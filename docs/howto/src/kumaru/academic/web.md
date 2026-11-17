@@ -24,6 +24,8 @@ phrases when they answer `200`.
 
 `inspect_source` stores metadata only. `collect_source` gates on reviewed human
 provenance, rights and topic coverage, then records text/hash/time/final URL.
+Those gates live in `require_collectable`, shared with [`site.py`](site.md) so a
+site crawl needs exactly the review one page does.
 AI disclosure revokes trust. Gated, unsupported and unavailable sources remain
 catalogued with access notes; actual failures are surfaced.
 

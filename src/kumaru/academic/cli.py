@@ -206,6 +206,22 @@ def collect(ctx: typer.Context, source_id: str) -> None:
     emit(collect_source(ctx.obj[0], source_id, PublicWeb()).model_dump(exclude={"text"}))
 
 
+@app.command("collect-site")
+def collect_site(
+    ctx: typer.Context, source_id: str,
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    max_pages: int = typer.Option(100, "--max-pages", min=1, max=1000),
+) -> None:
+    """Save a reviewed documentation site's pages below its URL folder to a NEW folder for `kumaru learn`."""
+    from kumaru.academic.site import collect_site as collect
+    from kumaru.academic.web import PublicWeb
+
+    def progress(done: int, limit: int, url: str) -> None:
+        typer.echo(f"[{done}/{limit}] {json.dumps(url, ensure_ascii=True)}", err=True)
+
+    emit(collect(ctx.obj[0], source_id, PublicWeb(), output, max_pages=max_pages, progress=progress))
+
+
 @app.command("export")
 def export(
     ctx: typer.Context, source_id: str,

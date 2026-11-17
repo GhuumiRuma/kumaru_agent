@@ -384,7 +384,8 @@ def inspect_source(catalog: Catalog, id_: str, web: PublicWeb) -> Source:
     return catalog.save_metadata(id_, updates)
 
 
-def collect_source(catalog: Catalog, id_: str, web: PublicWeb) -> Source:
+def require_collectable(catalog: Catalog, id_: str) -> Source:
+    """The source, if its human review permits collecting its text; raises otherwise."""
     source = catalog.get(id_)
     catalog.require_current_review(id_)
     if source.kind == "sources_of_sources":
@@ -395,6 +396,11 @@ def collect_source(catalog: Catalog, id_: str, web: PublicWeb) -> Source:
         raise RequestError("Review topic coverage before collecting text")
     if source.access in {"account", "paywall", "inaccessible"}:
         raise AccessBlocked("Source is access-restricted; this scraper never bypasses gates", source.access)
+    return source
+
+
+def collect_source(catalog: Catalog, id_: str, web: PublicWeb) -> Source:
+    source = require_collectable(catalog, id_)
     try:
         page = web.fetch(source.url)
         updates, text = analyze_page(page)

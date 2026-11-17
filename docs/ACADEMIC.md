@@ -391,8 +391,9 @@ longest matching rule wins (`Allow` on a tie), `*` and a final `$` are patterns,
 a group naming `KumaruAcademic` replaces the `*` group. Requests are paced by host (at
 least one second, including declared crawl delays/rates). Missing robots (404)
 allows access; policy failures, including a challenge on robots.txt itself, fail
-closed. Retrieval never recursively follows
-page links or bulk-downloads a repository. For large catalogues, paginate `list`
+closed. `collect` and `inspect` never follow page links, and nothing
+bulk-downloads a repository; `collect-site` (below) follows links only inside one
+reviewed documentation folder, up to a page limit. For large catalogues, paginate `list`
 with `--limit` (up to 500) and `--offset`.
 
 Provider, network, policy and parsing errors are explicit. Inaccessible inspection/
@@ -400,6 +401,46 @@ collection updates its source access note; a transient network failure (HTTP 503
 raises an error without changing the access category.
 Internet DNS/HTTPS access is required for real search. Offline tests use fixtures,
 not fictional references masquerading as discovered works.
+
+## Collect a documentation site
+
+A coding agent answers best from the documentation of the exact language, library
+and version you use. That documentation spans many pages, so `collect-site` saves a
+whole reviewed documentation folder for `kumaru learn`:
+
+```powershell
+# One-time: a topic for it (any area works; this is an example)
+'{"id": "python", "name": "Python", "level": "area"}' | Set-Content python-topic.json
+kumaru academic topic python-topic.json
+
+kumaru academic add docs-source.json      # {"url": "https://docs.python.org/3.12/library/", "title": "Python 3.12 library reference", "topic_ids": ["python"]}
+kumaru academic review SOURCE_ID review.json   # human origin + text permission evidence (the docs' license) + topics
+kumaru academic collect-site SOURCE_ID -o C:\references\python-3.12 --max-pages 300
+kumaru learn Python --version 3.12 --source C:\references\python-3.12 -o C:\references\python-3.12.sqlite
+```
+
+Then add the index to `agent.knowledge_indexes` (for example in `configs/coder.yaml`).
+
+- **One review covers the site**, with the same checks as `collect`. Review the
+  documentation's license as permission evidence; reachable is not licensed.
+- **Scope is the folder holding the reviewed URL**: same scheme and host, paths
+  below it, no query strings. `https://docs.python.org/3.12/library/` stays inside
+  `/3.12/library/`. A URL without a trailing slash uses its parent folder, so
+  `https://docs.python.org/3.12` would cover the whole site. Catalogue and review a
+  broader URL to collect more.
+- **Same safeguards per page**: robots.txt, at least one second between requests
+  (300 pages take 5+ minutes), DNS pinning, 2 MB pages, no logins or challenges.
+  Pages that are blocked, gated, empty, `noindex`, duplicates or AI-disclosing are
+  skipped with a reason; `nofollow` pages are saved but their links are not followed.
+- **Output** is a new or empty folder of the original HTML/text, named after the
+  URL paths, plus `_kumaru_site.json` with the untrusted-reference notice and each
+  page's URL, hash and time. Existing files are never overwritten. A network outage
+  stops the crawl with HTTP 503 and leaves a manifest marked `complete: false`.
+- `--max-pages` (default 100, at most 1000) counts requests. `complete: false` with
+  no `stopped` reason means the limit was reached before every link was visited.
+
+Site text is not stored in the catalogue, and `collect-site` is CLI-only: a crawl
+of minutes does not fit an HTTP request.
 
 ## HTTP API
 

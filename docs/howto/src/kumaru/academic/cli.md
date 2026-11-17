@@ -20,3 +20,7 @@ Editorial commands are `notice-add`, `notices`, `notice-review`, `check-updates`
 `open-access-batch [--topic] [--limit 1..20] [--provider]` find legal free copies;
 see [openaccess.py](openaccess.md). Provider names are checked against an explicit
 map rather than cast from arbitrary strings.
+
+`collect-site SOURCE_ID -o DIR [--max-pages 1..1000]` saves a reviewed documentation
+site to a new folder for `kumaru learn`; progress goes to stderr, the JSON summary to
+stdout. See [site.py](site.md).
