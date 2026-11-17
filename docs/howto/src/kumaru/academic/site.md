@@ -10,15 +10,19 @@ How it works:
 - **Same review as one page.** `web.require_collectable` applies the checks
   `collect_source` uses (human origin, text permission, reviewed topics, no pending
   notices, not restricted) before the first request. One review covers the site.
-- **Scope is the reviewed URL's folder.** Breadth-first from the source URL, a link is
+- **Scope is the reviewed URL's folder.** From the source URL, a link is
   followed only on the same scheme and host, below the folder holding that URL (`.../library/`
   for `.../library/` or `.../library/intro.html`), and without a query string. Binary
   suffixes (`.png`, `.pdf`, `.zip`, ...) are not requested. A redirect out of scope is skipped.
+- **Order.** A heap of `(-priority, discovery order)` from
+  [`assist.LinkScorer`](assist.md). Without `focus` that is breadth-first, with search,
+  changelog and index pages last. With `focus`, links whose anchor text, URL or parent
+  page mention the focus words come first, so `max_pages` is spent on them.
 - **Every request goes through `PublicWeb`**: robots per page, at least one second
   per host, DNS pinning, 2 MB responses. `analyze_page` classifies each page.
 - **Pages are skipped, not failed**, when blocked, gated, empty, marked
   `noindex` (meta `robots` or `KumaruAcademic`), duplicates of a saved page (same
-  body hash) or disclosing AI text. `nofollow` stops link extraction from that page.
+  body hash, or a SimHash within 3 bits for pages of 100+ words) or disclosing AI text. `nofollow` stops link extraction from that page.
   The root is the exception: if it fails, nothing is written, and an AI disclosure
   on it revokes trust as in `collect_source`.
 - **Output.** Original HTML or plain text, mirrored by URL path with safe names

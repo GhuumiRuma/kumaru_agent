@@ -133,6 +133,40 @@ def test_blocked_root_writes_nothing(catalog, tmp_path):
     assert not (tmp_path / "out").exists()
 
 
+def test_focus_spends_the_page_limit_on_relevant_pages(catalog, tmp_path):
+    pages = {
+        ROOT: html(
+            '<p>Index of the library.</p><a href="json.html">JSON encoder</a>'
+            '<a href="changelog.html">Changelog</a><a href="asyncio-task.html">Coroutines and Tasks</a>'
+        ),
+        ROOT + "json.html": html("<p>JSON.</p>"),
+        ROOT + "changelog.html": html("<p>Changes.</p>"),
+        ROOT + "asyncio-task.html": html("<p>Tasks.</p>"),
+    }
+    plain = SiteWeb(pages)
+    collect_site(catalog, reviewed(catalog), plain, tmp_path / "plain", max_pages=3)
+    assert plain.calls == [ROOT, ROOT + "json.html", ROOT + "asyncio-task.html"]
+    focused = SiteWeb(pages)
+    report = collect_site(
+        catalog, reviewed(catalog), focused, tmp_path / "focused", max_pages=2, focus="asyncio tasks",
+    )
+    assert focused.calls == [ROOT, ROOT + "asyncio-task.html"] and report["focus"] == "asyncio tasks"
+
+
+def test_near_duplicate_pages_are_skipped(catalog, tmp_path):
+    words = " ".join(f"term{i}" for i in range(150))
+    pages = {
+        ROOT: html(f'<p>{words}</p><a href="mirror">m</a><a href="short">s</a>'),
+        ROOT + "mirror": html(f"<p>{words} printed</p>"),
+        ROOT + "short": html("<p>Brief stub.</p>"),
+    }
+    out = tmp_path / "out"
+    report = collect_site(catalog, reviewed(catalog), SiteWeb(pages), out)
+    assert report["saved"] == 2
+    manifest = json.loads((out / MANIFEST).read_text())
+    assert manifest["skipped_pages"] == [{"url": ROOT + "mirror", "reason": f"Nearly the same text as {ROOT}"}]
+
+
 def test_file_names_are_safe_on_every_platform():
     scope = Scope.of(ROOT + "index.html")
     assert scope.prefix == "/lib/"

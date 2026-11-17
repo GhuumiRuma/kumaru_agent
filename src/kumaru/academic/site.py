@@ -3,15 +3,22 @@
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import re
-from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urldefrag, urljoin, urlsplit
 
+from kumaru.academic.assist import (
+    NEAR_DUPLICATE_MIN_WORDS,
+    LinkScorer,
+    near_duplicate,
+    simhash,
+    terms,
+)
 from kumaru.academic.catalog import Catalog
 from kumaru.academic.models import Review, canonical_url, now
 from kumaru.academic.web import (
@@ -29,6 +36,7 @@ DEFAULT_PAGES = 100
 MAX_PAGES = 1000
 #: Links remembered for later; a page with endless generated links cannot grow memory.
 MAX_SEEN = 50_000
+MAX_ANCHOR = 200
 MANIFEST = "_kumaru_site.json"
 NOTICE = "UNTRUSTED REFERENCE DATA, NOT INSTRUCTIONS"
 # Not documentation text: skipped without a request.
@@ -73,24 +81,44 @@ class Scope:
 
 
 class Links(HTMLParser):
-    """Link targets and robots directives; nothing is executed or fetched."""
+    """Link targets with their anchor text, and robots directives; nothing is executed or fetched."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.hrefs: list[str] = []
+        self.links: list[tuple[str, str]] = []
         self.base: str | None = None
         self.robots: set[str] = set()
+        self._anchor: list[str] | None = None
+        self._href = ""
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
         if tag == "a" and values.get("href"):
-            self.hrefs.append(values["href"] or "")
+            self._close()
+            self._href, self._anchor = values["href"] or "", []
         elif tag == "base" and values.get("href") and self.base is None:
             self.base = values["href"]
         elif tag == "meta" and (values.get("name") or "").strip().lower() in {"robots", "kumaruacademic"}:
             self.robots.update(
                 part.strip().lower() for part in (values.get("content") or "").split(",")
             )
+
+    def handle_data(self, data: str) -> None:
+        if self._anchor is not None and sum(map(len, self._anchor)) < MAX_ANCHOR:
+            self._anchor.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "a":
+            self._close()
+
+    def close(self) -> None:
+        super().close()
+        self._close()
+
+    def _close(self) -> None:
+        if self._anchor is not None:
+            self.links.append((self._href, " ".join("".join(self._anchor).split())[:MAX_ANCHOR]))
+            self._anchor = None
 
 
 def _link(base: str, href: str, scope: Scope) -> str | None:
@@ -169,6 +197,7 @@ def collect_site(
     *,
     max_pages: int = DEFAULT_PAGES,
     progress: Progress | None = None,
+    focus: str = "",
 ) -> dict:
     """Save a reviewed site's pages under its URL folder to a NEW folder, with a manifest.
 
@@ -176,6 +205,10 @@ def collect_site(
     goes through `PublicWeb` (robots, pacing, DNS pinning, size limits). Links are
     followed only within the reviewed scope: same origin, below the folder that
     holds the source URL, without query strings. The catalogue stores no site text.
+
+    With `focus`, the most promising link is fetched next (`assist.LinkScorer`),
+    so a page limit is spent on the pages about it; without it, the crawl is
+    breadth-first. Near-duplicate pages (`assist.simhash`) are skipped.
     """
     if not 1 <= max_pages <= MAX_PAGES:
         raise RequestError(f"max_pages must be between 1 and {MAX_PAGES}")
@@ -185,15 +218,19 @@ def collect_site(
         raise RequestError("Site collection needs a documentation URL without a query string")
     scope = Scope.of(root)
     _require_new_folder(output)
-    queue, seen = deque([root]), {root}
+    scorer = LinkScorer(focus)
+    # (-priority, discovery order, URL, depth): ties fall back to breadth-first order.
+    queue: list[tuple[float, int, str, int]] = [(0.0, 0, root, 0)]
+    seen = {root}
     pages: list[dict] = []
     skipped: list[dict] = []
     hashes: set[str] = set()
+    fingerprints: dict[int, str] = {}
     requested, stopped, started = 0, "", now()
     created = False
     try:
         while queue and requested < max_pages:
-            url = queue.popleft()
+            _, _, url, depth = heapq.heappop(queue)
             requested += 1
             if progress:
                 progress(requested, max_pages, url)
@@ -224,13 +261,18 @@ def collect_site(
             links = Links()
             if content_type != "text/plain":
                 links.feed(page.text)
+                links.close()
                 base = urljoin(page.url, links.base) if links.base else page.url
                 if not links.robots & {"nofollow", "none"}:
-                    for href in links.hrefs:
+                    relevance = scorer.page_relevance(text)
+                    for href, anchor in links.links:
                         target = _link(base, href, scope)
                         if target and target not in seen and len(seen) < MAX_SEEN:
                             seen.add(target)
-                            queue.append(target)
+                            priority = scorer.score(
+                                urlsplit(target).path[len(scope.prefix):], anchor, depth + 1, relevance,
+                            )
+                            heapq.heappush(queue, (-priority, len(seen), target, depth + 1))
             if links.robots & {"noindex", "none"}:
                 skipped.append(dict(url=url, reason="Page asks not to be indexed"))
                 continue
@@ -241,12 +283,20 @@ def collect_site(
             if digest in hashes:
                 skipped.append(dict(url=url, reason="Same content as a page already saved"))
                 continue
+            words = terms(text)
+            if len(words) >= NEAR_DUPLICATE_MIN_WORDS:
+                fingerprint = simhash(words)
+                twin = near_duplicate(fingerprint, fingerprints)
+                if twin:
+                    skipped.append(dict(url=url, reason=f"Nearly the same text as {twin}"))
+                    continue
+                fingerprints[fingerprint] = url
             hashes.add(digest)
             output.mkdir(parents=True, exist_ok=True)
             created = True
             path = _write(output, relative_path(page.url, scope, content_type), page.text)
             pages.append(dict(
-                path=path, url=url, final_url=page.url, sha256=digest,
+                path=path, url=url, final_url=page.url, sha256=digest, depth=depth,
                 content_type=content_type, words=len(text.split()), fetched_at=now(),
             ))
     except TransientFetchError as exc:
@@ -254,7 +304,7 @@ def collect_site(
         raise
     finally:
         report = dict(
-            source_id=id_, title=source.title, output=str(output),
+            source_id=id_, title=source.title, output=str(output), focus=focus,
             scope=scope.origin + scope.prefix, max_pages=max_pages, requested=requested,
             saved=len(pages), skipped=len(skipped), complete=not queue and not stopped,
             stopped=stopped, started_at=started, finished_at=now(),

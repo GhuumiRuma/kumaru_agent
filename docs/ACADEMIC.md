@@ -438,9 +438,34 @@ Then add the index to `agent.knowledge_indexes` (for example in `configs/coder.y
   stops the crawl with HTTP 503 and leaves a manifest marked `complete: false`.
 - `--max-pages` (default 100, at most 1000) counts requests. `complete: false` with
   no `stopped` reason means the limit was reached before every link was visited.
+- `--focus "asyncio tasks"` fetches the most promising links first (anchor text,
+  URL and the linking page), so a small `--max-pages` covers that subject instead of
+  whatever is nearest the root. Without it the crawl is breadth-first. Pages nearly
+  identical to one already saved (100+ words, SimHash) are skipped as duplicates.
 
 Site text is not stored in the catalogue, and `collect-site` is CLI-only: a crawl
 of minutes does not fit an HTTP request.
+
+## Search assistance
+
+Fast, model-free helpers decide what to look at first. They never review or approve
+anything, and their numbers are orderings, not legitimacy scores.
+
+```powershell
+kumaru academic rank calculus --query "chain rule" --limit 20   # review queue, best first
+kumaru academic suggest-queries calculus                          # terms to search next
+kumaru academic search calculus --query "riemann sums"            # ...then search one
+```
+
+- `rank` scores a topic's not-yet-reviewed sources: title relevance (BM25 against the
+  query and the topic's path and aliases) 70%, citations (log-scaled) 20%, recency
+  10%. Each row shows its components and matched words. `--all` includes reviewed ones.
+- `suggest-queries` finds words and word pairs common in the topic's titles (its
+  reviewed sources once there are 3) but rare in the rest of the catalogue. It gets
+  better as you review sources and catalogue other topics.
+
+Both run in time linear in the catalogue's title words. See
+[assist.py](howto/src/kumaru/academic/assist.md) for the formulas.
 
 ## HTTP API
 

@@ -211,6 +211,7 @@ def collect_site(
     ctx: typer.Context, source_id: str,
     output: Annotated[Path, typer.Option("--output", "-o")],
     max_pages: int = typer.Option(100, "--max-pages", min=1, max=1000),
+    focus: str = typer.Option("", "--focus", help="Words to steer the crawl toward, e.g. 'asyncio tasks'."),
 ) -> None:
     """Save a reviewed documentation site's pages below its URL folder to a NEW folder for `kumaru learn`."""
     from kumaru.academic.site import collect_site as collect
@@ -219,7 +220,32 @@ def collect_site(
     def progress(done: int, limit: int, url: str) -> None:
         typer.echo(f"[{done}/{limit}] {json.dumps(url, ensure_ascii=True)}", err=True)
 
-    emit(collect(ctx.obj[0], source_id, PublicWeb(), output, max_pages=max_pages, progress=progress))
+    emit(collect(
+        ctx.obj[0], source_id, PublicWeb(), output, max_pages=max_pages, progress=progress, focus=focus,
+    ))
+
+
+@app.command("rank")
+def rank(
+    ctx: typer.Context, topic: str,
+    query: str = typer.Option("", "--query", "-q"),
+    limit: int = typer.Option(20, "--limit", min=1, max=500),
+    include_reviewed: bool = typer.Option(False, "--all", help="Include sources already topic-reviewed."),
+) -> None:
+    """Order a topic's unreviewed sources for review (title BM25 + citation/recency priors)."""
+    from kumaru.academic.assist import rank_candidates
+
+    emit(rank_candidates(ctx.obj[0], topic, query, limit=limit, include_reviewed=include_reviewed))
+
+
+@app.command("suggest-queries")
+def suggest(
+    ctx: typer.Context, topic: str, limit: int = typer.Option(10, "--limit", min=1, max=50),
+) -> None:
+    """Suggest search terms that distinguish a topic's sources from the rest of the catalogue."""
+    from kumaru.academic.assist import suggest_queries
+
+    emit(suggest_queries(ctx.obj[0], topic, limit=limit))
 
 
 @app.command("export")
