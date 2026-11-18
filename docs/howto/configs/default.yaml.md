@@ -235,6 +235,12 @@ A sampling preset that is applied over `generation` only while thinking is on. R
 | `metrics_enabled` | `true` | Not read. `/metrics` is always served. |
 | `trace_file` | `null` | Not read. No request trace is written. |
 
+### `education`
+
+| Field | Default | Effect and notes |
+|---|---|---|
+| `runs_dirs` | `[runs/bench]` | Folders of `kumaru bench run` results that the Education page (`/education`) reads, up to two levels deep; relative paths start at the Kumaru folder. The first is also where `kumaru curriculum run` puts a phase's run. Set it once for your machine with `$env:KUMARU_EDUCATION__RUNS_DIRS = '["D:/kumaru/runs/bench"]'` (a JSON list). [Details](../src/kumaru/server/education.md). |
+
 ## How to use it
 
 Commands assume the venv is active; otherwise call `.\.venv\Scripts\kumaru.exe`.

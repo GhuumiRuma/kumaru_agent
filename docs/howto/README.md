@@ -55,6 +55,8 @@ One page per file. Each page answers the same seven questions: what it does, why
 | `server/app.py` | [page](src/kumaru/server/app.md) | Startup, lifecycle, metrics, concurrency limits |
 | `server/schemas.py` | [page](src/kumaru/server/schemas.md) | Changing the public API contract |
 | `server/routes_chat.py` | [page](src/kumaru/server/routes_chat.md) | **Every HTTP endpoint, documented** |
+| `server/education.py` | [page](src/kumaru/server/education.md) | A bar on the Education page looks wrong or is missing |
+| `server/routes_education.py` | [page](src/kumaru/server/routes_education.md) | `GET /v1/education`: the newest benchmark results per area |
 
 ## Training
 
@@ -62,6 +64,7 @@ One page per file. Each page answers the same seven questions: what it does, why
 |---|---|---|
 | `train/__init__.py` | [page](src/kumaru/train/__init__.md) | Deciding which training path you need |
 | `train/config.py` | [page](src/kumaru/train/config.md) | **Every training YAML field, explained** |
+| `train/curriculum.py` | [page](src/kumaru/train/curriculum.md) | **Studying one area at a time**: measuring it and collecting its references, repeatably |
 | `train/data.py` | [page](src/kumaru/train/data.md) | Dataset format, loss masking, token packing |
 | `train/distill.py` | [page](src/kumaru/train/distill.md) | **Distilling a large model into a small one**: building and auditing the data |
 | `train/finetune_lora.py` | [page](src/kumaru/train/finetune_lora.md) | Running or debugging a LoRA fine-tune |
@@ -89,6 +92,7 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 | `eval/benchmarks/extract.py` | [page](src/kumaru/eval/benchmarks/extract.md) | A right answer was graded wrong |
 | `eval/benchmarks/gsm8k.py` | [page](src/kumaru/eval/benchmarks/gsm8k.md) | Math word problems |
 | `eval/benchmarks/mmlu_pro.py` | [page](src/kumaru/eval/benchmarks/mmlu_pro.md) | Knowledge and reasoning, 14 subjects |
+| `eval/benchmarks/supergpqa.py` | [page](src/kumaru/eval/benchmarks/supergpqa.md) | **Graduate level, per area**: computer science in 10 subfields, and the other sciences |
 | `eval/benchmarks/ifeval.py` | [page](src/kumaru/eval/benchmarks/ifeval.md) | Instruction following and its four scores |
 | `eval/benchmarks/ifeval_checks.py` | [page](src/kumaru/eval/benchmarks/ifeval_checks.md) | One IFEval instruction type behaves oddly |
 | `eval/benchmarks/humaneval.py` | [page](src/kumaru/eval/benchmarks/humaneval.md) | Code generation; what the code-execution guard does and does not stop |
@@ -106,6 +110,9 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 | `ui/index.html` | [page](ui/index.html.md) | Adding a control to the sidebar |
 | `ui/styles.css` | [page](ui/styles.css.md) | Changing the theme |
 | `ui/app.js` | [page](ui/app.js.md) | Streaming, markdown rendering, client state |
+| `ui/education.html` | [page](ui/education.html.md) | The Education page: what the model knows, per area |
+| `ui/education.js` | [page](ui/education.js.md) | How a bar reads; adding a benchmark family to the page |
+| `ui/education.css` | [page](ui/education.css.md) | Bars, interval bands, chance ticks, compare markers |
 
 ## Configuration profiles
 
@@ -131,6 +138,7 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 | `configs/train/distill-gsm8k.yaml` | [page](configs/distill-gsm8k.yaml.md) | **Distillation**: Qwen2.5-1.5B learns from the teacher's verified answers |
 | `configs/train/distill-gsm8k-gold.yaml` | [page](configs/distill-gsm8k-gold.yaml.md) | Distillation's control arm: the same questions, human-written solutions |
 | `configs/train/distill-gsm8k-0.5b.yaml` | [page](configs/distill-gsm8k-0.5b.yaml.md) | Distillation pilot on Qwen2.5-0.5B: measures time and memory first |
+| `configs/curriculum/cs-foundations.yaml` | [page](configs/cs-foundations.yaml.md) | **Curriculum phase 1**: computer science fundamentals, measured and supplied with references |
 | `data/samples/chat_train.jsonl` | [page](configs/chat_train.jsonl.md) | **The SFT data format**, and how to build your own |
 | `data/samples/corpus.txt` | [page](configs/corpus.txt.md) | Pretraining corpus format |
 

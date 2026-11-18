@@ -59,6 +59,8 @@ The first run of a public benchmark downloads its dataset (cached afterwards). `
 | `golden` | Your own regression questions ([§8](#8-your-own-golden-questions)) | 27, grow it | - | accuracy |
 | `gsm8k` | Multi-step grade-school arithmetic (Cobbe et al., 2021) | 1,319 | ~0% | final number correct |
 | `mmlu_pro` | Knowledge plus reasoning across 14 subjects, up to 10 options (Wang et al., 2024) | 12,032 | ~11% | letter correct |
+| `supergpqa_cs` | Graduate computer science in 10 areas: data structures, operating systems, networks, databases, formal languages... (M-A-P Team, 2025) | 763 | ~10% | letter correct |
+| `supergpqa_stem` | Graduate science and engineering besides CS, in 6 areas: maths, physics, chemistry, biology, engineering, other sciences | 16,967 | ~10% | letter correct |
 | `ifeval` | Following verifiable instructions: "no commas", "exactly 3 bullet points" (Zhou et al., 2023) | 541 prompts, 834 instructions, 25 types | - | prompt-level strict |
 | `humaneval` | Writing a correct Python function from its docstring (Chen et al., 2021) | 164 | ~0% | pass@1: hidden unit tests pass |
 | `multipl_e` | HumanEval's problems in 8 languages: Python, JavaScript, TypeScript, C#, Java, C++, Go, Rust (Cassano et al., 2023) | 152 per language | ~0% | pass@1, per language |

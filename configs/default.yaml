@@ -176,3 +176,7 @@ academic:
   contact_email: null        # your own address, required only by Unpaywall lookups
   monitor_interval_s: 0      # 0 = manual only; positive = periodic checks while the server runs
   monitor_batch_size: 10     # never/least-recently checked DOI works per tick (1-20)
+
+education:
+  runs_dirs: [runs/bench]    # benchmark runs the /education page reads; relative = the Kumaru folder.
+                             # The first is also where `kumaru curriculum run` puts a phase's run.

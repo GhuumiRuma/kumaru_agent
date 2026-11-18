@@ -16,7 +16,10 @@
 
 This file defines the configuration models and the merge that builds one `KumaruConfig`. The top-level sections, in order, are:
 
-`backend`, `generation`, `thinking_mode`, `agent`, `server`, `telemetry`, `academic`
+`backend`, `generation`, `thinking_mode`, `agent`, `server`, `telemetry`, `academic`, `education`
+
+`education.runs_dirs` lists the benchmark-run folders the Education page reads; the
+first also receives `kumaru curriculum run`'s runs ([details](../server/education.md)).
 
 `academic` enables the optional academic HTTP catalogue (`enabled`, default false),
 sets its persistent SQLite `database`, and supplies optional `brave_api_key` for

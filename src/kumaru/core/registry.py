@@ -193,6 +193,13 @@ BENCHMARKS.register_lazy(
     "gsm8k_train", "kumaru.eval.benchmarks.gsm8k:GSM8KTrain", aliases=("gsm8k-train",)
 )
 BENCHMARKS.register_lazy("mmlu_pro", "kumaru.eval.benchmarks.mmlu_pro:MMLUPro", aliases=("mmlu-pro",))
+# Graduate level, reported per area: computer science by subfield, STEM by field.
+BENCHMARKS.register_lazy(
+    "supergpqa_cs", "kumaru.eval.benchmarks.supergpqa:SuperGPQACS", aliases=("supergpqa-cs",)
+)
+BENCHMARKS.register_lazy(
+    "supergpqa_stem", "kumaru.eval.benchmarks.supergpqa:SuperGPQASTEM", aliases=("supergpqa-stem",)
+)
 BENCHMARKS.register_lazy("ifeval", "kumaru.eval.benchmarks.ifeval:IFEval")
 BENCHMARKS.register_lazy("humaneval", "kumaru.eval.benchmarks.humaneval:HumanEval")
 # HumanEval in eight languages (MultiPL-E). One benchmark per language, so each

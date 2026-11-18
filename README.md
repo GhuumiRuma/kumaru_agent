@@ -77,7 +77,8 @@ Full walkthrough with troubleshooting: [`docs/QUICKSTART.md`](docs/QUICKSTART.md
 | `kumaru config` | Print the fully merged configuration — run this when something ignores your settings |
 | `kumaru train` | LoRA fine-tune or from-scratch pretrain |
 | `kumaru eval` | Latency, throughput, and quality regression checks |
-| `kumaru bench` | Public benchmarks with error bars; compares two runs with significance tests |
+| `kumaru bench` | Public benchmarks with error bars; compares two runs with significance tests. The web UI's `/education` page shows the newest results per area |
+| `kumaru curriculum` | Study one area at a time: `run` collects open-access references for a phase's topics and measures it with its benchmarks; repeating it only does what is missing ([phase 1](docs/howto/configs/cs-foundations.yaml.md)) |
 | `kumaru distill` | Turns a large model's graded answers into training data for a small, fast one ([how](docs/TRAINING.md#part-3--distillation)) |
 | `kumaru learn` | Create a versioned local reference pack, or index a documentation folder, for a language or platform |
 | `kumaru academic` | Discover sources, find legal open-access copies and their licenses, review claim-level evidence and editorial updates, and collect permitted human-authored text; opt-in `/academic` review dashboard ([guide](docs/ACADEMIC.md)) |
@@ -255,7 +256,7 @@ scripts/       setup.ps1 (install), verify.ps1 (layered self-check),
                get-llama-server.ps1 (inference engine), check_graders.py (grader proof),
                overnight.ps1 (frees the GPU and runs a long job while you sleep)
 docs/howto/    a page for every source file
-tests/         pytest suite (1414 tests), runs with no GPU in under a minute
+tests/         pytest suite (1432 tests), runs with no GPU in under a minute
 ```
 
 ## Requirements

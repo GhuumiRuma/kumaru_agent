@@ -23,6 +23,8 @@ The distinction that matters most:
 
 Fine-tuning facts into weights is expensive, slow to update, and fails silently as the world changes. If your goal is "the model should know our internal docs", build retrieval first. For a documentation folder that takes one command: `kumaru learn` indexes it, and `agent.knowledge_indexes` adds the passages that match each question ([how-to](howto/src/kumaru/agent/doc_index.md)).
 
+**Measure first, one area at a time.** A curriculum phase is one YAML file that names an area's benchmarks and the topics to collect references for: `kumaru curriculum run configs\curriculum\cs-foundations.yaml -c qwen36` (phase 1: computer science fundamentals). It changes no weights. Repeating it only does what is missing, so it never pays twice for an answer, and the web UI's `/education` page shows each area's bar as the baseline any training must beat ([how-to](howto/src/kumaru/train/curriculum.md)).
+
 ---
 
 ## The two paths

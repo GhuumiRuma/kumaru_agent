@@ -109,7 +109,7 @@ def test_chat_flags_beat_the_profiles_thinking_preset(scratch_dir: Path) -> None
 
 def test_bench_list_names_every_benchmark() -> None:
     text = run_cli("bench", "list")
-    for name in ("golden", "gsm8k", "mmlu_pro", "ifeval", "humaneval", "multipl_e_py", "multipl_e_rs"):
+    for name in ("golden", "gsm8k", "mmlu_pro", "supergpqa_cs", "supergpqa_stem", "ifeval", "humaneval", "multipl_e_py", "multipl_e_rs"):
         assert name in text
     assert "multipl_e " in text  # the suite of all eight languages
 

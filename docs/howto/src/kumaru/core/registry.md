@@ -19,7 +19,7 @@ This file defines the generic `Registry` class and three global registries.
 |---|---|---|---|
 | `BACKENDS` | `backend` | `kumaru.backends` | `echo`, `transformers` (`hf`), `llamacpp` (`gguf`), `openai_compat` (`ollama`, `vllm`, `remote`), `llamacpp_server` (`llama-server`, `llama_server`) — all lazy |
 | `TOOLS` | `tool` | `kumaru.tools` | `current_time`, registered by decorator, and the lazy project-folder tools `list_files`, `read_file`, `write_file`, `edit_file` (`kumaru.agent.workspace`) and `run_command` (`kumaru.agent.commands`), all registered when `kumaru.agent.tools` is imported |
-| `BENCHMARKS` | `benchmark` | `kumaru.benchmarks` | `gsm8k`, `gsm8k_train` (`gsm8k-train`), `mmlu_pro` (`mmlu-pro`), `ifeval`, `humaneval`, `multipl_e_<lang>` (`multipl-e-<lang>`) for each of the eight `MULTIPL_E_LANGUAGES`, `golden` — all lazy |
+| `BENCHMARKS` | `benchmark` | `kumaru.benchmarks` | `gsm8k`, `gsm8k_train` (`gsm8k-train`), `mmlu_pro` (`mmlu-pro`), `supergpqa_cs` (`supergpqa-cs`), `supergpqa_stem` (`supergpqa-stem`), `ifeval`, `humaneval`, `multipl_e_<lang>` (`multipl-e-<lang>`) for each of the eight `MULTIPL_E_LANGUAGES`, `golden` — all lazy |
 
 v0.2 adds the `llamacpp_server` backend and the whole `BENCHMARKS` registry, which `kumaru bench` uses.
 
@@ -112,7 +112,8 @@ from kumaru.core.registry import BENCHMARKS, suite_members
 
 print(BENCHMARKS.names())
 # ['golden', 'gsm8k', 'gsm8k_train', 'humaneval', 'ifeval', 'mmlu_pro', 'multipl_e_cpp', 'multipl_e_cs',
-#  'multipl_e_go', 'multipl_e_java', 'multipl_e_js', 'multipl_e_py', 'multipl_e_rs', 'multipl_e_ts']
+#  'multipl_e_go', 'multipl_e_java', 'multipl_e_js', 'multipl_e_py', 'multipl_e_rs', 'multipl_e_ts',
+#  'supergpqa_cs', 'supergpqa_stem']
 print("mmlu-pro" in BENCHMARKS)        # True: alias, no import
 print(suite_members("multipl-e"))
 # ('multipl_e_py', 'multipl_e_js', 'multipl_e_ts', 'multipl_e_cs', 'multipl_e_java', 'multipl_e_cpp', 'multipl_e_go', 'multipl_e_rs')

@@ -93,6 +93,7 @@ The signatures show the CLI defaults. In Python, the real defaults are `typer.Op
 | `app` | `typer.Typer(name="kumaru", help="Local-first, scalable LLM agent.", no_args_is_help=True, add_completion=False)` | The root command. It has no `--version` and no shell-completion options. |
 | `bench_app` | `typer.Typer(help="Score models on public benchmarks; compare runs with significance tests.", no_args_is_help=True)` | Mounted as `kumaru bench` by `app.add_typer(bench_app, name="bench")`. |
 | `distill_app` | `typer.Typer(help="Build training data from a teacher model's graded answers (knowledge distillation).", no_args_is_help=True)` | Mounted as `kumaru distill`. |
+| `curriculum_app` | `typer.Typer(help="Study one area at a time: collect references for it and measure it, repeatably.", no_args_is_help=True)` | Mounted as `kumaru curriculum`. |
 | `console` | `Console()` | Module-level Rich console on stdout. All command output goes here, including the `error:` and `hint:` lines. Log records go to stderr. |
 | `CONTEXT_HELP` | `str` | The help text shared by every `--context`. |
 | `serve` | `serve(config: str = None, backend: str = None, model: str = None, device: str = None, adapter: str = None, context: int = None, host: str = None, port: int = None, log_level: str = None) -> None` | `kumaru serve`: prints the banner, then calls `kumaru.server.app.run(cfg)`, which blocks. |
@@ -107,6 +108,7 @@ The signatures show the CLI defaults. In Python, the real defaults are `typer.Op
 | `bench_run` | `bench_run(benchmarks: list[str], config: str = None, backend: str = None, model: str = None, adapter: str = None, context: int = None, limit: int = 100, full: bool = False, seed: int = 1234, think: bool = None, thinking_budget: int = None, max_tokens: int = None, temperature: float = None, concurrency: int = None, label: str = None, out: str = None, allow_code_exec: bool = False, sandbox: str = "none", use_agent_prompt: bool = False) -> None` | `kumaru bench run`: refuses a `--sandbox` outside `codeexec.SANDBOXES` before loading the profile, builds `BenchSettings` (`limit=None` when `--full` is given), then runs `BenchRunner(cfg, settings, profile=config, console=console).run(benchmarks)`. After the summaries it prints `not run: <name>: <why>` for each suite member the runner skipped. |
 | `bench_compare` | `bench_compare(baseline: str, candidate: str, examples: int = 0) -> None` | `kumaru bench compare A B`: `render_comparisons(...)`, plus `render_flips(...)` when `-e` is above 0. |
 | `bench_report` | `bench_report(run: str) -> None` | `kumaru bench report RUN`: `render_summaries(console, load_summaries(Path(run)), details=True)`. |
+| `curriculum_run` | `curriculum_run(phase_file: Path, config: str = None, collect: bool = True, measure: bool = True, refresh: bool = False, out_root: str = None) -> None` | `kumaru curriculum run PHASE`: `load_phase`, then `collect(...)` with `discover` bound to OpenAlex, open-access only, 20 works per search; then `BenchRunner` with `out_dir = <out_root or first education.runs_dirs>/<phase id>-<default_label>` so a repeat resumes. |
 | `distill_build` | `distill_build(runs: list[str], out: str, max_tokens: int = 1024, per_question: int = 4, val_fraction: float = 0.05, seed: int = 42, check_arithmetic: bool = True, eval_set: list[str] = ["gsm8k"], decontaminate: bool = True, allow_thinking: bool = False, force: bool = False) -> None` | `kumaru distill build RUNS... -o DIR`: `render(console, build_from_runs(runs, out, DistillSettings(...), force=force), Path(out))`. |
 | `distill_gold` | `distill_gold(out: str, match: str = None, val_fraction: float = 0.05, seed: int = 42, check_arithmetic: bool = True, eval_set: list[str] = ["gsm8k"], decontaminate: bool = True, force: bool = False) -> None` | `kumaru distill gold -o DIR`: the same with `build_gold(out, settings, match=match, force=force)`. |
 | `DISTILL_OUT_HELP`, `VAL_FRACTION_HELP`, `SPLIT_SEED_HELP`, `ARITHMETIC_HELP`, `EVAL_SET_HELP`, `DECONTAMINATE_HELP`, `FORCE_HELP` | `str` | Help texts shared by `distill build` and `distill gold`, so the two commands describe a shared flag identically. |
@@ -137,6 +139,7 @@ The examples are PowerShell, run from the repo root with the venv active; otherw
 | `kumaru eval` | Measure latency, throughput, and answer quality. | Yes. |
 | `kumaru bench list\|run\|report\|compare` | Score models on public benchmarks; compare runs with significance tests. | `run` only. |
 | `kumaru distill build\|gold` | Build training data from a teacher model's graded answers (knowledge distillation). | No. It reads GSM8K from the Hugging Face cache, downloading it on first use. |
+| `kumaru curriculum run PHASE` | Collect open-access references for a phase's topics, then measure it with its benchmarks; a repeat only does what is missing. | Yes, unless `--no-measure`. |
 
 ### Options
 
@@ -407,7 +410,7 @@ kumaru eval -c qwen36 -s my_cases.jsonl
 ### Benchmarks: `kumaru bench`
 
 - **Subcommands:**
-  - `bench list` prints the benchmarks: `golden`, `gsm8k`, `gsm8k_train`, `humaneval`, `ifeval`, `mmlu_pro` and the eight `multipl_e_<lang>`, plus the `multipl_e` suite, which runs all eight. Any golden-set `.jsonl` file also works as a benchmark. `gsm8k_train` is GSM8K's training split: teacher data for `kumaru distill`, not a score.
+  - `bench list` prints the benchmarks: `golden`, `gsm8k`, `gsm8k_train`, `humaneval`, `ifeval`, `mmlu_pro`, `supergpqa_cs`, `supergpqa_stem` and the eight `multipl_e_<lang>`, plus the `multipl_e` suite, which runs all eight. Any golden-set `.jsonl` file also works as a benchmark. `gsm8k_train` is GSM8K's training split: teacher data for `kumaru distill`, not a score.
   - `bench report RUN` shows one run in detail.
   - `bench compare BASELINE CANDIDATE [-e N]` answers "did B really beat A?" with paired differences, confidence intervals and p-values.
 - **Records.** `bench run` saves every answer.
@@ -457,6 +460,16 @@ kumaru bench run multipl_e -c qwen36 --no-think --allow-code-exec
   - A run whose fingerprint differs (model, decoding parameters, seed, prompt mode, documentation indexes, sandbox, compiler version or memory cap) is refused before anything is written.
   - On Ctrl+C the runner prints `Stopped. Finished answers are saved; resume with --out <dir>`.
 - **`humaneval` and `multipl_e*`** refuse to run without `--allow-code-exec`. Read `docs\howto\src\kumaru\eval\benchmarks\multipl_e.md` for the toolchains each language needs.
+
+### Curriculum phases: `kumaru curriculum`
+
+```powershell
+kumaru curriculum run configs\curriculum\cs-foundations.yaml -c qwen36
+```
+
+- **`run PHASE`** reads a phase file ([format](train/curriculum.md)), adds its topics to the academic catalogue, searches OpenAlex for open-access works once per (topic, query), then runs its benchmarks in one fixed folder, `<first education.runs_dirs>\<phase id>-<profile>-<think mode>`. A repeat skips the searches already done and resumes the run, so it spends model tokens only on unanswered questions.
+- `--no-collect` / `--no-measure` do one half; `--refresh` repeats the searches; `--out-root DIR` puts the run elsewhere.
+- A failed search (no network, a spent OpenAlex budget) stops collection with `collection stopped: ...`, and measuring goes ahead.
 
 ### Distillation data: `kumaru distill`
 

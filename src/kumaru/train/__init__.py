@@ -18,5 +18,9 @@ strong teacher's graded answers into training data, and
 ``kumaru train configs/train/distill-gsm8k.yaml`` fine-tunes a small, fast
 student on it.
 
+Measure before either path: ``kumaru curriculum run configs/curriculum/<phase>.yaml``
+(``curriculum.py``) scores one area with its benchmarks and collects references
+for it, repeatably and without changing any weights.
+
 See docs/TRAINING.md for the full walkthrough.
 """

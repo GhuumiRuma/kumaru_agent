@@ -667,6 +667,71 @@ def bench_report(
 
 
 # ---------------------------------------------------------------------------
+# kumaru curriculum ...
+# ---------------------------------------------------------------------------
+
+curriculum_app = typer.Typer(
+    help="Study one area at a time: collect references for it and measure it, repeatably.",
+    no_args_is_help=True,
+)
+app.add_typer(curriculum_app, name="curriculum")
+
+
+@curriculum_app.command("run")
+def curriculum_run(
+    phase_file: Path = typer.Argument(..., help="A phase file, e.g. configs/curriculum/cs-foundations.yaml."),
+    config: str = typer.Option(None, "--config", "-c", help="YAML file or profile name."),
+    collect: bool = typer.Option(True, "--collect/--no-collect", help="Search OpenAlex for open-access works per topic."),
+    measure: bool = typer.Option(True, "--measure/--no-measure", help="Run the phase's benchmarks."),
+    refresh: bool = typer.Option(False, "--refresh", help="Repeat the searches already done."),
+    out_root: str = typer.Option(None, "--out-root", help="Folder for the phase's run (default: the first education.runs_dirs)."),
+) -> None:
+    """Run one phase; repeating it only does what is missing."""
+    import asyncio
+    from functools import partial
+
+    from kumaru.academic.catalog import Catalog
+    from kumaru.academic.discovery import discover
+    from kumaru.core.types import GenerationParams
+    from kumaru.eval.benchmarks.runner import (
+        DEFAULT_OUT,
+        BenchRunner,
+        BenchSettings,
+        default_label,
+        render_summaries,
+    )
+    from kumaru.server.education import resolve_dirs
+    from kumaru.train.curriculum import collect as collect_phase
+    from kumaru.train.curriculum import load_phase
+
+    phase = load_phase(phase_file)
+    cfg = _load(config)
+    console.print(f"[bold]{escape(phase.title)}[/] [dim]({phase.id})[/]")
+    if collect and phase.collect:
+        search = partial(
+            discover, provider="openalex", open_access_only=True, limit=20,
+            openalex_api_key=cfg.academic.openalex_api_key,
+        )
+        result = collect_phase(phase, Catalog(cfg.academic.database), search, refresh=refresh)
+        for row in result["searched"]:
+            console.print(f"  {row['topic']} [dim]{escape(row['query'])}[/]: {row['found']} works")
+        console.print(f"[dim]{result['skipped']} searches done before were skipped (--refresh repeats them)[/]")
+        if result["error"]:
+            console.print(f"[yellow]collection stopped:[/] {escape(result['error'])}. Run again later to continue.")
+        console.print("[dim]review the finds on the Academic page before Kumaru relies on them[/]")
+    if measure and phase.measure:
+        plan = phase.measure
+        root = Path(out_root) if out_root else (resolve_dirs(cfg.education.runs_dirs) or [DEFAULT_OUT])[0]
+        label = default_label(cfg.backend.model, config, GenerationParams(thinking=plan.think))
+        settings = BenchSettings(limit=plan.limit, thinking=plan.think, out_dir=root / f"{phase.id}-{label}")
+        runner = BenchRunner(cfg, settings, profile=config, console=console)
+        summaries = asyncio.run(runner.run(plan.benchmarks))
+        console.print()
+        render_summaries(console, summaries)
+        console.print(f"\n[dim]saved to[/] {runner.out_dir}")
+
+
+# ---------------------------------------------------------------------------
 # kumaru distill ...
 # ---------------------------------------------------------------------------
 

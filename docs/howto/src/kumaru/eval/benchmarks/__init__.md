@@ -54,7 +54,7 @@ A single accuracy on 100 questions moves by several points by chance. A model sw
 | `stats` | Wilson CI, exact McNemar, paired bootstrap, Holm | [`stats.md`](stats.md) |
 | `runner` | Run, resume, summarize, compare, render | [`runner.md`](runner.md) |
 | `golden` | Your own JSONL regression set, 7 graders | [`golden.md`](golden.md) |
-| `gsm8k`, `mmlu_pro`, `ifeval`, `humaneval` | Public benchmarks | [`gsm8k.md`](gsm8k.md), [`mmlu_pro.md`](mmlu_pro.md), [`ifeval.md`](ifeval.md), [`humaneval.md`](humaneval.md) |
+| `gsm8k`, `mmlu_pro`, `supergpqa_cs`, `supergpqa_stem`, `ifeval`, `humaneval` | Public benchmarks | [`gsm8k.md`](gsm8k.md), [`mmlu_pro.md`](mmlu_pro.md), [`supergpqa.md`](supergpqa.md), [`ifeval.md`](ifeval.md), [`humaneval.md`](humaneval.md) |
 | `multipl_e` | HumanEval in eight languages, one benchmark per language plus the `multipl_e` suite | [`multipl_e.md`](multipl_e.md) |
 | `codeparse` | Cuts code in brace languages into top-level pieces, for `multipl_e` | [`codeparse.md`](codeparse.md) |
 | `codeexec` | Runs the code benchmarks' programs: limits, process-tree kill, `--sandbox docker` | [`codeexec.md`](codeexec.md) |

@@ -292,6 +292,14 @@ class AcademicConfig(_Base):
     monitor_batch_size: int = Field(default=10, ge=1, le=20)
 
 
+class EducationConfig(_Base):
+    """Where the Education page (/education) finds `kumaru bench` results."""
+
+    # Folders of `kumaru bench` runs, or single runs. Relative paths start at the
+    # Kumaru folder, like the runner's default output, runs/bench.
+    runs_dirs: list[str] = Field(default_factory=lambda: [str(REPO_ROOT / "runs" / "bench")])
+
+
 class KumaruConfig(_Base):
     """The single object every subsystem reads from."""
 
@@ -302,6 +310,7 @@ class KumaruConfig(_Base):
     server: ServerConfig = Field(default_factory=ServerConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     academic: AcademicConfig = Field(default_factory=AcademicConfig)
+    education: EducationConfig = Field(default_factory=EducationConfig)
 
     def dump_yaml(self) -> str:
         """Serialize the *fully resolved* config.

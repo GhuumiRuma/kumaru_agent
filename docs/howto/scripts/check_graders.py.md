@@ -12,10 +12,11 @@
 |---|---|---|
 | `gsm8k` | Each of the 1,319 reference answers, in 5 phrasings (`Answer: 18`, `**Answer:** $1,080`, `\boxed{1{,}080}`, ...), grades correct; the reference + 1 grades wrong | 7,914 gradings |
 | `mmlu_pro` | Each of the 12,032 gold letters, in 6 phrasings (`The answer is (C)`, `\boxed{\text{(C)}}`, "not (A). The answer is (C)", ...), grades correct; a wrong letter grades wrong; removing junk options never moves the gold option, which still appears in the prompt | 84,224 gradings |
+| `supergpqa` | Both slices (`supergpqa_cs`, 763 questions, and `supergpqa_stem`, 16,967): each gold letter names the dataset's own answer text, which appears in the prompt; the gold letter in 7 phrasings (`Answer: C`, `**Answer: C**`, `Answer: (C)`, `Answer: C) text`, `The answer is (C)`, `\boxed{C}`, after ruling one letter out) grades correct; a wrong letter grades wrong | 8 gradings per question: 141,840 |
 | `humaneval` | All 164 reference solutions pass their hidden tests in 3 forms (whole function, body only, unindented body); a wrong solution fails; an infinite loop times out; the guard blocks `os.remove` | 495 Python processes |
 | `multipl_e`, or one language: `multipl_e_<lang>` | MultiPL-E has no reference solutions in most languages, so this replays answers its authors already ran and graded with their own harness: StarCoder2-15B's (Python: replit-code-v1-3b's), from `nuprl/MultiPL-E-completions` at a pinned commit. Kumaru grades each through `kumaru bench`'s own path (answer reading, assembly, compile, run) and must reach the same pass/fail verdict, apart from five excused kinds of difference (below). `multipl_e` checks every language whose toolchain is installed and reports the rest as not checked; a language named on its own fails the check if its toolchain is missing | `--sample` (200) model-written programs per language |
 
-With no names it runs `gsm8k`, `mmlu_pro` and `humaneval`, which need no compilers. It prints one line per benchmark (`passed/total` for each phrasing; for MultiPL-E, the agreement) and exits 0 only if everything held.
+With no names it runs `gsm8k`, `mmlu_pro`, `supergpqa` and `humaneval`, which need no compilers. It prints one line per benchmark (`passed/total` for each phrasing; for MultiPL-E, the agreement) and exits 0 only if everything held.
 
 ## Why it exists
 
@@ -27,7 +28,7 @@ This mirrors what you would do for any measuring instrument: calibrate it agains
 
 ```powershell
 pip install -e ".[bench]"                                  # once
-python scripts\check_graders.py                            # gsm8k, mmlu_pro, humaneval: about 1-2 minutes
+python scripts\check_graders.py                            # gsm8k, mmlu_pro, supergpqa, humaneval: about 1-2 minutes
 python scripts\check_graders.py gsm8k                      # one benchmark
 python scripts\check_graders.py multipl_e --workers 2      # every MultiPL-E language with a toolchain here
 python scripts\check_graders.py multipl_e_rs --sample 50   # one language, a smaller sample
