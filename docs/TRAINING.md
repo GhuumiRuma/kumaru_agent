@@ -143,6 +143,8 @@ kumaru train configs/train/lora-qwen.yaml
 
 On an RTX 3090: ~9–11 GB VRAM, roughly 20–40 minutes per epoch on 1,000 examples of ~1k tokens each.
 
+To run it overnight on a PC you also use for games or browsing, `.\scripts\overnight.ps1 "kumaru train configs/train/lora-qwen.yaml"` closes the programs holding graphics memory (it lists them and asks first), keeps the PC awake until the run ends, and saves the log and a summary under `runs\overnight\` ([how-to](howto/scripts/overnight.ps1.md)).
+
 Use the adapter:
 
 ```powershell

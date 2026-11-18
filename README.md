@@ -251,7 +251,8 @@ ui/            zero-build web client (3 files, no npm)
 configs/       hardware profiles and training recipes, heavily commented
 data/          sample training data and the golden benchmark questions
 scripts/       setup.ps1 (install), verify.ps1 (layered self-check),
-               get-llama-server.ps1 (inference engine), check_graders.py (grader proof)
+               get-llama-server.ps1 (inference engine), check_graders.py (grader proof),
+               overnight.ps1 (frees the GPU and runs a long job while you sleep)
 docs/howto/    a page for every source file
 tests/         pytest suite (1209 tests), runs with no GPU in under a minute
 ```
