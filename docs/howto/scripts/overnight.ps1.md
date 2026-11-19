@@ -10,7 +10,7 @@
 
 1. **Checks the job can start.** `ghuumi train …` runs once with `--dry-run`. If that fails, the script stops before closing anything and shows why, for example `PyTorch is not installed`.
 2. **Lists the programs holding graphics memory**: Task Manager's "Dedicated GPU memory", read per process from Windows' performance counters, with how much each holds. `-AllApps` adds every other program with a window. It asks once.
-3. **Closes them.** Each of their windows gets a close request, as its X button sends; whatever is still running 20 seconds later is stopped by process id. It then prints the graphics memory in use before and after.
+3. **Closes them.** Each of their windows gets a close request, as its X button sends; whatever is still running 20 seconds later is stopped by process id. Both first check that each process is still the one listed, as Windows reuses the ids of processes that exit. It then prints the graphics memory in use before and after.
 4. **Keeps Windows from sleeping** while the job runs (`SetThreadExecutionState`). No power setting changes: when the script ends, the normal sleep timer applies again. The screen can still turn off.
 5. **Runs the job** from the Ghuumi folder, in the same window, showing how long it has run and the graphics memory in use. It writes `runs\overnight\<date-time>\`:
 
@@ -29,7 +29,7 @@ Training needs graphics memory, not RAM ([TRAINING.md](../../TRAINING.md)), and 
 
 ## What it closes, and what it never closes
 
-It closes **whole programs**. A browser's graphics process is traced up to the browser, and an embedded browser (WebView2, Steam's or Epic's web helper) up to the program that hosts it, because closing only the helper would get it restarted. A game is closed, not the launcher that started it; the launcher is closed only if it holds graphics memory itself.
+It closes **whole programs**. A browser's graphics process is traced up to the browser, and an embedded browser (WebView2, Steam's or Epic's web helper) up to the program that hosts it, because closing only the helper would get it restarted; the helpers of a program it never closes, such as VS Code's when the script runs in its terminal, are left alone. A program is closed with those helpers, not with the programs it started: a game is closed, not the launcher that started it, and a launcher, not its games. Each is closed only if it is on the list.
 
 | Never closed | How it's recognized |
 |---|---|
@@ -119,9 +119,9 @@ Logs      C:\...\runs\overnight\20261117-230512
 
 ## Extending it
 
-- **Another embedded browser that comes back after closing**: add its process name to `$HelperNames`, so the program hosting it is closed instead.
+- **Another embedded browser that comes back after closing**, or a helper that keeps running after its program closes: add its process name to `$HelperNames`, so the program hosting it is closed instead, and the helper with it.
 - **A driver or security program that must never close**: add its process name to `$ProtectedNames`.
-- **Testing**: dot-sourcing the script (`. .\scripts\overnight.ps1`) loads its functions without running anything. `Get-AppRoot`, `Get-ProcessTree` and `Find-Programs` take a process table, so they can be checked against an invented one; `Close-Programs` can be checked on dummy windows you start yourself.
+- **Testing**: dot-sourcing the script (`. .\scripts\overnight.ps1`) loads its functions without running anything. `Get-AppRoot`, `Get-ProcessTree` and `Find-Programs` take a process table, so they can be checked against an invented one; `Close-Programs` can be checked on dummy windows you start yourself, or with a stand-in `GhuumiOvernight.Native` type defined before dot-sourcing, which the script then uses instead of its own. `tests/test_overnight.py` checks them that way and closes nothing.
 
 ## Related files
 

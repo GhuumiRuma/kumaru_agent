@@ -216,17 +216,16 @@ function Get-AppRoot($context, $proc) {
         $same = $parent.Name -eq $root.Name
         $hosted = $HelperNames -contains $root.Name
         if (-not ($same -or $hosted)) { break }
-        if (Test-Protected $context $parent) {
-            if ($hosted -and -not $same) { return $null }
-            break
-        }
+        if (Test-Protected $context $parent) { return $null }
         $root = $parent
     }
     if (Test-Protected $context $root) { return $null }
     $root
 }
 
-# The program and everything it started, except what is protected.
+# The program's own processes, the ones Get-AppRoot traces up to it: its
+# helpers and the embedded browsers it hosts, except what is protected. Other
+# programs it started, such as a launcher's game, are closed only if listed.
 function Get-ProcessTree($context, $root) {
     $ids = New-Object System.Collections.Generic.List[int]
     $queue = New-Object System.Collections.Generic.Queue[object]
@@ -239,7 +238,9 @@ function Get-ProcessTree($context, $root) {
         if ($proc.Id -ne $root.Id -and (Test-Protected $context $proc)) { continue }
         $ids.Add($proc.Id)
         if ($context.Children.ContainsKey($proc.Id)) {
-            foreach ($child in $context.Children[$proc.Id]) { $queue.Enqueue($child) }
+            foreach ($child in $context.Children[$proc.Id]) {
+                if ($child.Name -eq $proc.Name -or $HelperNames -contains $child.Name) { $queue.Enqueue($child) }
+            }
         }
     }
     , $ids.ToArray()
@@ -351,7 +352,10 @@ function Get-StillRunning($context, $app) {
 function Close-Programs($context, $apps, [int]$graceSeconds) {
     $waiting = @()
     foreach ($app in $apps) {
-        if ([GhuumiOvernight.Native]::CloseWindows([int[]]$app.Ids) -gt 0) { $waiting += $app }
+        # Only the listed processes still running: while the question was
+        # open, Windows may have given the id of one that exited to another.
+        $running = Get-StillRunning $context $app
+        if ($running.Count -gt 0 -and [GhuumiOvernight.Native]::CloseWindows([int[]]$running) -gt 0) { $waiting += $app }
     }
     $deadline = (Get-Date).AddSeconds($graceSeconds)
     while ($waiting.Count -gt 0 -and (Get-Date) -lt $deadline) {

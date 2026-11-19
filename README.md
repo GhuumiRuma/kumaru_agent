@@ -257,7 +257,7 @@ scripts/       setup.ps1 (install), verify.ps1 (layered self-check),
                get-llama-server.ps1 (inference engine), check_graders.py (grader proof),
                overnight.ps1 (frees the GPU and runs a long job while you sleep)
 docs/howto/    a page for every source file
-tests/         pytest suite (1440 tests), runs with no GPU in under a minute
+tests/         pytest suite (1443 tests), runs with no GPU in under a minute
 ```
 
 ## Requirements
