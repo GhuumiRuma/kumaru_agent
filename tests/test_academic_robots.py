@@ -9,10 +9,10 @@ from pathlib import Path
 import httpx
 import pytest
 
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.models import Source
-from kumaru.academic.robots import parse_robots
-from kumaru.academic.web import (
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.models import Source
+from ghuumi.academic.robots import parse_robots
+from ghuumi.academic.web import (
     USER_AGENT,
     AccessBlocked,
     Page,
@@ -74,21 +74,21 @@ def test_allow_wins_a_tie_and_empty_rules_match_nothing():
     assert allowed("", "/anything")
 
 
-def test_a_group_naming_kumaru_replaces_the_star_group():
+def test_a_group_naming_ghuumi_replaces_the_star_group():
     robots = """\
 User-agent: *
 Disallow: /
 
-User-agent: KumaruAcademic
+User-agent: GhuumiAcademic
 Disallow: /drafts/
 """
     assert allowed(robots, "/paper")
     assert not allowed(robots, "/drafts/a")
     assert not allowed(robots, "/paper", agent="OtherBot/1.0")
     # A named group with no rules allows everything, even under a blanket `*` ban.
-    assert allowed("User-agent: *\nDisallow: /\n\nUser-agent: kumaruacademic/2\nDisallow:\n", "/x")
+    assert allowed("User-agent: *\nDisallow: /\n\nUser-agent: ghuumiacademic/2\nDisallow:\n", "/x")
     # The product token must match exactly; a prefix of it names another crawler.
-    assert not allowed("User-agent: *\nDisallow: /\n\nUser-agent: Kumaru\nAllow: /\n", "/x")
+    assert not allowed("User-agent: *\nDisallow: /\n\nUser-agent: Ghuumi\nAllow: /\n", "/x")
 
 
 def test_groups_follow_rfc_boundaries():
@@ -96,14 +96,14 @@ def test_groups_follow_rfc_boundaries():
 Disallow: /before-any-group
 
 User-agent: a-bot
-User-agent: KumaruAcademic
+User-agent: GhuumiAcademic
 
 Disallow: /shared
 Sitemap: https://example.org/sitemap.xml
 User-agent: b-bot
 Disallow: /b-only
 
-User-agent: KumaruAcademic
+User-agent: GhuumiAcademic
 Disallow: /merged
 """
     assert allowed(robots, "/before-any-group")
@@ -123,7 +123,7 @@ def test_paths_and_rules_compare_after_percent_encoding_normalisation():
 
 def test_crawl_delays_parse_conservatively_and_inherit_from_star():
     rules = parse_robots(
-        "User-agent: *\nCrawl-delay: 2.5\nRequest-rate: 1/5\n\nUser-agent: KumaruAcademic\nDisallow: /x\n",
+        "User-agent: *\nCrawl-delay: 2.5\nRequest-rate: 1/5\n\nUser-agent: GhuumiAcademic\nDisallow: /x\n",
         USER_AGENT,
     )
     assert (rules.crawl_delay, rules.request_rate) == (2.5, (1, 5))
@@ -169,7 +169,7 @@ def test_fetch_obeys_longest_match_robots():
     (403, "", {"cf-mitigated": "block"}),
 ])
 def test_transport_names_the_service_behind_a_browser_challenge(monkeypatch, status, service, headers):
-    from kumaru.academic import web as module
+    from ghuumi.academic import web as module
 
     monkeypatch.setattr(module, "public_addresses", lambda *args: ["93.184.216.34"])
 

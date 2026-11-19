@@ -1,4 +1,4 @@
-"""Prove Kumaru's benchmark graders right, using each dataset's own answer key.
+"""Prove Ghuumi's benchmark graders right, using each dataset's own answer key.
 
 A benchmark score is only as trustworthy as its grader: one that misreads
 "$1,080" or "**The answer is (C).**" silently turns right answers into wrong
@@ -13,7 +13,7 @@ wrong. docs/BENCHMARKS.md ("Are the graders right?") reports the results.
     python scripts\\check_graders.py multipl_e --workers 2 --sample 200
 
 Exit code 0 means every check passed. Datasets download on first use and are
-cached, exactly as for `kumaru bench run`. The HumanEval check runs the
+cached, exactly as for `ghuumi bench run`. The HumanEval check runs the
 dataset's own reference solutions (not model output) in fresh Python processes.
 IFEval is validated against Google's reference implementation instead; see
 docs/BENCHMARKS.md.
@@ -21,18 +21,18 @@ docs/BENCHMARKS.md.
 MultiPL-E has no reference solutions in most languages, so its check replays
 completions that MultiPL-E's authors already ran and graded with their own
 harness (nuprl/MultiPL-E-completions, pinned): StarCoder2-15B's, and for
-Python replit-code-v1-3b's, the newest run with Python in it. Kumaru grades
-each through `kumaru bench`'s own path (extraction, assembly, compile, run)
+Python replit-code-v1-3b's, the newest run with Python in it. Ghuumi grades
+each through `ghuumi bench`'s own path (extraction, assembly, compile, run)
 and must reach the same verdict. Like with like: the completions are graded
 on the tests as MultiPL-E published them, which gave its verdicts, not with
-the fixes `kumaru bench` applies (multipl_e.TEST_FIXES). A sample of
+the fixes `ghuumi bench` applies (multipl_e.TEST_FIXES). A sample of
 `--sample` completions per language (default 200) is spread across problems:
 half passed, half failed in each way MultiPL-E saw (wrong answer, exception,
 compile error; at most 10 timeouts, which cost 15 s each). `multipl_e`
 checks every language whose toolchain is installed and reports the others as
 skipped. These are model-written programs and run on this machine, as
-`kumaru bench run` runs them without `--sandbox docker`. `--workers`
-(default: KUMARU_CODE_WORKERS or half the cores, at most 4) caps how many
+`ghuumi bench run` runs them without `--sandbox docker`. `--workers`
+(default: GHUUMI_CODE_WORKERS or half the cores, at most 4) caps how many
 programs run at once.
 
 `--sandbox docker` runs every check's programs (HumanEval's too) in the
@@ -55,13 +55,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any
 
-from kumaru.eval.benchmarks import codeexec, multipl_e
-from kumaru.eval.benchmarks.base import BenchItem, Grade, load_hf_rows
-from kumaru.eval.benchmarks.codeexec import ToolchainMissing
-from kumaru.eval.benchmarks.extract import parse_number
-from kumaru.eval.benchmarks.gsm8k import GSM8K
-from kumaru.eval.benchmarks.humaneval import HumanEval, assemble_program, run_program
-from kumaru.eval.benchmarks.mmlu_pro import LETTERS, MMLUPro, clean_options
+from ghuumi.eval.benchmarks import codeexec, multipl_e
+from ghuumi.eval.benchmarks.base import BenchItem, Grade, load_hf_rows
+from ghuumi.eval.benchmarks.codeexec import ToolchainMissing
+from ghuumi.eval.benchmarks.extract import parse_number
+from ghuumi.eval.benchmarks.gsm8k import GSM8K
+from ghuumi.eval.benchmarks.humaneval import HumanEval, assemble_program, run_program
+from ghuumi.eval.benchmarks.mmlu_pro import LETTERS, MMLUPro, clean_options
 
 
 @dataclass
@@ -223,7 +223,7 @@ COMPLETION_RUNS = {
     for lang in multipl_e.LANGUAGES
 }
 TIMEOUT_CAP = 10
-# MultiPL-E's time limits (its evaluation/src/eval_<lang>.py). Kumaru allows
+# MultiPL-E's time limits (its evaluation/src/eval_<lang>.py). Ghuumi allows
 # 15 s to run and 120 s to compile, so a correct answer that timed out there
 # (slow, or graded on a busy machine) can pass here.
 MULTIPL_E_LIMITS = {
@@ -332,10 +332,10 @@ def sample_replays(rows: list[dict[str, Any]], size: int, seed: int = 0) -> list
 _TSC_ERROR_LINE = re.compile(r"\((\d+),\d+\): error TS\d+")
 
 
-def dropped_by_kumaru(bench: multipl_e.MultiPLE, replay: Replay, item: BenchItem) -> bool:
-    """Is the first line MultiPL-E's tsc rejected one that Kumaru's program leaves out?
+def dropped_by_ghuumi(bench: multipl_e.MultiPLE, replay: Replay, item: BenchItem) -> bool:
+    """Is the first line MultiPL-E's tsc rejected one that Ghuumi's program leaves out?
 
-    Kumaru keeps a TypeScript answer's declarations and drops its other
+    Ghuumi keeps a TypeScript answer's declarations and drops its other
     top-level statements (multipl_e._assemble_js); MultiPL-E compiles them.
     StarCoder2 often writes a file path after the function, such as
     `/src/kata/7kyu/sum.ts`, which tsc reads as a regular expression, or an
@@ -358,15 +358,15 @@ def dropped_by_kumaru(bench: multipl_e.MultiPLE, replay: Replay, item: BenchItem
 def expected_difference(
     bench: multipl_e.MultiPLE, replay: Replay, grade: Grade, item: BenchItem | None = None
 ) -> str:
-    """Why Kumaru may rightly disagree with MultiPL-E here ("" if it may not)."""
-    if replay.status == "SyntaxError" and grade.correct and item and dropped_by_kumaru(bench, replay, item):
-        return "tsc failed on top-level statements Kumaru drops (not declarations), such as a file path"
+    """Why Ghuumi may rightly disagree with MultiPL-E here ("" if it may not)."""
+    if replay.status == "SyntaxError" and grade.correct and item and dropped_by_ghuumi(bench, replay, item):
+        return "tsc failed on top-level statements Ghuumi drops (not declarations), such as a file path"
     strip_only = bench.lang == "ts" and bench.toolchain.checker == "strip"
     if strip_only and replay.status == "SyntaxError" and grade.correct:
         return "tsc rejected it; without tsc, types are not checked"
     if replay.status == "Timeout" and grade.correct:
         limit = MULTIPL_E_LIMITS[bench.lang]
-        return f"timed out under MultiPL-E's limit ({limit}), passes within Kumaru's"
+        return f"timed out under MultiPL-E's limit ({limit}), passes within Ghuumi's"
     newer_go = re.search(r"undefined: (?:min|max|clear)\b", replay.stderr)
     if bench.lang == "go" and replay.status == "SyntaxError" and grade.correct and newer_go:
         return "uses min, max or clear, built into Go since 1.21 (MultiPL-E's Go is older)"
@@ -431,8 +431,8 @@ def check_multipl_e_language(lang: str, *, skip_missing: bool = False) -> list[s
         theirs = replay.stderr.strip().splitlines()[-3:]
         problems.append(
             f"{bench.name} {replay.problem} #{replay.index}: MultiPL-E {replay.status}, "
-            f"Kumaru {grade.extracted} ({grade.detail.get('mode')})\n"
-            f"      Kumaru: {' | '.join(ours)[-300:]}\n      MultiPL-E: {' | '.join(theirs)[-300:]}"
+            f"Ghuumi {grade.extracted} ({grade.detail.get('mode')})\n"
+            f"      Ghuumi: {' | '.join(ours)[-300:]}\n      MultiPL-E: {' | '.join(theirs)[-300:]}"
         )
     run = COMPLETION_RUNS[lang].split(".")[0]
     print(
@@ -440,7 +440,7 @@ def check_multipl_e_language(lang: str, *, skip_missing: bool = False) -> list[s
         f"on {run} completions reproduced, {len({r.problem for r in replays})} problems, {elapsed:.0f}s"
     )
     for status, kinds in sorted(table.items()):
-        print(f"  MultiPL-E {status:<15} {sum(kinds.values()):>4}: Kumaru {dict(sorted(kinds.items()))}")
+        print(f"  MultiPL-E {status:<15} {sum(kinds.values()):>4}: Ghuumi {dict(sorted(kinds.items()))}")
     for reason, n in explained.items():
         print(f"  {n} expected difference(s): {reason}")
     return problems

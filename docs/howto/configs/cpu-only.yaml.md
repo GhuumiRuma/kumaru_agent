@@ -2,7 +2,7 @@
 
 > llama.cpp/GGUF serving profile for machines with no usable GPU.
 
-**Read this when:** you need Kumaru to run on CPU, verify behavior without CUDA, or operate on a host where GPU inference is unavailable.
+**Read this when:** you need Ghuumi to run on CPU, verify behavior without CUDA, or operate on a host where GPU inference is unavailable.
 
 ---
 
@@ -32,7 +32,7 @@ Use it on CPU-only desktops, laptops, CI-like smoke environments where `echo` is
 
 ## How to use it
 
-Prerequisites, in the Kumaru folder (the `Requires:` line of `configs\cpu-only.yaml`):
+Prerequisites, in the Ghuumi folder (the `Requires:` line of `configs\cpu-only.yaml`):
 
 ```powershell
 .\scripts\setup.ps1 -Gguf    # llama-cpp-python; or: pip install -e ".[gguf]"
@@ -41,19 +41,19 @@ Prerequisites, in the Kumaru folder (the `Requires:` line of `configs\cpu-only.y
 Run:
 
 ```powershell
-kumaru serve -c cpu-only
+ghuumi serve -c cpu-only
 ```
 
 Terminal prompt:
 
 ```powershell
-kumaru chat -c cpu-only -q "Explain gradient accumulation briefly."
+ghuumi chat -c cpu-only -q "Explain gradient accumulation briefly."
 ```
 
 Inspect resolved config:
 
 ```powershell
-kumaru config -c cpu-only
+ghuumi config -c cpu-only
 ```
 
 ## Tuning it
@@ -68,7 +68,7 @@ kumaru config -c cpu-only
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Optional dependency 'llama-cpp-python' is not installed.` | The `gguf` extra is missing. | `.\scripts\setup.ps1 -Gguf`, or `pip install -e ".[gguf]"` in the Kumaru folder. |
+| `Optional dependency 'llama-cpp-python' is not installed.` | The `gguf` extra is missing. | `.\scripts\setup.ps1 -Gguf`, or `pip install -e ".[gguf]"` in the Ghuumi folder. |
 | Model download cannot find a file | `gguf_filename` pattern does not match repo files. | Choose a model repo with matching GGUF files or change the pattern. |
 | Host becomes unresponsive | llama.cpp uses all cores. | Set `backend.n_threads` lower. |
 | Very slow replies | CPU inference is inherently slow or model is too large. | Use a smaller model or GPU/remote backend. |
@@ -78,5 +78,5 @@ kumaru config -c cpu-only
 
 - `configs/test.yaml` — faster no-model smoke profile.
 - `configs/low-vram.yaml` — quantized CUDA profile.
-- `src/kumaru/core/config.py` — backend schema, including `extra`.
+- `src/ghuumi/core/config.py` — backend schema, including `extra`.
 

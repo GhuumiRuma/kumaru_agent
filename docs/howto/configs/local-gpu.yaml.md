@@ -2,7 +2,7 @@
 
 > Transformers serving profile for a single 24 GB CUDA GPU running Qwen2.5 7B in bfloat16 with a 16k context window.
 
-**Read this when:** you are operating Kumaru on an RTX 3090, RTX 4090, A5000, or similar 24 GB Ampere-or-newer GPU.
+**Read this when:** you are operating Ghuumi on an RTX 3090, RTX 4090, A5000, or similar 24 GB Ampere-or-newer GPU.
 
 ---
 
@@ -40,17 +40,17 @@ Do not use it for 6-12 GB VRAM; use `configs/low-vram.yaml`. Do not use it for C
 | `server.host` | string | `127.0.0.1` | Server bind address. | Keep localhost unless you add `server.api_key`. |
 | `server.port` | int | `8080` | Server port. | Change if another service uses 8080. |
 | `server.max_concurrent_requests` | int | `4` | Number of admitted concurrent requests. | Keep low for one GPU; higher mostly adds queueing latency with Transformers. |
-| `telemetry.log_level` | level name | `INFO` | Logging verbosity of `kumaru serve`. | `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`, in any case (`WARN` and `FATAL` are aliases); any other name fails at load. Use `DEBUG` only while troubleshooting. |
+| `telemetry.log_level` | level name | `INFO` | Logging verbosity of `ghuumi serve`. | `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`, in any case (`WARN` and `FATAL` are aliases); any other name fails at load. Use `DEBUG` only while troubleshooting. |
 
 ## How to use it
 
-Prerequisites, in the Kumaru folder:
+Prerequisites, in the Ghuumi folder:
 
 ```powershell
 .\scripts\setup.ps1 -Gpu    # a CUDA build of PyTorch, then pip install -e ".[train]"
 ```
 
-Outside Windows, `pip install -e ".[torch]"` in the Kumaru folder is enough; Linux PyTorch wheels from PyPI include CUDA.
+Outside Windows, `pip install -e ".[torch]"` in the Ghuumi folder is enough; Linux PyTorch wheels from PyPI include CUDA.
 
 Optional long-context attention optimization, if your CUDA toolchain supports it:
 
@@ -68,19 +68,19 @@ backend:
 Run:
 
 ```powershell
-kumaru serve -c local-gpu
+ghuumi serve -c local-gpu
 ```
 
 Terminal prompt:
 
 ```powershell
-kumaru chat -c local-gpu -q "Summarize grouped-query attention."
+ghuumi chat -c local-gpu -q "Summarize grouped-query attention."
 ```
 
 Inspect resolved settings:
 
 ```powershell
-kumaru config -c local-gpu
+ghuumi config -c local-gpu
 ```
 
 ## Tuning it
@@ -95,7 +95,7 @@ kumaru config -c local-gpu
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `torch.cuda.is_available()` is false | CUDA/PyTorch install mismatch. | Install a CUDA-enabled PyTorch build before running Kumaru. |
+| `torch.cuda.is_available()` is false | CUDA/PyTorch install mismatch. | Install a CUDA-enabled PyTorch build before running Ghuumi. |
 | OOM with long prompts | 16k KV cache plus output budget exceeds free VRAM. | Lower `max_context_length`, `max_history_tokens`, or `max_tokens`. |
 | NaN/inf output on older GPU | GPU does not handle bf16 well. | Change `backend.dtype` to `float16` or use supported hardware. |
 | Multiple users see high latency | Transformers backend does not continuously batch. | Keep concurrency low or switch to `configs/vllm.yaml`. |
@@ -106,5 +106,5 @@ kumaru config -c local-gpu
 - `configs/default.yaml` — full reference for omitted defaults.
 - `configs/low-vram.yaml` — 4-bit profile for smaller GPUs.
 - `configs/vllm.yaml` — throughput profile using an external vLLM server.
-- `src/kumaru/core/config.py` — schema for all fields.
+- `src/ghuumi/core/config.py` — schema for all fields.
 

@@ -11,11 +11,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from kumaru.core.config import REPO_ROOT
-from kumaru.core.errors import ConfigError
-from kumaru.train import runner
-from kumaru.train.config import DataConfig, TrainConfig
-from kumaru.train.runner import preflight
+from ghuumi.core.config import REPO_ROOT
+from ghuumi.core.errors import ConfigError
+from ghuumi.train import runner
+from ghuumi.train.config import DataConfig, TrainConfig
+from ghuumi.train.runner import preflight
 
 SAMPLES = REPO_ROOT / "data" / "samples"
 CHAT = str(SAMPLES / "chat_train.jsonl")
@@ -109,7 +109,7 @@ def test_run_training_stops_before_loading_any_task(monkeypatch: pytest.MonkeyPa
     config = lora(CHAT, eval_file=MISSING)
     monkeypatch.setattr(runner, "load_train_config", lambda path: config)
     # If dispatch were reached, these imports would raise ImportError instead of ConfigError.
-    monkeypatch.setitem(sys.modules, "kumaru.train.finetune_lora", None)
-    monkeypatch.setitem(sys.modules, "kumaru.train.pretrain_nano", None)
+    monkeypatch.setitem(sys.modules, "ghuumi.train.finetune_lora", None)
+    monkeypatch.setitem(sys.modules, "ghuumi.train.pretrain_nano", None)
     with pytest.raises(ConfigError, match="Training data not found"):
         runner.run_training(Path("unused.yaml"))

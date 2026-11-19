@@ -16,15 +16,15 @@ from types import SimpleNamespace
 import pytest
 from rich.console import Console
 
-from kumaru.agent import prompt
-from kumaru.agent.doc_index import build_index
-from kumaru.backends.echo import EchoBackend
-from kumaru.core.config import KumaruConfig
-from kumaru.core.errors import ConfigError, KumaruError
-from kumaru.core.types import GenerationParams
-from kumaru.eval.benchmarks import runner
-from kumaru.eval.benchmarks.golden import GoldenSet
-from kumaru.eval.benchmarks.runner import (
+from ghuumi.agent import prompt
+from ghuumi.agent.doc_index import build_index
+from ghuumi.backends.echo import EchoBackend
+from ghuumi.core.config import GhuumiConfig
+from ghuumi.core.errors import ConfigError, GhuumiError
+from ghuumi.core.types import GenerationParams
+from ghuumi.eval.benchmarks import runner
+from ghuumi.eval.benchmarks.golden import GoldenSet
+from ghuumi.eval.benchmarks.runner import (
     MAX_CONSECUTIVE_ERRORS,
     BenchSettings,
     BenchSummary,
@@ -74,7 +74,7 @@ def golden(scratch_dir: Path) -> str:
 
 
 async def bench(
-    cfg: KumaruConfig, specs: list[str], out: Path, **settings
+    cfg: GhuumiConfig, specs: list[str], out: Path, **settings
 ) -> tuple[Path, list[BenchSummary]]:
     return await run_benchmarks(
         cfg,
@@ -93,7 +93,7 @@ def records_of(out: Path, bench_name: str = "golden-mini") -> dict[str, ItemReco
 
 
 async def test_a_run_saves_every_answer_a_summary_and_its_provenance(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path
 ) -> None:
     echo_config.server.api_key = "s3cret-key"
     out = scratch_dir / "run"
@@ -125,7 +125,7 @@ async def test_a_run_saves_every_answer_a_summary_and_its_provenance(
 
 
 async def test_thinking_is_recorded_but_never_graded(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path
 ) -> None:
     out, [summary] = await bench(echo_config, [golden], scratch_dir / "think", thinking=True, thinking_budget=5)
 
@@ -145,7 +145,7 @@ async def test_thinking_is_recorded_but_never_graded(
 
 
 async def test_rerunning_into_the_same_directory_asks_only_what_is_missing(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     out = scratch_dir / "resume"
     await bench(echo_config, [golden], out)
@@ -172,7 +172,7 @@ async def test_rerunning_into_the_same_directory_asks_only_what_is_missing(
 
 
 async def test_resuming_with_different_settings_is_refused_before_anything_is_written(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path
 ) -> None:
     out = scratch_dir / "refuse"
     await bench(echo_config, [golden], out)
@@ -188,7 +188,7 @@ async def test_resuming_with_different_settings_is_refused_before_anything_is_wr
 
 
 async def test_repeated_request_failures_stop_the_run_and_a_rerun_retries_them(
-    echo_config: KumaruConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
+    echo_config: GhuumiConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     rows = [{"id": str(i), "prompt": f"question {i}", "answer": "You said"} for i in range(12)]
     spec = str(write_golden(scratch_dir / "many.jsonl", rows))
@@ -203,7 +203,7 @@ async def test_repeated_request_failures_stop_the_run_and_a_rerun_retries_them(
         return await original(self, messages, params)
 
     monkeypatch.setattr(EchoBackend, "generate", flaky)
-    with pytest.raises(KumaruError, match="questions failed in a row"):
+    with pytest.raises(GhuumiError, match="questions failed in a row"):
         await bench(echo_config, [spec], out)
 
     failed = records_of(out, "golden-many")
@@ -220,7 +220,7 @@ async def test_repeated_request_failures_stop_the_run_and_a_rerun_retries_them(
 
 
 async def test_a_grader_crash_is_recorded_against_the_question_not_raised(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def broken_grader(self, item, output):
         raise ValueError("bad pattern")
@@ -234,10 +234,10 @@ async def test_a_grader_crash_is_recorded_against_the_question_not_raised(
     assert (summary.n_errors, summary.n_correct, summary.extraction) == (4, 0, {"error": 4})
 
 
-async def test_a_program_kumaru_cannot_contain_is_an_error_not_a_wrong_answer(
-    echo_config: KumaruConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
+async def test_a_program_ghuumi_cannot_contain_is_an_error_not_a_wrong_answer(
+    echo_config: GhuumiConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kumaru.eval.benchmarks import codeexec, humaneval
+    from ghuumi.eval.benchmarks import codeexec, humaneval
 
     class NoJob:
         def __init__(self) -> None:
@@ -255,12 +255,12 @@ async def test_a_program_kumaru_cannot_contain_is_an_error_not_a_wrong_answer(
 
     errors = {r.error for r in records_of(out, "humaneval").values()}
     assert len(errors) == 1
-    assert errors.pop().startswith("grader failed: KumaruError: Could not create the Windows job object")
+    assert errors.pop().startswith("grader failed: GhuumiError: Could not create the Windows job object")
     assert (summary.n, summary.n_errors, summary.n_correct) == (2, 2, 0)  # retried on resume
 
 
 async def test_a_grader_failing_every_question_stops_the_run_and_says_so(
-    echo_config: KumaruConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
+    echo_config: GhuumiConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def broken_grader(self, item, output):
         raise ValueError("bad pattern")
@@ -268,13 +268,13 @@ async def test_a_grader_failing_every_question_stops_the_run_and_says_so(
     monkeypatch.setattr(GoldenSet, "grade", broken_grader)
     rows = [{"id": str(i), "prompt": f"question {i}", "answer": "x"} for i in range(MAX_CONSECUTIVE_ERRORS + 2)]
     spec = str(write_golden(scratch_dir / "graded.jsonl", rows))
-    with pytest.raises(KumaruError, match="questions failed in a row") as caught:
+    with pytest.raises(GhuumiError, match="questions failed in a row") as caught:
         await bench(echo_config, [spec], scratch_dir / "streak")
     assert "grader failed" in str(caught.value.hint)
 
 
 async def test_code_execution_benchmarks_need_explicit_consent(
-    echo_config: KumaruConfig, scratch_dir: Path
+    echo_config: GhuumiConfig, scratch_dir: Path
 ) -> None:
     # Refused while resolving names: no download, no model load, nothing written.
     with pytest.raises(ConfigError, match="model-written code"):
@@ -290,10 +290,10 @@ async def test_code_execution_benchmarks_need_explicit_consent(
 
 
 async def test_a_suite_skips_languages_without_a_toolchain_and_says_so(
-    echo_config: KumaruConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
+    echo_config: GhuumiConfig, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kumaru.eval.benchmarks import codeexec, multipl_e
-    from kumaru.eval.benchmarks.codeexec import Outcome, ToolchainMissing
+    from ghuumi.eval.benchmarks import codeexec, multipl_e
+    from ghuumi.eval.benchmarks.codeexec import Outcome, ToolchainMissing
 
     absent = [lang for lang in multipl_e.LANGUAGES if lang != "py"]
 
@@ -343,7 +343,7 @@ async def test_a_suite_skips_languages_without_a_toolchain_and_says_so(
 
 
 async def test_two_golden_files_with_the_same_name_are_refused(
-    echo_config: KumaruConfig, scratch_dir: Path
+    echo_config: GhuumiConfig, scratch_dir: Path
 ) -> None:
     # Both would be "golden-set": one results folder, so the second was skipped.
     (scratch_dir / "a").mkdir()
@@ -356,7 +356,7 @@ async def test_two_golden_files_with_the_same_name_are_refused(
 
 
 async def test_agent_prompt_runs_resume_the_next_day_without_asking_again(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     out = scratch_dir / "agent"
     systems: list[str] = []
@@ -382,7 +382,7 @@ async def test_agent_prompt_runs_resume_the_next_day_without_asking_again(
         await bench(echo_config, [golden], out, use_agent_prompt=True)
 
 
-def fingerprint(cfg: KumaruConfig, spec: str, **settings) -> str:
+def fingerprint(cfg: GhuumiConfig, spec: str, **settings) -> str:
     """The fingerprint a run of `spec` would get, without running it."""
     benchmark = runner.resolve_benchmark(spec)
     return runner.BenchRunner(cfg, BenchSettings(**settings))._fingerprint(
@@ -391,7 +391,7 @@ def fingerprint(cfg: KumaruConfig, spec: str, **settings) -> str:
 
 
 def test_documentation_indexes_join_the_fingerprint_by_content_when_used(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path
 ) -> None:
     docs = scratch_dir / "docs"
     docs.mkdir()
@@ -427,7 +427,7 @@ def test_documentation_indexes_join_the_fingerprint_by_content_when_used(
 
 
 async def test_comparison_pairs_questions_and_shows_what_changed(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path
 ) -> None:
     a, a_summaries = await bench(echo_config, [golden], scratch_dir / "a")
     b, _ = await bench(echo_config, [golden], scratch_dir / "b", thinking=True, thinking_budget=5)
@@ -449,7 +449,7 @@ async def test_comparison_pairs_questions_and_shows_what_changed(
 
 
 async def test_runs_with_no_benchmark_in_common_cannot_be_compared(
-    echo_config: KumaruConfig, golden: str, scratch_dir: Path
+    echo_config: GhuumiConfig, golden: str, scratch_dir: Path
 ) -> None:
     other = str(write_golden(scratch_dir / "other.jsonl", GOLDEN_ROWS[:1]))
     a, _ = await bench(echo_config, [golden], scratch_dir / "a")
@@ -497,7 +497,7 @@ def test_default_label_names_the_model_and_the_thinking_mode() -> None:
 @pytest.mark.parametrize(
     ("model_id", "expected"),
     [
-        (r"D:\kumaru\models\Qwen3-8B-Q4_K_M.gguf", "Qwen3-8B-Q4_K_M"),  # was "D"
+        (r"D:\ghuumi\models\Qwen3-8B-Q4_K_M.gguf", "Qwen3-8B-Q4_K_M"),  # was "D"
         ("C:/models/llama/", "llama"),
         ("/srv/models/model.safetensors", "model"),
         ("Qwen/Qwen2.5-7B-Instruct", "Qwen2.5-7B-Instruct"),  # not a file extension

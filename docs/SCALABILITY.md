@@ -2,7 +2,7 @@
 
 > You asked what "scalable" actually means for this system. This document answers it precisely: every ceiling, what you hit first, and what the next step is.
 
-Scalability is not one property. It is **seven independent axes**, each with its own ceiling, its own warning sign, and its own next move. The design goal of Kumaru is that advancing along any axis is a *configuration* change or an *additive* change — never a rewrite.
+Scalability is not one property. It is **seven independent axes**, each with its own ceiling, its own warning sign, and its own next move. The design goal of Ghuumi is that advancing along any axis is a *configuration* change or an *additive* change — never a rewrite.
 
 | # | Axis | You hit this when… | Next move |
 |---|---|---|---|
@@ -12,7 +12,7 @@ Scalability is not one property. It is **seven independent axes**, each with its
 | 4 | [Capability](#4-capability) | The model needs to *do* things | Tool registry, plugins |
 | 5 | [Training](#5-training-scale) | LoRA isn't enough | Full FT → FSDP → multi-node |
 | 6 | [Data](#6-data-scale) | Datasets exceed RAM | Memmap, streaming, sharding |
-| 7 | [Evaluation](#7-evaluation-scale) | You can't tell if changes helped | `kumaru bench`, then full test sets, harder benchmarks, LLM judges, CI gates |
+| 7 | [Evaluation](#7-evaluation-scale) | You can't tell if changes helped | `ghuumi bench`, then full test sets, harder benchmarks, LLM judges, CI gates |
 
 ---
 
@@ -105,7 +105,7 @@ The degradation is not uniform. It concentrates in long-chain reasoning and exac
 
 ### The honest ceiling
 
-No configuration of Kumaru makes a model that fits on one consumer GPU as good as Claude. Frontier models are built with far more training compute and post-training data than any open model you can run locally (exact figures aren't public). What Kumaru does instead:
+No configuration of Ghuumi makes a model that fits on one consumer GPU as good as Claude. Frontier models are built with far more training compute and post-training data than any open model you can run locally (exact figures aren't public). What Ghuumi does instead:
 
 - removes every *engineering* obstacle between you and the best model your hardware can hold;
 - makes each upgrade a configuration change, never a rewrite;
@@ -117,7 +117,7 @@ Open models keep improving, and new architectures usually reach llama.cpp first.
 
 1. **Engine, only if the architecture is new.** `.\scripts\get-llama-server.ps1 -Version bNNNNN` installs a newer llama.cpp build, and later plain runs keep it. Builds are tagged `b` plus a number on the llama.cpp releases page.
 2. **Profile.** Copy `configs/qwen36.yaml`, set `backend.model` to the new `org/repo:QUANT`, and copy the sampling settings from the model card.
-3. **Verdict.** Repeat your baseline `kumaru bench run …` with `-c` set to the new profile, then run `kumaru bench compare <baseline> <new>`. Switch on `B better`, or on `no clear difference` if the new model is faster or smaller.
+3. **Verdict.** Repeat your baseline `ghuumi bench run …` with `-c` set to the new profile, then run `ghuumi bench compare <baseline> <new>`. Switch on `B better`, or on `no clear difference` if the new model is faster or smaller.
 
 ---
 
@@ -146,7 +146,7 @@ Two techniques make that theoretical win real:
 
 ### What batching buys, measured on this machine
 
-Output tokens per second, all requests together, on the RTX 3090. The "bench" rows are `tokens/answer × answers/min ÷ 60` from `kumaru bench report`, so they include prompt processing and the end-of-run tail. A game was open on the same GPU during them.
+Output tokens per second, all requests together, on the RTX 3090. The "bench" rows are `tokens/answer × answers/min ÷ 60` from `ghuumi bench report`, so they include prompt processing and the end-of-run tail. A game was open on the same GPU during them.
 
 | Model | Placement | Requests at once | Output tok/s |
 |---|---|---|---|
@@ -180,14 +180,14 @@ vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000 --max-model-len 16384 --gpu-memo
 ```
 
 ```powershell
-kumaru serve -c vllm
+ghuumi serve -c vllm
 ```
 
-Nothing in Kumaru changes. `configs/vllm.yaml` just points `base_url` at the engine.
+Nothing in Ghuumi changes. `configs/vllm.yaml` just points `base_url` at the engine.
 
 ### Beyond one GPU
 
-These are vLLM flags, not Kumaru changes:
+These are vLLM flags, not Ghuumi changes:
 
 | Situation | Flag |
 |---|---|
@@ -273,7 +273,7 @@ Then `agent.memory_policy: summarize` in config. `ChatAgent` is untouched.
 
 ### The judgement call
 
-More context is not automatically better. Models attend most reliably to the beginning and end of their window — the "lost in the middle" effect. **Retrieving 2,000 relevant tokens beats stuffing 100,000 mediocre ones**, and it is far cheaper. Reach for a longer window only after retrieval has failed you. Documentation already works this way: an index built by `kumaru learn` holds up to 1 GiB of documentation and sends each question only its best passages, within `agent.max_retrieved_chars` ([how-to](howto/src/kumaru/agent/doc_index.md)).
+More context is not automatically better. Models attend most reliably to the beginning and end of their window — the "lost in the middle" effect. **Retrieving 2,000 relevant tokens beats stuffing 100,000 mediocre ones**, and it is far cheaper. Reach for a longer window only after retrieval has failed you. Documentation already works this way: an index built by `ghuumi learn` holds up to 1 GiB of documentation and sends each question only its best passages, within `agent.max_retrieved_chars` ([how-to](howto/src/ghuumi/agent/doc_index.md)).
 
 ---
 
@@ -284,9 +284,9 @@ More context is not automatically better. Models attend most reliably to the beg
 Three registries in `core/registry.py`:
 
 ```python
-BACKENDS:   Registry = Registry("backend",   entry_point_group="kumaru.backends")
-TOOLS:      Registry = Registry("tool",      entry_point_group="kumaru.tools")
-BENCHMARKS: Registry = Registry("benchmark", entry_point_group="kumaru.benchmarks")
+BACKENDS:   Registry = Registry("backend",   entry_point_group="ghuumi.backends")
+TOOLS:      Registry = Registry("tool",      entry_point_group="ghuumi.tools")
+BENCHMARKS: Registry = Registry("benchmark", entry_point_group="ghuumi.benchmarks")
 ```
 
 Components announce themselves with a decorator. Built-ins with heavy imports use a one-line `register_lazy(...)` instead, so torch or `datasets` loads only when that component is selected. The rest of the system only ever asks by name, resolved from config at runtime.
@@ -310,11 +310,11 @@ With a registry, a new capability is a **new file plus one decorator**. Nothing 
 
 ```toml
 # in someone else's package
-[project.entry-points."kumaru.backends"]
-mamba = "kumaru_mamba:MambaBackend"
+[project.entry-points."ghuumi.backends"]
+mamba = "ghuumi_mamba:MambaBackend"
 ```
 
-`pip install kumaru-mamba` and it appears in your UI dropdown. No fork, no patch, no change to this repository. One broken plugin is logged and skipped rather than crashing startup. The `kumaru.benchmarks` group works the same way, so a private evaluation can ship as its own package.
+`pip install ghuumi-mamba` and it appears in your UI dropdown. No fork, no patch, no change to this repository. One broken plugin is logged and skipped rather than crashing startup. The `ghuumi.benchmarks` group works the same way, so a private evaluation can ship as its own package.
 
 ### The roadmap this enables
 
@@ -323,7 +323,7 @@ Each of these is additive. None requires touching the agent loop:
 | Capability | Where it plugs in |
 |---|---|
 | Web search, code execution, file I/O | `@TOOLS.register(...)` |
-| RAG over your documents | Built in for documentation folders: `kumaru learn` indexes one, and `agent.knowledge_indexes` adds the passages that match each question ([how-to](howto/src/kumaru/agent/doc_index.md)). Embeddings would join the keyword search in `find_passages` |
+| RAG over your documents | Built in for documentation folders: `ghuumi learn` indexes one, and `agent.knowledge_indexes` adds the passages that match each question ([how-to](howto/src/ghuumi/agent/doc_index.md)). Embeddings would join the keyword search in `find_passages` |
 | Multi-agent orchestration | A `Backend` that fans out to sub-agents |
 | Structured output / JSON mode | `GenerationParams` field + backend support |
 | Vision input | `Message.content` becomes a union type |
@@ -362,7 +362,7 @@ This table is the single most useful thing to internalize about training:
 
 **Optimizer state dominates, and it scales with *trainable* parameters, not total ones.** LoRA attacks exactly that term. That single observation is why fine-tuning a 7B model on a gaming GPU is possible at all.
 
-**Mixture-of-experts models change one row of that table.** LoRA keeps optimizer state small, but frozen base weights scale with *total* parameters. A 35B MoE at 4 bits is ~18 GB of weights before any activations, even though only ~3B are active per token. Kumaru's fine-tuning path (PyTorch + PEFT) therefore targets dense models like Qwen2.5-7B on a 24 GB card; fine-tuning `qwen36` itself needs a bigger GPU.
+**Mixture-of-experts models change one row of that table.** LoRA keeps optimizer state small, but frozen base weights scale with *total* parameters. A 35B MoE at 4 bits is ~18 GB of weights before any activations, even though only ~3B are active per token. Ghuumi's fine-tuning path (PyTorch + PEFT) therefore targets dense models like Qwen2.5-7B on a 24 GB card; fine-tuning `qwen36` itself needs a bigger GPU.
 
 ### Why the same loop scales
 
@@ -370,13 +370,13 @@ This table is the single most useful thing to internalize about training:
 
 ```powershell
 # 1 GPU
-kumaru train configs/train/pretrain-nano.yaml
+ghuumi train configs/train/pretrain-nano.yaml
 
 # 8 GPUs, same file, same code
-torchrun --nproc_per_node=8 -m kumaru.train.pretrain_nano configs/train/pretrain-nano.yaml
+torchrun --nproc_per_node=8 -m ghuumi.train.pretrain_nano configs/train/pretrain-nano.yaml
 
 # multiple nodes
-torchrun --nnodes=4 --nproc_per_node=8 --rdzv_endpoint=$MASTER:29500 -m kumaru.train.pretrain_nano cfg.yaml
+torchrun --nnodes=4 --nproc_per_node=8 --rdzv_endpoint=$MASTER:29500 -m ghuumi.train.pretrain_nano cfg.yaml
 ```
 
 Data-parallel training works because **gradients are linear**: each rank computes gradients on its own shard, an all-reduce averages them, and every rank applies an identical update. The result is mathematically equivalent to one giant batch. That is the entire idea behind scaling to hundreds of GPUs.
@@ -408,16 +408,16 @@ Chinchilla-optimal training is roughly **20 tokens per parameter**:
 | 7B | 140B | 5.9e21 | ~3 months |
 | 70B | 1.4T | 5.9e23 | ~25 years |
 
-The 70B row is why nobody pretrains a frontier model on their own hardware, and why the fine-tuning path is the one that matters for you. Kumaru's from-scratch trainer exists to make the mechanisms legible and to be *correct* at any scale — not to pretend the last row is reachable.
+The 70B row is why nobody pretrains a frontier model on their own hardware, and why the fine-tuning path is the one that matters for you. Ghuumi's from-scratch trainer exists to make the mechanisms legible and to be *correct* at any scale — not to pretend the last row is reachable.
 
 ### Distillation: a big model's compute, a small model's speed
 
 A large teacher answers questions slowly, a grader keeps its correct answers, and a small student trained on them answers fast ([TRAINING.md Part 3](TRAINING.md#part-3--distillation)). The other axes then feed the student:
 
 - **A stronger teacher** (§1) raises what the data can teach.
-- **More answers per question.** Rerun the teacher with another `--seed` and pass every run to `kumaru distill build`, which keeps up to 4 distinct correct answers per question. Yuan et al. (2023) found that distinct correct solutions help, and help weaker students most.
+- **More answers per question.** Rerun the teacher with another `--seed` and pass every run to `ghuumi distill build`, which keeps up to 4 distinct correct answers per question. Yuan et al. (2023) found that distinct correct solutions help, and help weaker students most.
 - **Serving throughput** (§2) sets how fast the data is written: an estimated 16 hours for GSM8K's 7,473 training questions on this machine, beside a game.
-- **Any task with a grader and a training split** can be a source, not just GSM8K ([how](howto/src/kumaru/train/distill.md#how-to-extend-it)).
+- **Any task with a grader and a training split** can be a source, not just GSM8K ([how](howto/src/ghuumi/train/distill.md#how-to-extend-it)).
 
 The limit is the student. Li et al. (2025) found that students of 3B parameters or fewer often learn less from a strong teacher's long reasoning than from short reasoning, so a stronger teacher alone does not guarantee a better small student. Measure each step against a control arm, as Part 3 does.
 
@@ -443,13 +443,13 @@ One detail that matters: the array is `uint32`, not `uint16`. Modern vocabularie
 Every claim above is meant to be measurable. Two commands do the measuring:
 
 ```powershell
-kumaru eval --suite smoke -c qwen36    # 6 cases: did anything break?
-kumaru eval --suite speed -c qwen36    # time-to-first-token, tok/s, latency
-kumaru bench run golden gsm8k mmlu_pro ifeval -c qwen36    # did it get smarter?
-kumaru bench compare runs\bench\<before> runs\bench\<after>
+ghuumi eval --suite smoke -c qwen36    # 6 cases: did anything break?
+ghuumi eval --suite speed -c qwen36    # time-to-first-token, tok/s, latency
+ghuumi bench run golden gsm8k mmlu_pro ifeval -c qwen36    # did it get smarter?
+ghuumi bench compare runs\bench\<before> runs\bench\<after>
 ```
 
-`kumaru eval` is a tripwire. `kumaru bench` is a measuring instrument: public benchmarks plus your own golden questions, validated graders, confidence intervals, and a paired significance test, so that "B is better" means something. [BENCHMARKS.md](BENCHMARKS.md) is its manual and lab notebook.
+`ghuumi eval` is a tripwire. `ghuumi bench` is a measuring instrument: public benchmarks plus your own golden questions, validated graders, confidence intervals, and a paired significance test, so that "B is better" means something. [BENCHMARKS.md](BENCHMARKS.md) is its manual and lab notebook.
 
 ### Precision costs questions, quadratically
 
@@ -458,7 +458,7 @@ The 95% error bar on an accuracy *p* measured on *n* questions is about `±1.96 
 | Questions | Error bar at 75% accuracy | Enough to see | Example |
 |---|---|---|---|
 | 27 | ±16 points | Only disasters | the golden set |
-| 100 | ±8.5 points | Model swaps | `kumaru bench` default (`-n 100`) |
+| 100 | ±8.5 points | Model swaps | `ghuumi bench` default (`-n 100`) |
 | 1,000 | ±2.7 points | Prompt and sampling changes | `-n 1000` |
 | 12,032 | ±0.8 points | Small fine-tuning effects | MMLU-Pro with `--full` |
 
@@ -471,9 +471,9 @@ Halving the error bar takes four times the questions. Two things make each quest
 
 | Stage | Method | Detects | Status |
 |---|---|---|---|
-| tripwire | `kumaru eval --suite smoke` | Catastrophic breakage | shipped |
-| now | `kumaru bench`, 100 questions per benchmark, McNemar + Holm | ~10-point differences | shipped |
-| next | `kumaru bench run … --full`: every test question | 1–2 point differences on the large sets | shipped; MMLU-Pro takes 120× as long |
+| tripwire | `ghuumi eval --suite smoke` | Catastrophic breakage | shipped |
+| now | `ghuumi bench`, 100 questions per benchmark, McNemar + Holm | ~10-point differences | shipped |
+| next | `ghuumi bench run … --full`: every test question | 1–2 point differences on the large sets | shipped; MMLU-Pro takes 120× as long |
 | then | Harder benchmarks, as current ones saturate | Differences near the frontier | one new file each |
 | then | Pairwise LLM-as-judge for open-ended answers | Quality no answer key captures | a stronger judge, calibrated against your own ratings |
 | always | A CI gate on `bench compare` | Regressions reaching main | compute on every pull request |
@@ -491,12 +491,12 @@ Every stage is additive. A judge is another kind of grader, so it arrives as a n
 
 ## What to do next, in order
 
-1. **Establish a baseline.** `kumaru bench run golden gsm8k mmlu_pro ifeval -c qwen36`, and keep the run folder. Every later change is a `kumaru bench compare` against it.
+1. **Establish a baseline.** `ghuumi bench run golden gsm8k mmlu_pro ifeval -c qwen36`, and keep the run folder. Every later change is a `ghuumi bench compare` against it.
 2. **Fix quality before speed.** A fast wrong answer is worthless. Try a better model, Think, or a better system prompt first, and measure each.
 3. **Fix latency before throughput.** Until you have more than two concurrent users, throughput is not your problem.
 4. **Use the engine's slots before adding hardware.** `llamacpp_server` already batches 4 requests. Move to vLLM (Linux or WSL) when you need dozens; it costs one config file.
 5. **Fine-tune only after prompting plateaus.** And run `configs/train/lora-small.yaml` first to validate the pipeline in five minutes.
-6. **Add retrieval before adding context length.** Cheaper, more accurate, and updatable. For documentation, index the folder with `kumaru learn` and list it in `agent.knowledge_indexes`.
+6. **Add retrieval before adding context length.** Cheaper, more accurate, and updatable. For documentation, index the folder with `ghuumi learn` and list it in `agent.knowledge_indexes`.
 7. **Add tools last.** They multiply capability and they multiply failure modes.
 
 ---
@@ -505,7 +505,7 @@ Every stage is additive. A judge is another kind of grader, so it arrives as a n
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — why the seams are where they are
 - [`BENCHMARKS.md`](BENCHMARKS.md) — measuring whether a change helped, with results
-- [`howto/src/kumaru/backends/llamacpp_server.md`](howto/src/kumaru/backends/llamacpp_server.md) — the engine behind `qwen36`, and its VRAM knobs
+- [`howto/src/ghuumi/backends/llamacpp_server.md`](howto/src/ghuumi/backends/llamacpp_server.md) — the engine behind `qwen36`, and its VRAM knobs
 - [`TRAINING.md`](TRAINING.md) — the training walkthrough
-- [`howto/src/kumaru/backends/base.md`](howto/src/kumaru/backends/base.md) — the backend contract
-- [`howto/src/kumaru/core/registry.md`](howto/src/kumaru/core/registry.md) — the plugin mechanism
+- [`howto/src/ghuumi/backends/base.md`](howto/src/ghuumi/backends/base.md) — the backend contract
+- [`howto/src/ghuumi/core/registry.md`](howto/src/ghuumi/core/registry.md) — the plugin mechanism

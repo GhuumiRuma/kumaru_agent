@@ -15,15 +15,15 @@ from typing import Any
 import httpx
 import pytest
 
-from kumaru.backends.base import Backend, ReasoningSplitter, StopSequenceTracker, iterate_in_thread
-from kumaru.backends.echo import EchoBackend
-from kumaru.backends.llamacpp_backend import LlamaCppBackend
-from kumaru.backends.openai_compat import OpenAICompatBackend, normalize_finish_reason
-from kumaru.backends.transformers_backend import TransformersBackend, _row_repetition_penalty
-from kumaru.core.config import BackendConfig
-from kumaru.core.errors import BackendError, ConfigError, DependencyMissingError, install_command
-from kumaru.core.registry import BACKENDS
-from kumaru.core.types import GenerationParams, Message
+from ghuumi.backends.base import Backend, ReasoningSplitter, StopSequenceTracker, iterate_in_thread
+from ghuumi.backends.echo import EchoBackend
+from ghuumi.backends.llamacpp_backend import LlamaCppBackend
+from ghuumi.backends.openai_compat import OpenAICompatBackend, normalize_finish_reason
+from ghuumi.backends.transformers_backend import TransformersBackend, _row_repetition_penalty
+from ghuumi.core.config import BackendConfig
+from ghuumi.core.errors import BackendError, ConfigError, DependencyMissingError, install_command
+from ghuumi.core.registry import BACKENDS
+from ghuumi.core.types import GenerationParams, Message
 
 ECHO_THOUGHT = (
     "The user asked: hello. Echo cannot reason; this text only exercises the reasoning channel."
@@ -230,14 +230,14 @@ def test_transformers_is_the_backend_that_attaches_adapters() -> None:
         ("torch", True, r".\scripts\setup.ps1 -Gpu"),
         ("quant", True, r".\scripts\setup.ps1 -Quant"),
         ("gguf", True, r".\scripts\setup.ps1 -Gguf"),
-        ("bench", True, 'pip install -e ".[bench]" in the Kumaru folder'),
-        ("torch", False, 'pip install -e ".[torch]" in the Kumaru folder'),
+        ("bench", True, 'pip install -e ".[bench]" in the Ghuumi folder'),
+        ("torch", False, 'pip install -e ".[torch]" in the Ghuumi folder'),
     ],
 )
 def test_install_hints_name_the_source_folder_not_pypi(extra: str, windows: bool, expected: str) -> None:
     command = install_command(extra, windows=windows)
     assert command.startswith(expected)
-    assert "kumaru[" not in command  # PyPI has no Kumaru project; that name could be anyone's
+    assert "ghuumi[" not in command  # PyPI has no Ghuumi project; that name could be anyone's
 
 
 def test_a_missing_engine_says_how_to_install_it() -> None:
@@ -283,7 +283,7 @@ async def test_an_abandoned_stream_closes_its_producer_on_the_worker_thread() ->
     assert [await anext(stream) for _ in range(3)] == [0, 1, 2]
     await stream.aclose()  # what the server does when the client presses Stop
     assert await asyncio.to_thread(closed.wait, 5)
-    assert closed_on == ["kumaru-generate"]
+    assert closed_on == ["ghuumi-generate"]
     assert produced < 100
 
 
@@ -413,7 +413,7 @@ class FakeTokenizer:
 def tiny_gpt2(steps: list[int], finished: threading.Event, positions: int = 4096) -> object:
     """A random two-layer GPT-2 (no download) that counts its decoding steps.
 
-    It has no end-of-sequence token, so only max_new_tokens or Kumaru's halt
+    It has no end-of-sequence token, so only max_new_tokens or Ghuumi's halt
     can end a generation: exactly what the test below needs to tell apart.
     Like any GPT-2, it fails on a sequence longer than its `positions`.
     """

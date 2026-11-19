@@ -11,13 +11,13 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from kumaru.academic import discovery, openaccess
-from kumaru.academic import web as web_module
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.discovery import discover
-from kumaru.academic.models import Relationship, Review, Source
-from kumaru.academic.openaccess import find_open_access, find_open_access_batch
-from kumaru.academic.web import (
+from ghuumi.academic import discovery, openaccess
+from ghuumi.academic import web as web_module
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.discovery import discover
+from ghuumi.academic.models import Relationship, Review, Source
+from ghuumi.academic.openaccess import find_open_access, find_open_access_batch
+from ghuumi.academic.web import (
     FetchError,
     Page,
     ProviderMissing,
@@ -25,10 +25,10 @@ from kumaru.academic.web import (
     RateLimited,
     TransientFetchError,
 )
-from kumaru.cli import app as cli
-from kumaru.core.config import AcademicConfig
-from kumaru.core.errors import RequestError
-from kumaru.server.app import create_app
+from ghuumi.cli import app as cli
+from ghuumi.core.config import AcademicConfig
+from ghuumi.core.errors import RequestError
+from ghuumi.server.app import create_app
 
 DOI = "10.1007/s00006-010-0242-8"
 ARXIV = {"display_name": "arXiv (Cornell University)", "type": "repository"}

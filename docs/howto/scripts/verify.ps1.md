@@ -1,6 +1,6 @@
 # `scripts/verify.ps1`
 
-> A layered self-check that proves each part of Kumaru works on this machine, in an order where the first failure identifies the broken layer.
+> A layered self-check that proves each part of Ghuumi works on this machine, in an order where the first failure identifies the broken layer.
 
 **Read this when:** something is wrong and you do not yet know where; you have just upgraded a dependency; or you want to confirm a fresh install before relying on it.
 
@@ -81,7 +81,7 @@ That is the full request path, including the streaming protocol that a plain hea
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `No .venv found` | Setup not run | `.\scripts\setup.ps1` |
-| Stage 1 fails | Broken install | Re-run setup; check `kumaru info` output |
+| Stage 1 fails | Broken install | Re-run setup; check `ghuumi info` output |
 | Stage 2 fails | A YAML profile has an invalid key | The error names the file and key; configs use `extra="forbid"` |
 | Stage 3 fails with `No module named pytest` | The test tools were never installed (an install by hand with plain `pip install -e .`) | `pip install -e ".[dev]"`; `setup.ps1` installs them for you |
 | Stage 3 fails | A genuine regression in core logic | `pytest tests -q` for the full traceback |
@@ -97,7 +97,7 @@ Add a stage with the `Check` helper. Place it in dependency order — after ever
 
 ```powershell
 Check "my new subsystem" {
-    & $kumaru my-command --flag | Out-Host
+    & $ghuumi my-command --flag | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "my-command failed" }
 }
 ```

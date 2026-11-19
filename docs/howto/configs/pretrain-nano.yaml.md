@@ -58,7 +58,7 @@ Pretraining reads only `model.max_seq_length`. It is both the length of each pac
 
 ## How to use it
 
-Prerequisites, in the Kumaru folder:
+Prerequisites, in the Ghuumi folder:
 
 ```powershell
 .\scripts\setup.ps1 -Gpu    # elsewhere: pip install -e ".[train]"
@@ -67,7 +67,7 @@ Prerequisites, in the Kumaru folder:
 Validate:
 
 ```powershell
-kumaru train configs/train/pretrain-nano.yaml --dry-run
+ghuumi train configs/train/pretrain-nano.yaml --dry-run
 ```
 
 A dry run checks the config and data, packs the corpus into `runs/nano/tokens.bin` if that file does not exist yet, builds the dataset and model plan, and stops before training. On a large corpus the packing is the slow part, and it is done once.
@@ -75,16 +75,16 @@ A dry run checks the config and data, packs the corpus into `runs/nano/tokens.bi
 Train:
 
 ```powershell
-kumaru train configs/train/pretrain-nano.yaml
+ghuumi train configs/train/pretrain-nano.yaml
 ```
 
 Multi-GPU entry point from the source comments:
 
 ```powershell
-torchrun --nproc_per_node=4 -m kumaru.train.pretrain_nano configs/train/pretrain-nano.yaml
+torchrun --nproc_per_node=4 -m ghuumi.train.pretrain_nano configs/train/pretrain-nano.yaml
 ```
 
-Under `torchrun`, rank 0 packs the corpus while the other ranks wait at a barrier, and PyTorch aborts that wait after its default process-group timeout (10 minutes with NCCL, 30 with gloo). At the packing speed measured below, a corpus larger than about 800 MB outlasts the NCCL limit and one larger than about 2.5 GB outlasts gloo's. So pack first with the single-process dry run above, using the same `output_dir`, then launch `torchrun`. The `torchrun` entry point also skips the `kumaru train` preflight, which is a second reason to dry-run first.
+Under `torchrun`, rank 0 packs the corpus while the other ranks wait at a barrier, and PyTorch aborts that wait after its default process-group timeout (10 minutes with NCCL, 30 with gloo). At the packing speed measured below, a corpus larger than about 800 MB outlasts the NCCL limit and one larger than about 2.5 GB outlasts gloo's. So pack first with the single-process dry run above, using the same `output_dir`, then launch `torchrun`. The `torchrun` entry point also skips the `ghuumi train` preflight, which is a second reason to dry-run first.
 
 ## Tuning it
 
@@ -100,12 +100,12 @@ Under `torchrun`, rank 0 packs the corpus while the other ranks wait at a barrie
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `Training data not found: ... (data.text_file)` | `data.text_file` path is wrong. Preflight checks it before the tokenizer loads; with `text_file` unset it checks `data.train_file` instead. | Point it at an existing UTF-8 text file. Paths are resolved from the directory you run in. |
-| `Corpus not found` | Same wrong path, reached through the `torchrun` entry point, which skips preflight. | Fix the path; dry-run with `kumaru train` first. |
+| `Corpus not found` | Same wrong path, reached through the `torchrun` entry point, which skips preflight. | Fix the path; dry-run with `ghuumi train` first. |
 | Trains on the wrong text after changing `text_file` or `tokenizer` | An existing `<output_dir>/tokens.bin` was reused. | Use a new `output_dir`, or delete `tokens.bin` to repack. |
 | `tokens.bin.tmp` left in `output_dir` | Packing was killed before it finished. | Harmless: the next run packs again and overwrites it, and a partial file is never renamed to `tokens.bin`. Delete it to reclaim the disk space. |
 | `... produced zero tokens` | The corpus file is empty. | Point `data.text_file` at a file with text in it. |
 | Too few tokens for `seq_length` | Corpus token count is smaller than one sequence window. | Use a larger corpus or lower `model.max_seq_length`. |
-| Collective or barrier timeout under `torchrun` on the first run | Rank 0 was still packing a large corpus when the other ranks' wait timed out. | Pack first with `kumaru train <config> --dry-run`, then launch `torchrun` with the same `output_dir`. |
+| Collective or barrier timeout under `torchrun` on the first run | Rank 0 was still packing a large corpus when the other ranks' wait timed out. | Pack first with `ghuumi train <config> --dry-run`, then launch `torchrun` with the same `output_dir`. |
 | Loss falls unrealistically low | Toy corpus memorization. | Use a held-out corpus and much more text. |
 | OOM | Batch, sequence length, or model size too high. | Lower batch first, then sequence/model size. |
 | Token ids corrupt or invalid | Incorrect packing dtype would be unsafe for large vocabs, but code uses `uint32`. | Do not change packing dtype to `uint16`. |
@@ -113,7 +113,7 @@ Under `torchrun`, rank 0 packs the corpus while the other ranks wait at a barrie
 ## Related files
 
 - `data/samples/corpus.txt` — demonstration corpus.
-- `src/kumaru/train/config.py` — training and nano model schema.
-- `src/kumaru/train/data.py` — raw-text packing and `PackedTokenDataset`.
+- `src/ghuumi/train/config.py` — training and nano model schema.
+- `src/ghuumi/train/data.py` — raw-text packing and `PackedTokenDataset`.
 - `configs/train/lora-small.yaml` — SFT smoke profile instead of pretraining.
 

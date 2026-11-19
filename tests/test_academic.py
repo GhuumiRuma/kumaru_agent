@@ -13,11 +13,11 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from typer.testing import CliRunner
 
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.discovery import discover
-from kumaru.academic.models import Evidence, Relationship, Review, Source, Topic, canonical_url
-from kumaru.academic.scoring import WEIGHTS, score_source
-from kumaru.academic.web import (
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.discovery import discover
+from ghuumi.academic.models import Evidence, Relationship, Review, Source, Topic, canonical_url
+from ghuumi.academic.scoring import WEIGHTS, score_source
+from ghuumi.academic.web import (
     AccessBlocked,
     FetchError,
     Page,
@@ -27,10 +27,10 @@ from kumaru.academic.web import (
     inspect_source,
     public_addresses,
 )
-from kumaru.cli import app as cli
-from kumaru.core.config import AcademicConfig, KumaruConfig
-from kumaru.core.errors import RequestError
-from kumaru.server.app import create_app
+from ghuumi.cli import app as cli
+from ghuumi.core.config import AcademicConfig, GhuumiConfig
+from ghuumi.core.errors import RequestError
+from ghuumi.server.app import create_app
 
 
 @pytest.fixture
@@ -446,7 +446,7 @@ def test_mixed_public_private_dns_is_blocked(monkeypatch):
 
 
 def test_transport_pins_ip_and_verifies_original_tls_name(monkeypatch):
-    from kumaru.academic import web as module
+    from ghuumi.academic import web as module
 
     monkeypatch.setattr(module, "public_addresses", lambda *args: ["93.184.216.34"])
     observed = {}
@@ -561,7 +561,7 @@ def test_offline_cli_and_export_into_existing_learning_workflow(tmp_path, catalo
     assert result.exit_code == 0 and index.exists()
 
 
-def test_academic_api_is_opt_in_and_uses_existing_auth(tmp_path, echo_config: KumaruConfig):
+def test_academic_api_is_opt_in_and_uses_existing_auth(tmp_path, echo_config: GhuumiConfig):
     echo_config.academic = AcademicConfig(enabled=True, database=str(tmp_path / "api.sqlite"))
     echo_config.server.api_key = "test-only"
     with TestClient(create_app(echo_config)) as client:
@@ -585,12 +585,12 @@ def test_academic_api_is_opt_in_and_uses_existing_auth(tmp_path, echo_config: Ku
 
 
 def test_full_api_workflow_without_ready_inference_backend(tmp_path, echo_config, monkeypatch):
-    from kumaru.server import routes_academic
+    from ghuumi.server import routes_academic
 
     echo_config.academic = AcademicConfig(enabled=True, database=str(tmp_path / "api.sqlite"))
     echo_config.backend.name = "intentionally-unavailable"
     monkeypatch.setattr(routes_academic, "PublicWeb", lambda: FakeWeb())
-    monkeypatch.setattr("kumaru.academic.discovery.PublicWeb", lambda: FakeWeb(
+    monkeypatch.setattr("ghuumi.academic.discovery.PublicWeb", lambda: FakeWeb(
         payload=crossref_payload(),
     ))
     with TestClient(create_app(echo_config)) as client:

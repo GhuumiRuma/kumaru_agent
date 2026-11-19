@@ -7,9 +7,9 @@
 # Do this first. Every time. A masking bug found here costs five minutes; the
 # same bug found on the 7B run costs an evening.
 #
-#   kumaru train configs/train/lora-small.yaml --dry-run
-#   kumaru train configs/train/lora-small.yaml
-#   kumaru chat --model Qwen/Qwen2.5-0.5B-Instruct --adapter runs/lora-small/adapter
+#   ghuumi train configs/train/lora-small.yaml --dry-run
+#   ghuumi train configs/train/lora-small.yaml
+#   ghuumi chat --model Qwen/Qwen2.5-0.5B-Instruct --adapter runs/lora-small/adapter
 #
 # Requires: .\scripts\setup.ps1 -Gpu   (elsewhere: pip install -e ".[train]"; no bitsandbytes needed)
 

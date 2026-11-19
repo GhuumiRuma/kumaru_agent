@@ -4,21 +4,21 @@ from pathlib import Path
 
 import pytest
 
-from kumaru.core.config import (
+from ghuumi.core.config import (
     CONFIG_DIR,
-    KumaruConfig,
+    GhuumiConfig,
     config_file,
     deep_merge,
     env_overrides,
     list_profiles,
     load_config,
 )
-from kumaru.core.errors import ConfigError
+from ghuumi.core.errors import ConfigError
 
 
 class TestConfigDefaults:
     def test_field_defaults_are_offline_safe_to_inspect(self) -> None:
-        cfg = KumaruConfig()
+        cfg = GhuumiConfig()
         assert cfg.backend.name == "transformers"
         assert cfg.backend.max_context_length == 8192
         assert cfg.generation.max_tokens == 1024
@@ -31,7 +31,7 @@ class TestConfigDefaults:
         assert profiles
         for profile in profiles:
             cfg = load_config(profile, use_env=False)
-            assert isinstance(cfg, KumaruConfig)
+            assert isinstance(cfg, GhuumiConfig)
 
     def test_unknown_key_raises_config_error(self) -> None:
         with pytest.raises(ConfigError):
@@ -49,7 +49,7 @@ class TestConfigFile:
     def test_a_bare_name_is_the_shipped_profile_even_beside_a_decoy_file(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # A cloned project could ship a file named like a profile; `kumaru chat
+        # A cloned project could ship a file named like a profile; `ghuumi chat
         # --workspace .` run there must still read configs/test.yaml.
         monkeypatch.chdir(tmp_path)
         (tmp_path / "test").write_text(self.DECOY, encoding="utf-8")
@@ -101,11 +101,11 @@ class TestConfigMerging:
     def test_env_overrides_parses_nested_keys_and_scalars(self) -> None:
         out = env_overrides(
             {
-                "KUMARU_BACKEND__MODEL": "local-model",
-                "KUMARU_BACKEND__LOAD_IN_4BIT": "true",
-                "KUMARU_BACKEND__MAX_CONTEXT_LENGTH": "4096",
-                "KUMARU_SERVER__SERVE_UI": "false",
-                "KUMARU_LOG_LEVEL": "DEBUG",
+                "GHUUMI_BACKEND__MODEL": "local-model",
+                "GHUUMI_BACKEND__LOAD_IN_4BIT": "true",
+                "GHUUMI_BACKEND__MAX_CONTEXT_LENGTH": "4096",
+                "GHUUMI_SERVER__SERVE_UI": "false",
+                "GHUUMI_LOG_LEVEL": "DEBUG",
                 "OTHER": "ignored",
             }
         )
@@ -119,8 +119,8 @@ class TestConfigMerging:
         }
 
     def test_precedence_overrides_env_yaml_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("KUMARU_BACKEND__MODEL", "from-env")
-        monkeypatch.setenv("KUMARU_GENERATION__MAX_TOKENS", "17")
+        monkeypatch.setenv("GHUUMI_BACKEND__MODEL", "from-env")
+        monkeypatch.setenv("GHUUMI_GENERATION__MAX_TOKENS", "17")
         cfg = load_config(
             "test",
             overrides={
@@ -137,7 +137,7 @@ class TestConfigMerging:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         # YAML 1.1, which also parses env values, turns a bare on/off into True/False.
-        monkeypatch.setenv("KUMARU_BACKEND__LLAMA_SERVER__FLASH_ATTN", "off")
+        monkeypatch.setenv("GHUUMI_BACKEND__LLAMA_SERVER__FLASH_ATTN", "off")
         assert load_config("test").backend.llama_server.flash_attn == "off"
         on = load_config(overrides={"backend": {"llama_server": {"flash_attn": True}}}, use_env=False)
         assert on.backend.llama_server.flash_attn == "on"
@@ -149,6 +149,6 @@ class TestConfigMerging:
             return load_config(overrides={"telemetry": {"log_level": raw}}, use_env=False).telemetry.log_level
 
         assert (level(" debug "), level("warn"), level("Fatal")) == ("DEBUG", "WARNING", "CRITICAL")
-        # Unchecked, a typo surfaced only once `kumaru serve` started, as a KeyError in uvicorn.
+        # Unchecked, a typo surfaced only once `ghuumi serve` started, as a KeyError in uvicorn.
         with pytest.raises(ConfigError, match="log_level"):
             level("verbose")

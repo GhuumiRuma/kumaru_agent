@@ -1,5 +1,5 @@
-// Kumaru golden set: your own questions, graded deterministically. One JSON object per line.
-// Format and graders: docs/howto/src/kumaru/eval/benchmarks/golden.md. Run: kumaru bench run golden
+// Ghuumi golden set: your own questions, graded deterministically. One JSON object per line.
+// Format and graders: docs/howto/src/ghuumi/eval/benchmarks/golden.md. Run: ghuumi bench run golden
 {"id": "pens", "prompt": "Pens cost $3 each, or $10 for a pack of 4. What is the least you can pay for exactly 10 pens? Finish with \"Answer: <number>\".", "grader": "numeric", "answer": 26, "tags": ["math"]}
 {"id": "mult", "prompt": "What is 17 × 24? Finish with \"Answer: <number>\".", "grader": "numeric", "answer": 408, "tags": ["math"]}
 {"id": "seconds", "prompt": "How many seconds are in 3 hours and 25 minutes? Finish with \"Answer: <number>\".", "grader": "numeric", "answer": 12300, "tags": ["math"]}

@@ -10,7 +10,7 @@ from MultiPL-E it documents.
 Assembly is checked as text, so most of these tests need no compiler. The
 canary and chat-answer tests compile and run programs for real: Python,
 JavaScript and TypeScript whenever they are installed, the compiled languages
-only with KUMARU_TEST_TOOLCHAINS=1 (seconds per program).
+only with GHUUMI_TEST_TOOLCHAINS=1 (seconds per program).
 """
 
 import dataclasses
@@ -28,15 +28,15 @@ from types import ModuleType
 
 import pytest
 
-from kumaru.core.errors import KumaruError
-from kumaru.core.registry import suite_members
-from kumaru.eval.benchmarks import codeexec, multipl_e, runner
-from kumaru.eval.benchmarks.base import BenchItem, Grade
-from kumaru.eval.benchmarks.codeexec import Outcome, Step, ToolchainMissing
-from kumaru.eval.benchmarks.extract import fences, open_fence
-from kumaru.eval.benchmarks.multipl_e import Toolchain, assemble, extract_answer
+from ghuumi.core.errors import GhuumiError
+from ghuumi.core.registry import suite_members
+from ghuumi.eval.benchmarks import codeexec, multipl_e, runner
+from ghuumi.eval.benchmarks.base import BenchItem, Grade
+from ghuumi.eval.benchmarks.codeexec import Outcome, Step, ToolchainMissing
+from ghuumi.eval.benchmarks.extract import fences, open_fence
+from ghuumi.eval.benchmarks.multipl_e import Toolchain, assemble, extract_answer
 
-MARK = "kumaru-finished-0123456789abcdef"
+MARK = "ghuumi-finished-0123456789abcdef"
 CANARIES = multipl_e._CANARIES
 COMPILED = {"cs", "java", "cpp", "go", "rs"}
 REPO = Path(__file__).resolve().parents[1]
@@ -74,8 +74,8 @@ def cpu_seconds(work: Callable[[], object], limit: float) -> float:
 
 def installed(lang: str) -> multipl_e.MultiPLE:
     """The benchmark for `lang` with this machine's toolchain, or skip."""
-    if lang in COMPILED and os.environ.get("KUMARU_TEST_TOOLCHAINS") != "1":
-        pytest.skip("compiles; set KUMARU_TEST_TOOLCHAINS=1 to run")
+    if lang in COMPILED and os.environ.get("GHUUMI_TEST_TOOLCHAINS") != "1":
+        pytest.skip("compiles; set GHUUMI_TEST_TOOLCHAINS=1 to run")
     bench = multipl_e.BY_LANGUAGE[lang]()
     try:
         bench.toolchain  # noqa: B018 - finds the toolchain
@@ -282,7 +282,7 @@ def test_the_entry_point_is_read_from_each_languages_prompt(lang: str) -> None:
 def test_the_entry_point_is_the_last_function_a_prompt_opens() -> None:
     prompt = "function helper(x){\n  return x;\n}\n// >>> sort_array([])\nfunction sort_array(arr){\n"
     assert multipl_e.entry_point(prompt, "js") == "sort_array"
-    with pytest.raises(KumaruError, match="Could not find the function a Go prompt asks for"):
+    with pytest.raises(GhuumiError, match="Could not find the function a Go prompt asks for"):
         multipl_e.entry_point("package x_test\n\n// func add(x int) int\n", "go")
 
 
@@ -475,7 +475,7 @@ def test_java_renames_the_answers_class_and_keeps_its_helpers() -> None:
     assert "Problem.half(Helper.twice(x))" in program
     assert program.index("class Helper") < program.index("class Problem {")
     assert program.count("void main(") == 1
-    assert "KUMARU_NO_ASSERT" in program  # exits 97 if the JVM runs without -ea
+    assert "GHUUMI_NO_ASSERT" in program  # exits 97 if the JVM runs without -ea
     assert program.rindex("assert(") < program.index(MARK)
 
 
@@ -496,7 +496,7 @@ def test_csharp_unwraps_the_namespace_and_keeps_a_static_class_static() -> None:
     assert "static class Problem {" in program
     assert program.count("void Main(") == 1
     assert program.count("using System;") == program.count("using System.Linq;") == 1
-    assert "KUMARU_NO_DEBUG" in program  # exits 97 if built without DEBUG
+    assert "GHUUMI_NO_DEBUG" in program  # exits 97 if built without DEBUG
     assert program.rindex("Debug.Assert(") < program.index(MARK)
     assert program.endswith(multipl_e._CS_LISTENER + "\n")
 
@@ -674,7 +674,7 @@ def test_every_language_asks_the_same_152_problems_in_the_same_order(monkeypatch
 
 def test_a_changed_dataset_is_an_error_not_a_smaller_benchmark(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(multipl_e, "load_hf_rows", lambda *args, **kwargs: hf_rows(multipl_e.DATASET)[:100])
-    with pytest.raises(KumaruError, match="Expected 152 Rust problems, found 93"):
+    with pytest.raises(GhuumiError, match="Expected 152 Rust problems, found 93"):
         multipl_e.MultiPLERust().load()
 
 
@@ -719,7 +719,7 @@ def test_other_results_and_other_languages_keep_their_tests_as_published(signatu
 
 def test_a_list_test_that_cannot_be_rewritten_exactly_is_an_error() -> None:
     prompt, tests = cs_problem("List<string> Split(string s)", LIST_TEST, 'Debug.Assert(Split(("")).Count == 0);')
-    with pytest.raises(KumaruError, match=re.escape('as nuprl/MultiPL-E#71 does: Debug.Assert(Split(("")).Count')):
+    with pytest.raises(GhuumiError, match=re.escape('as nuprl/MultiPL-E#71 does: Debug.Assert(Split(("")).Count')):
         multipl_e.fix_tests("cs", prompt, tests, "Split")
 
 
@@ -739,7 +739,7 @@ def test_csharp_fixes_exactly_the_problems_it_expects_and_says_so(monkeypatch: p
     fixed = {item.meta["problem"] for item in items if "SequenceEqual" in item.meta["tests"]}
     assert fixed == expected and len(expected) == 43
     lists.add(max(set(range(164)) - expected - multipl_e.EXCLUDED))  # one more than expected
-    with pytest.raises(KumaruError, match=r"Fixing the C# tests \(nuprl/MultiPL-E#71\) changed 44 problems"):
+    with pytest.raises(GhuumiError, match=r"Fixing the C# tests \(nuprl/MultiPL-E#71\) changed 44 problems"):
         multipl_e.MultiPLECSharp().load()
 
     cs, rs = multipl_e.MultiPLECSharp(), multipl_e.MultiPLERust()
@@ -806,7 +806,7 @@ def test_a_toolchain_that_grades_its_canary_wrongly_is_not_used(
 ) -> None:
     monkeypatch.setitem(multipl_e._DETECT, "rs", lambda: Toolchain({"rustc": "rustc"}, "rustc 0.0-fake"))
     monkeypatch.setattr(codeexec, "run", finished(status, stderr="error: linker `cc` not found"))
-    expected = f"The Rust toolchain (rustc 0.0-fake) failed Kumaru's self-test: {verdict} ({status})"
+    expected = f"The Rust toolchain (rustc 0.0-fake) failed Ghuumi's self-test: {verdict} ({status})"
     with pytest.raises(ToolchainMissing, match=re.escape(expected)):
         multipl_e.MultiPLERust().preflight()
 
@@ -827,7 +827,7 @@ def test_the_sandbox_runs_the_images_own_tools(monkeypatch: pytest.MonkeyPatch) 
     java = multipl_e.MultiPLEJava()
     java.configure(sandbox="docker")
     run = multipl_e.build_program("java", java.toolchain, "", MARK, local=False).steps[-1]
-    assert run.argv[run.argv.index("-cp") + 1] == ".:/opt/kumaru/javatuples-1.2.jar"
+    assert run.argv[run.argv.index("-cp") + 1] == ".:/opt/ghuumi/javatuples-1.2.jar"
     ts = multipl_e.MultiPLETypeScript()
     ts.configure(sandbox="docker")
     assert ts.fingerprint_extra()["checker"] == "tsc"  # the image type-checks
@@ -841,7 +841,7 @@ def test_changing_the_sandbox_finds_the_toolchain_again_and_a_typo_is_refused() 
     assert bench._toolchain is fake
     bench.configure(sandbox="docker")
     assert bench._toolchain is None
-    with pytest.raises(KumaruError, match="Unknown sandbox 'vm'"):
+    with pytest.raises(GhuumiError, match="Unknown sandbox 'vm'"):
         bench.configure(sandbox="vm")
 
 
@@ -1015,17 +1015,17 @@ def test_only_documented_differences_from_multipl_e_are_excused(check_graders) -
     ts._toolchain = dataclasses.replace(ts._toolchain, checker="tsc")
     assert excuse(ts, type_error, passed) == ""
 
-    # tsc failed on a file path written after the function, which Kumaru drops.
+    # tsc failed on a file path written after the function, which Ghuumi drops.
     prompt = "function f(x: number): number {\n"
     completion = "    return x;\n}\n/src/kata/7kyu/f.ts\n"
     tests = "declare var require: any;\nconst assert = require('node:assert');\nassert.deepEqual(f(1), 1);\n"
     item = BenchItem(id="HumanEval_0_f", prompt="", meta={"prompt": prompt, "tests": tests, "entry_point": "f"})
     tsc_says = "x.ts(4,6): error TS1499: Unknown regular expression flag.\n"
     stray = replay("HumanEval_0_f", 0, "SyntaxError", completion, "", prompt + completion + tests, tsc_says)
-    assert "Kumaru drops" in excuse(ts, stray, passed, item)
+    assert "Ghuumi drops" in excuse(ts, stray, passed, item)
     assert excuse(ts, stray, failed, item) == ""
     assert excuse(js, stray, passed, item) == ""
-    # An error on a line Kumaru keeps is not excused, unless an earlier one led to it.
+    # An error on a line Ghuumi keeps is not excused, unless an earlier one led to it.
     kept_error = "x.ts(2,5): error TS2322: Type 'string' is not assignable.\n"
     assert excuse(ts, dataclasses.replace(stray, stdout=kept_error), passed, item) == ""
     assert excuse(ts, dataclasses.replace(stray, stdout=kept_error + tsc_says), passed, item) == ""
@@ -1034,7 +1034,7 @@ def test_only_documented_differences_from_multipl_e_are_excused(check_graders) -
     runs_on = "x.ts(4,15): error TS1002: Unterminated string literal.\nx.ts(5,1): error TS1005: ',' expected.\n"
     call = replay("HumanEval_0_f", 0, "SyntaxError", cut_off, "", prompt + cut_off + tests, runs_on)
     assert "declare var require" in call.program.splitlines()[4]
-    assert "Kumaru drops" in excuse(ts, call, passed, item)
+    assert "Ghuumi drops" in excuse(ts, call, passed, item)
 
 
 def test_cpp_is_excused_only_where_windows_32_bit_long_cuts_a_test_number(

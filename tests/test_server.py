@@ -5,9 +5,9 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from kumaru.core.config import BackendConfig, KumaruConfig, ServerConfig, ThinkingModeConfig
-from kumaru.server.app import create_app
-from kumaru.server.schemas import ChatCompletionRequest
+from ghuumi.core.config import BackendConfig, GhuumiConfig, ServerConfig, ThinkingModeConfig
+from ghuumi.server.app import create_app
+from ghuumi.server.schemas import ChatCompletionRequest
 
 ECHO_THOUGHT = (
     "The user asked: hello. Echo cannot reason; this text only exercises the reasoning channel."
@@ -88,7 +88,7 @@ def test_every_client_system_message_reaches_the_model(
     test_client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     assert test_client.post("/v1/chat/completions", json=chat_payload()).status_code == 200  # loaded
-    backend = test_client.app.state.kumaru.backend
+    backend = test_client.app.state.ghuumi.backend
     prompts: list[list] = []
     stream = backend.stream
 
@@ -106,11 +106,11 @@ def test_every_client_system_message_reaches_the_model(
     assert response.status_code == 200
     [prompt] = prompts
     assert [m.role.value for m in prompt] == ["system", "user"]
-    assert prompt[0].content.endswith("\n\nBe terse.\n\nUse metric units.")  # after Kumaru's own
+    assert prompt[0].content.endswith("\n\nBe terse.\n\nUse metric units.")  # after Ghuumi's own
 
 
 def test_api_key_required_for_chat_completion() -> None:
-    cfg = KumaruConfig(
+    cfg = GhuumiConfig(
         backend=BackendConfig(name="echo", model="echo", extra={"delay_s": 0}),
         server=ServerConfig(api_key="secret"),
     )
@@ -132,7 +132,7 @@ def test_api_key_required_for_chat_completion() -> None:
 def test_streaming_final_frame_carries_timing_stats(test_client: TestClient) -> None:
     final = sse_payloads(test_client, chat_payload(stream=True))[-1]
     assert final["choices"][0]["delta"] == {}
-    stats = final["kumaru"]  # the UI's tok/s and timing line
+    stats = final["ghuumi"]  # the UI's tok/s and timing line
     assert set(stats) == {
         "latency_ms", "time_to_first_token_ms", "thinking_ms",
         "prompt_tokens", "completion_tokens", "tokens_per_second",
@@ -149,7 +149,7 @@ def test_streamed_thoughts_arrive_before_the_answer(test_client: TestClient) -> 
     assert all(set(delta) == {"reasoning_content"} for delta in deltas[:first_answer])
     assert all(set(delta) == {"content"} for delta in deltas[first_answer:])
     assert "".join(delta["reasoning_content"] for delta in deltas[:first_answer]) == ECHO_THOUGHT
-    stats = payloads[-1]["kumaru"]
+    stats = payloads[-1]["ghuumi"]
     assert stats["completion_tokens"] == len(deltas)  # echo counts one token per frame
     assert stats["thinking_ms"] is not None
 
@@ -182,7 +182,7 @@ def test_a_thought_that_fills_max_tokens_ends_with_length_and_no_answer(
         assert all(set(delta) == {"reasoning_content"} for delta in deltas)
         reasoning = "".join(delta["reasoning_content"] for delta in deltas)
         finish = payloads[-1]["choices"][0]["finish_reason"]
-        completion_tokens = payloads[-1]["kumaru"]["completion_tokens"]
+        completion_tokens = payloads[-1]["ghuumi"]["completion_tokens"]
     else:
         reply = test_client.post("/v1/chat/completions", json=body).json()
         message = reply["choices"][0]["message"]
@@ -198,7 +198,7 @@ def test_a_thought_that_fills_max_tokens_ends_with_length_and_no_answer(
     ("fields", "expected"),
     [
         ({}, None),  # use the server default
-        ({"thinking": False, "reasoning_effort": "high"}, False),  # Kumaru's own field wins
+        ({"thinking": False, "reasoning_effort": "high"}, False),  # Ghuumi's own field wins
         ({"chat_template_kwargs": {"enable_thinking": True}}, True),  # vLLM / SGLang
         ({"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "high"}, False),
         ({"chat_template_kwargs": {"enable_thinking": "false"}}, False),  # a string, not a bool
@@ -215,7 +215,7 @@ def test_resolved_thinking_accepts_three_spellings(fields: dict, expected: bool 
 
 
 def test_info_reports_thinking_mode_without_leaking_the_api_key() -> None:
-    cfg = KumaruConfig(
+    cfg = GhuumiConfig(
         backend=BackendConfig(
             name="echo", model="echo", api_key="not-for-the-ui", extra={"delay_s": 0}
         ),

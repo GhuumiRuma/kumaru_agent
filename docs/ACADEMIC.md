@@ -1,6 +1,6 @@
 # Academic source discovery and permitted text collection
 
-`kumaru academic` discovers potential information carriers, records provenance,
+`ghuumi academic` discovers potential information carriers, records provenance,
 organizes their academic subjects and relationships, and collects **reviewed,
 permitted human-authored text**. It does not use an LLM to generate references,
 detect AI, review mathematics, or approve sources. Its HTTP API is opt-in.
@@ -10,13 +10,13 @@ separate `/academic` review dashboard, linked from the chat sidebar.
 ## Start with Mathematics
 
 ```powershell
-kumaru academic --database C:\references\academic.sqlite topics
-kumaru academic --database C:\references\academic.sqlite search calculus --query "fundamental theorem" --limit 10
-kumaru academic --database C:\references\academic.sqlite list --topic mathematics
-kumaru academic --database C:\references\academic.sqlite show SOURCE_ID
+ghuumi academic --database C:\references\academic.sqlite topics
+ghuumi academic --database C:\references\academic.sqlite search calculus --query "fundamental theorem" --limit 10
+ghuumi academic --database C:\references\academic.sqlite list --topic mathematics
+ghuumi academic --database C:\references\academic.sqlite show SOURCE_ID
 ```
 
-The database defaults to `~/.local/share/kumaru/academic.sqlite`. It is created
+The database defaults to `~/.local/share/ghuumi/academic.sqlite`. It is created
 with its parent folder as needed, preserved across commands, and not overwritten.
 Group flags (`--database`, `--config`) must precede the subcommand.
 No model, GPU or optional package is required.
@@ -32,14 +32,14 @@ peer review, accuracy, access or permission.
 For broader web discovery, configure a Brave Search API subscription:
 
 ```powershell
-$env:KUMARU_ACADEMIC__BRAVE_API_KEY = "YOUR_KEY"
-kumaru academic search number-theory --provider brave --query "textbook university"
+$env:GHUUMI_ACADEMIC__BRAVE_API_KEY = "YOUR_KEY"
+ghuumi academic search number-theory --provider brave --query "textbook university"
 ```
 
 Only query terms go to search providers. Stored text, review evidence and API keys
 are not sent to an inference backend by this subsystem. Do not place secrets in
 search terms. Keys stay in request headers and are never forwarded on redirects.
-`kumaru config` prints configuration secrets, including this key; do not share its
+`ghuumi config` prints configuration secrets, including this key; do not share its
 output unredacted.
 
 OpenAlex (`--provider openalex`) searches a CC0 scholarly index and also records each
@@ -57,7 +57,7 @@ taxonomy, not a claim that every curriculum organizes chapters identically.
 Subchapters are optional and should be used sparingly.
 
 You can search any seed topic and add arbitrary missing subfields or other areas.
-Save a `Topic` JSON file and run `kumaru academic topic FILE.json`:
+Save a `Topic` JSON file and run `ghuumi academic topic FILE.json`:
 
 ```json
 {
@@ -83,7 +83,7 @@ cannot silently credit all of Mathematics.
 
 ## Sources of Sources and access
 
-Add an individual work, website or database using `kumaru academic add FILE.json`.
+Add an individual work, website or database using `ghuumi academic add FILE.json`.
 For a journal index, library, collection or repository that cannot be analyzed
 work by work, use:
 
@@ -124,8 +124,8 @@ never pass it. Responses that Cloudflare (`cf-mitigated: challenge`) or AWS WAF
 with the service named, whatever their status code (usually `403` or `202`).
 
 ```powershell
-kumaru academic list --containers --access paywall
-kumaru academic inspect SOURCE_ID
+ghuumi academic list --containers --access paywall
+ghuumi academic inspect SOURCE_ID
 ```
 
 Inspection stores metadata and access observations, **not page text**. Public
@@ -138,7 +138,7 @@ their Crossref metadata remains available for review and scoring. Containers are
 never full-text collected or scored as if their
 reputation established the truth of all their contents.
 
-Link reviewed relationships with `kumaru academic link FILE.json`:
+Link reviewed relationships with `ghuumi academic link FILE.json`:
 
 ```json
 {
@@ -165,10 +165,10 @@ edition. `open-access` asks an index where a DOI work can be read free, and unde
 which license:
 
 ```powershell
-kumaru academic open-access SOURCE_ID                       # OpenAlex, the default
-kumaru academic open-access SOURCE_ID --provider unpaywall  # needs academic.contact_email
-kumaru academic open-access-batch --topic calculus --limit 20
-kumaru academic search calculus --provider openalex --open-access-only --query "fundamental theorem"
+ghuumi academic open-access SOURCE_ID                       # OpenAlex, the default
+ghuumi academic open-access SOURCE_ID --provider unpaywall  # needs academic.contact_email
+ghuumi academic open-access-batch --topic calculus --limit 20
+ghuumi academic search calculus --provider openalex --open-access-only --query "fundamental theorem"
 ```
 
 The work's `open_access` records the index's status for it, plus the license,
@@ -206,23 +206,23 @@ Providers:
 
 - **OpenAlex** (default) needs no account, and DOI lookups are free. Searches draw on
   a daily budget: without a key, everyone on your network shares a small one, and
-  OpenAlex may briefly refuse anonymous searches under load. Kumaru waits once when
+  OpenAlex may briefly refuse anonymous searches under load. Ghuumi waits once when
   told to retry within 20 seconds. A free key (openalex.org, Settings, API key) gives
   you your own budget. It is sent only in an `Authorization` header, so it never
   appears in the metadata URLs that sources store.
 - **Unpaywall** (the same team and data as OpenAlex; its search was retired) answers
-  DOI lookups and requires your own email address. Kumaru sends the address only to
+  DOI lookups and requires your own email address. Ghuumi sends the address only to
   Unpaywall and stores the request URL without it.
 
 ```powershell
-$env:KUMARU_ACADEMIC__OPENALEX_API_KEY = "YOUR_KEY"
-$env:KUMARU_ACADEMIC__CONTACT_EMAIL = "you@your-university.edu"
+$env:GHUUMI_ACADEMIC__OPENALEX_API_KEY = "YOUR_KEY"
+$env:GHUUMI_ACADEMIC__CONTACT_EMAIL = "you@your-university.edu"
 ```
 
 Batches check DOI works never checked first, then the least recently checked, up to
 20 per run. They skip containers and sources that are themselves free copies. A rate
 limit or outage stops the batch and reports it in `stopped`, rather than failing
-every remaining work. `kumaru config` prints both settings; redact them before
+every remaining work. `ghuumi config` prints both settings; redact them before
 sharing its output.
 
 ## Human review and permission
@@ -239,7 +239,7 @@ collection. A subscription or personal account alone is not necessarily reuse
 permission. Paid sources can be catalogued and scored from authorized evidence
 even when their text remains unavailable to this application.
 
-Save a `Review` JSON and run `kumaru academic review SOURCE_ID FILE.json`.
+Save a `Review` JSON and run `ghuumi academic review SOURCE_ID FILE.json`.
 The following is a **shape example**, not evidence or permission for a real work.
 Replace URLs and notes with your actual verified findings:
 
@@ -358,23 +358,23 @@ pages keep total words but get no per-topic length credit until a future
 section-level implementation can measure it honestly. Bulk text never adds more
 than two usefulness points. Scores must not be used as automatic training approval.
 
-## Collect and integrate with Kumaru learning
+## Collect and integrate with Ghuumi learning
 
 ```powershell
-kumaru academic collect SOURCE_ID
-kumaru academic export SOURCE_ID --output C:\references\calculus.txt
-kumaru learn Calculus --version reviewed --source C:\references\calculus.txt -o C:\references\calculus.json
+ghuumi academic collect SOURCE_ID
+ghuumi academic export SOURCE_ID --output C:\references\calculus.txt
+ghuumi learn Calculus --version reviewed --source C:\references\calculus.txt -o C:\references\calculus.json
 ```
 
 Only reviewed topic coverage, verified human origin and explicit text permission
 permit collection. Export creates a **new** UTF-8 file and never overwrites.
 It contains the text, source URL, final retrieval URL, collection time,
 content hash, topic tags, scores and an untrusted-reference notice.
-Export multiple sources into a documentation folder and use `kumaru learn`
+Export multiple sources into a documentation folder and use `ghuumi learn`
 on that folder for existing BM25 retrieval. Import/export is explicit; unknown
 discoveries never automatically enter chat context or training data.
 
-Retrieval supports HTML and plain text, strips markup using Kumaru's existing
+Retrieval supports HTML and plain text, strips markup using Ghuumi's existing
 documentation converter, and executes no scripts. PDF, book files, scanned pages,
 JavaScript-only sites and gated full text remain metadata-only. Each response is
 bounded to 2 MB, with 20-second HTTP timeouts, public HTTP(S) only, DNS validation
@@ -388,7 +388,7 @@ cataloguing/reviewing the destination so permissions are not transferred silentl
 
 Robots rules are honored at each page/redirect, matched as RFC 9309 specifies: the
 longest matching rule wins (`Allow` on a tie), `*` and a final `$` are patterns, and
-a group naming `KumaruAcademic` replaces the `*` group. Requests are paced by host (at
+a group naming `GhuumiAcademic` replaces the `*` group. Requests are paced by host (at
 least one second, including declared crawl delays/rates). Missing robots (404)
 allows access; policy failures, including a challenge on robots.txt itself, fail
 closed. `collect` and `inspect` never follow page links, and nothing
@@ -406,17 +406,17 @@ not fictional references masquerading as discovered works.
 
 A coding agent answers best from the documentation of the exact language, library
 and version you use. That documentation spans many pages, so `collect-site` saves a
-whole reviewed documentation folder for `kumaru learn`:
+whole reviewed documentation folder for `ghuumi learn`:
 
 ```powershell
 # One-time: a topic for it (any area works; this is an example)
 '{"id": "python", "name": "Python", "level": "area"}' | Set-Content python-topic.json
-kumaru academic topic python-topic.json
+ghuumi academic topic python-topic.json
 
-kumaru academic add docs-source.json      # {"url": "https://docs.python.org/3.12/library/", "title": "Python 3.12 library reference", "topic_ids": ["python"]}
-kumaru academic review SOURCE_ID review.json   # human origin + text permission evidence (the docs' license) + topics
-kumaru academic collect-site SOURCE_ID -o C:\references\python-3.12 --max-pages 300
-kumaru learn Python --version 3.12 --source C:\references\python-3.12 -o C:\references\python-3.12.sqlite
+ghuumi academic add docs-source.json      # {"url": "https://docs.python.org/3.12/library/", "title": "Python 3.12 library reference", "topic_ids": ["python"]}
+ghuumi academic review SOURCE_ID review.json   # human origin + text permission evidence (the docs' license) + topics
+ghuumi academic collect-site SOURCE_ID -o C:\references\python-3.12 --max-pages 300
+ghuumi learn Python --version 3.12 --source C:\references\python-3.12 -o C:\references\python-3.12.sqlite
 ```
 
 Then add the index to `agent.knowledge_indexes` (for example in `configs/coder.yaml`).
@@ -433,7 +433,7 @@ Then add the index to `agent.knowledge_indexes` (for example in `configs/coder.y
   Pages that are blocked, gated, empty, `noindex`, duplicates or AI-disclosing are
   skipped with a reason; `nofollow` pages are saved but their links are not followed.
 - **Output** is a new or empty folder of the original HTML/text, named after the
-  URL paths, plus `_kumaru_site.json` with the untrusted-reference notice and each
+  URL paths, plus `_ghuumi_site.json` with the untrusted-reference notice and each
   page's URL, hash and time. Existing files are never overwritten. A network outage
   stops the crawl with HTTP 503 and leaves a manifest marked `complete: false`.
 - `--max-pages` (default 100, at most 1000) counts requests. `complete: false` with
@@ -452,9 +452,9 @@ Fast, model-free helpers decide what to look at first. They never review or appr
 anything, and their numbers are orderings, not legitimacy scores.
 
 ```powershell
-kumaru academic rank calculus --query "chain rule" --limit 20   # review queue, best first
-kumaru academic suggest-queries calculus                          # terms to search next
-kumaru academic search calculus --query "riemann sums"            # ...then search one
+ghuumi academic rank calculus --query "chain rule" --limit 20   # review queue, best first
+ghuumi academic suggest-queries calculus                          # terms to search next
+ghuumi academic search calculus --query "riemann sums"            # ...then search one
 ```
 
 - `rank` scores a topic's not-yet-reviewed sources: title relevance (BM25 against the
@@ -465,14 +465,14 @@ kumaru academic search calculus --query "riemann sums"            # ...then sear
   better as you review sources and catalogue other topics.
 
 Both run in time linear in the catalogue's title words. See
-[assist.py](howto/src/kumaru/academic/assist.md) for the formulas.
+[assist.py](howto/src/ghuumi/academic/assist.md) for the formulas.
 
 ## HTTP API
 
 ```powershell
-$env:KUMARU_ACADEMIC__ENABLED = "true"
-$env:KUMARU_ACADEMIC__DATABASE = "C:\references\academic.sqlite"
-kumaru serve -c test
+$env:GHUUMI_ACADEMIC__ENABLED = "true"
+$env:GHUUMI_ACADEMIC__DATABASE = "C:\references\academic.sqlite"
+ghuumi serve -c test
 ```
 
 Visit `/docs` and select the `academic` endpoints. All endpoints use the existing
@@ -563,10 +563,10 @@ A source score cannot establish every theorem or assertion inside it. Record
 individual claims and keep their evidence separate:
 
 ```powershell
-kumaru academic claim-add C:\references\claim.json
-kumaru academic claims --source SOURCE_ID --limit 100 --offset 0
-kumaru academic claim-show CLAIM_ID
-kumaru academic claim-review CLAIM_ID C:\references\claim-review.json
+ghuumi academic claim-add C:\references\claim.json
+ghuumi academic claims --source SOURCE_ID --limit 100 --offset 0
+ghuumi academic claim-show CLAIM_ID
+ghuumi academic claim-review CLAIM_ID C:\references\claim-review.json
 ```
 
 A `ClaimCreate` file looks like:
@@ -637,11 +637,11 @@ factual flaws can limit claims attributed to that source.
 ## Corrections, concerns and retractions
 
 ```powershell
-kumaru academic check-updates SOURCE_ID
-kumaru academic monitor --limit 10
-kumaru academic notices --state reported --limit 100 --offset 0
-kumaru academic notice-add C:\references\notice.json
-kumaru academic notice-review NOTICE_ID C:\references\notice-review.json
+ghuumi academic check-updates SOURCE_ID
+ghuumi academic monitor --limit 10
+ghuumi academic notices --state reported --limit 100 --offset 0
+ghuumi academic notice-add C:\references\notice.json
+ghuumi academic notice-review NOTICE_ID C:\references\notice-review.json
 ```
 
 For DOI works, monitoring uses Crossref's documented `updates:DOI` filter to find
@@ -696,7 +696,7 @@ limited to the first 100 editorial records; a larger result count is explicitly
 reported as partial. Crossref metadata is not comprehensive; no reported notice
 does not prove that no correction exists.
 
-Periodic checks are optional and run only while the Kumaru server is alive:
+Periodic checks are optional and run only while the Ghuumi server is alive:
 
 ```yaml
 academic:

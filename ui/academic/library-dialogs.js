@@ -21,7 +21,7 @@ export async function openDiscoverDialog(trigger) {
             hint: "Scholarly metadata with open-access status and licenses; also catalogues the free copies it lists."
               + (state.openalexKeyConfigured ? "" : " Uses a small keyless budget shared by your network; set academic.openalex_api_key for your own.") },
           { value: "brave", label: "Brave web search", disabled: !state.braveConfigured,
-            hint: state.braveConfigured ? "Broader web results." : "Unavailable: academic.brave_api_key is not set in the Kumaru configuration." },
+            hint: state.braveConfigured ? "Broader web results." : "Unavailable: academic.brave_api_key is not set in the Ghuumi configuration." },
         ],
       });
       const freeOnly = checkField({

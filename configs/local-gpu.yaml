@@ -14,7 +14,7 @@
 # KV cache is small enough to afford a 16k window here. On an older model with
 # full multi-head attention the same window would cost ~6 GB.
 #
-#   kumaru serve -c local-gpu
+#   ghuumi serve -c local-gpu
 
 backend:
   name: transformers

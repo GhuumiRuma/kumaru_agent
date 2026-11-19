@@ -19,16 +19,16 @@ from pathlib import Path
 
 import pytest
 
-from kumaru.core.errors import KumaruError
-from kumaru.eval.benchmarks import codeexec, multipl_e
-from kumaru.eval.benchmarks.codeexec import (
+from ghuumi.core.errors import GhuumiError
+from ghuumi.eval.benchmarks import codeexec, multipl_e
+from ghuumi.eval.benchmarks.codeexec import (
     EARLY_EXIT_NOTE,
     TAIL_BYTES,
     Program,
     Step,
     ToolchainMissing,
 )
-from kumaru.eval.benchmarks.humaneval import HumanEval
+from ghuumi.eval.benchmarks.humaneval import HumanEval
 
 PYTHON = getattr(sys, "_base_executable", None) or sys.executable
 
@@ -76,7 +76,7 @@ def test_a_failed_compile_step_is_a_compile_error_and_nothing_after_it_runs(scra
 
 def test_a_failed_setup_step_means_the_sandbox_is_broken() -> None:
     program = Program({}, (Step((PYTHON, "-c", "raise SystemExit(1)"), 30, "setup"),), "marker")
-    with pytest.raises(KumaruError, match="setup step"):
+    with pytest.raises(GhuumiError, match="setup step"):
         codeexec.run(program)
 
 
@@ -100,24 +100,24 @@ def test_a_timeout_kills_every_process_the_program_started(scratch_dir: Path) ->
 def test_secrets_are_withheld_and_temp_files_land_in_a_folder_that_is_removed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("KUMARU_TEST_SECRET", "s3cret")
-    monkeypatch.setenv("KUMARU_TEST_KEPT", "kept")
+    monkeypatch.setenv("GHUUMI_TEST_SECRET", "s3cret")
+    monkeypatch.setenv("GHUUMI_TEST_KEPT", "kept")
     marker = codeexec.new_marker()
     code = (
         "import os, tempfile\n"
-        "assert 'KUMARU_TEST_SECRET' not in os.environ\n"
-        "assert os.environ['KUMARU_TEST_KEPT'] == 'kept'\n"
-        "assert os.environ['KUMARU_TEST_SET'] == 'set'\n"
+        "assert 'GHUUMI_TEST_SECRET' not in os.environ\n"
+        "assert os.environ['GHUUMI_TEST_KEPT'] == 'kept'\n"
+        "assert os.environ['GHUUMI_TEST_SET'] == 'set'\n"
         "assert os.path.samefile(tempfile.gettempdir(), os.getcwd())\n"
         "print(os.getcwd(), flush=True)\n" + finish(marker)
     )
     program = python(
-        code, marker, env={"KUMARU_TEST_SET": "set"}, keep_env=frozenset({"KUMARU_TEST_KEPT"})
+        code, marker, env={"GHUUMI_TEST_SET": "set"}, keep_env=frozenset({"GHUUMI_TEST_KEPT"})
     )
     outcome = codeexec.run(program)
     assert outcome.passed, outcome.stderr
     workdir = Path(outcome.stdout.splitlines()[0].strip())
-    assert workdir.name.startswith("kumaru-code-")
+    assert workdir.name.startswith("ghuumi-code-")
     assert not workdir.exists()
 
 
@@ -136,7 +136,7 @@ def test_only_the_tail_of_the_output_is_kept_and_the_marker_is_seen_across_reads
 
 @pytest.mark.skipif(sys.platform != "win32", reason="the memory cap is a Windows job-object limit")
 def test_a_program_cannot_use_more_memory_than_the_cap(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("KUMARU_CODE_MEMORY_MB", "256")
+    monkeypatch.setenv("GHUUMI_CODE_MEMORY_MB", "256")
     marker = codeexec.new_marker()
     outcome = codeexec.run(python("block = bytearray(1024 * 1024 * 1024)\n" + finish(marker), marker))
     assert outcome.status == "failed"
@@ -160,7 +160,7 @@ def test_a_program_cannot_run_more_processes_at_once_than_the_cap(monkeypatch: p
     assert "refused after 2 1816" in outcome.stdout
 
 
-def test_a_program_kumaru_cannot_put_in_a_job_is_not_started(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_program_ghuumi_cannot_put_in_a_job_is_not_started(monkeypatch: pytest.MonkeyPatch) -> None:
     # Outside a job nothing caps its memory, and what it starts can outlive it
     # with its pipes open. Grading stops with an error instead, which the
     # runner records against the question (and retries) rather than as wrong.
@@ -174,7 +174,7 @@ def test_a_program_kumaru_cannot_put_in_a_job_is_not_started(monkeypatch: pytest
     monkeypatch.setattr(codeexec, "_WINDOWS", True)
     monkeypatch.setattr(codeexec, "_Job", NoJob)
     monkeypatch.setattr(codeexec.subprocess, "Popen", popen)
-    with pytest.raises(KumaruError, match="Could not create the Windows job object") as caught:
+    with pytest.raises(GhuumiError, match="Could not create the Windows job object") as caught:
         codeexec.run(python("pass"))
     assert "--sandbox docker" in str(caught.value.hint)
 
@@ -194,7 +194,7 @@ def test_a_program_kumaru_cannot_put_in_a_job_is_not_started(monkeypatch: pytest
 
     monkeypatch.setattr(codeexec, "_Job", Unjoinable)
     monkeypatch.setattr(codeexec.subprocess, "Popen", lambda *args, **kwargs: Suspended())
-    with pytest.raises(KumaruError, match=r"Could not start .* inside its Windows job object: \[Errno 5\]"):
+    with pytest.raises(GhuumiError, match=r"Could not start .* inside its Windows job object: \[Errno 5\]"):
         codeexec.run(python("pass"))
 
 
@@ -209,9 +209,9 @@ def test_a_local_runs_fingerprint_records_a_memory_cap_other_than_the_default(
     # another run. At the default, runs keep the fingerprints they were made with.
     monkeypatch.setattr(codeexec, "_WINDOWS", True)
     if setting is None:
-        monkeypatch.delenv("KUMARU_CODE_MEMORY_MB", raising=False)
+        monkeypatch.delenv("GHUUMI_CODE_MEMORY_MB", raising=False)
     else:
-        monkeypatch.setenv("KUMARU_CODE_MEMORY_MB", setting)
+        monkeypatch.setenv("GHUUMI_CODE_MEMORY_MB", setting)
     assert HumanEval().fingerprint_extra() == expected
     rust = multipl_e.MultiPLERust()
     rust._toolchain = multipl_e.Toolchain({"rustc": "rustc"}, "rustc 1.0")
@@ -223,7 +223,7 @@ def test_a_local_runs_fingerprint_records_a_memory_cap_other_than_the_default(
 
 
 def test_a_compiler_that_is_not_installed_is_a_missing_toolchain() -> None:
-    program = Program({}, (Step(("kumaru-no-such-compiler", "x.c"), 30, "compile"),), "marker")
+    program = Program({}, (Step(("ghuumi-no-such-compiler", "x.c"), 30, "compile"),), "marker")
     with pytest.raises(ToolchainMissing, match="Could not start"):
         codeexec.run(program)
 
@@ -236,9 +236,9 @@ def test_run_refuses_an_unknown_sandbox_and_a_program_without_steps() -> None:
 
 
 def test_at_most_max_workers_programs_run_at_once(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("KUMARU_CODE_WORKERS", "3")
+    monkeypatch.setenv("GHUUMI_CODE_WORKERS", "3")
     assert codeexec.max_workers() == 3
-    monkeypatch.setenv("KUMARU_CODE_WORKERS", "none")
+    monkeypatch.setenv("GHUUMI_CODE_WORKERS", "none")
     assert 1 <= codeexec.max_workers() <= 4
 
     monkeypatch.setattr(codeexec, "_slots", None)
@@ -277,7 +277,7 @@ def test_find_program_never_runs_a_decoy_from_the_current_folder(
     scratch_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # On Windows shutil.which looks in the current folder first, so a node.cmd
-    # planted where Kumaru was started from would run as Node.js.
+    # planted where Ghuumi was started from would run as Node.js.
     here = scratch_dir / "here"
     plant(here, "node")
     plant(here / "rel", "node")
@@ -296,7 +296,7 @@ def test_find_program_never_runs_a_decoy_from_the_current_folder(
     found = codeexec.find_program("node")
     assert found is not None and Path(found).is_absolute()
     assert os.path.samefile(found, real)
-    assert codeexec.find_program("kumaru-no-such-program") is None
+    assert codeexec.find_program("ghuumi-no-such-program") is None
     if WINDOWS:
         assert os.path.samefile(codeexec.find_program("node.cmd") or "", real)
 
@@ -323,7 +323,7 @@ def record(token: str, index: int, rc: int, millis: int, marks: int, out: str = 
 
 
 def test_docker_runs_each_program_without_network_privileges_or_a_writable_root() -> None:
-    argv = codeexec.docker_command(DOCKER, "img", "kumaru-x", {"B": "2", "A": "1"}, "echo hi")
+    argv = codeexec.docker_command(DOCKER, "img", "ghuumi-x", {"B": "2", "A": "1"}, "echo hi")
     joined = " ".join(argv)
     for flag in (
         "--network none",
@@ -372,9 +372,9 @@ def test_docker_results_read_back_into_the_outcomes_a_local_run_gives(
 
 
 def test_docker_output_without_every_step_is_an_error() -> None:
-    with pytest.raises(KumaruError, match="printed no results"):
+    with pytest.raises(GhuumiError, match="printed no results"):
         codeexec.parse_docker_output("container noise", "tok", TWO_STEPS)
-    with pytest.raises(KumaruError, match="stopped after step 1 of 2"):
+    with pytest.raises(GhuumiError, match="stopped after step 1 of 2"):
         codeexec.parse_docker_output(record("tok", 0, 0, 900, 0), "tok", TWO_STEPS)
 
 
@@ -384,7 +384,7 @@ def fake_docker(monkeypatch: pytest.MonkeyPatch, reply) -> list[list[str]]:
 
     def run(argv, input=None, **kwargs):
         calls.append(argv)
-        token = re.search(r'echo "(kumaru-[0-9a-f]+) stderr"', argv[-1])
+        token = re.search(r'echo "(ghuumi-[0-9a-f]+) stderr"', argv[-1])
         code, stdout = reply(argv, input, token.group(1) if token else "")
         return subprocess.CompletedProcess(argv, code, stdout.encode(), b"docker said no")
 
@@ -396,7 +396,7 @@ def fake_docker(monkeypatch: pytest.MonkeyPatch, reply) -> list[list[str]]:
 def test_a_docker_run_sends_the_files_as_a_tar_and_reads_the_reports(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("KUMARU_SANDBOX_IMAGE", "my-image")
+    monkeypatch.setenv("GHUUMI_SANDBOX_IMAGE", "my-image")
     sent: dict[str, str] = {}
 
     def reply(argv, stdin, token):
@@ -425,7 +425,7 @@ def test_a_container_killed_for_memory_fails_the_answer_and_a_broken_docker_rais
     assert codeexec.run(TWO_STEPS, sandbox="docker").status == "failed"
 
     fake_docker(monkeypatch, lambda argv, stdin, token: (125, ""))
-    with pytest.raises(KumaruError, match="exited with 125") as caught:
+    with pytest.raises(GhuumiError, match="exited with 125") as caught:
         codeexec.run(TWO_STEPS, sandbox="docker")
     assert "docker build" in str(caught.value.hint)
 
@@ -448,8 +448,8 @@ def test_a_container_that_never_finishes_is_removed(monkeypatch: pytest.MonkeyPa
 
 
 def test_check_docker_says_how_to_get_docker_and_the_image(monkeypatch: pytest.MonkeyPatch) -> None:
-    build = "docker build -t kumaru-sandbox -f docker/sandbox/Dockerfile ."
-    monkeypatch.delenv("KUMARU_SANDBOX_IMAGE", raising=False)
+    build = "docker build -t ghuumi-sandbox -f docker/sandbox/Dockerfile ."
+    monkeypatch.delenv("GHUUMI_SANDBOX_IMAGE", raising=False)
     calls: list[list[str]] = []
     answer = {"code": 1, "out": ""}
 
@@ -467,7 +467,7 @@ def test_check_docker_says_how_to_get_docker_and_the_image(monkeypatch: pytest.M
     assert calls == []  # never a bare "docker", which Windows looks for in the current folder first
 
     find_docker(monkeypatch)
-    with pytest.raises(ToolchainMissing, match="no image 'kumaru-sandbox'") as caught:
+    with pytest.raises(ToolchainMissing, match="no image 'ghuumi-sandbox'") as caught:
         codeexec.check_docker()
     assert build in str(caught.value.hint)
 
@@ -481,7 +481,7 @@ def test_check_docker_wakes_a_paused_docker_desktop_before_calling_the_image_mis
 ) -> None:
     # Docker Desktop's Resource Saver answers a lookup by name with "No such
     # image" until a container starts; a missing image can't start one either.
-    monkeypatch.delenv("KUMARU_SANDBOX_IMAGE", raising=False)
+    monkeypatch.delenv("GHUUMI_SANDBOX_IMAGE", raising=False)
     find_docker(monkeypatch)
     calls: list[list[str]] = []
     state = {"awake": False, "image": True}
@@ -490,7 +490,7 @@ def test_check_docker_wakes_a_paused_docker_desktop_before_calling_the_image_mis
         calls.append(argv)
         if argv[1] == "run":
             if not state["image"]:
-                return subprocess.CompletedProcess(argv, 125, "", "No such image: kumaru-sandbox:latest")
+                return subprocess.CompletedProcess(argv, 125, "", "No such image: ghuumi-sandbox:latest")
             state["awake"] = True
             return subprocess.CompletedProcess(argv, 0, "", "")
         if state["awake"]:
@@ -499,8 +499,8 @@ def test_check_docker_wakes_a_paused_docker_desktop_before_calling_the_image_mis
 
     monkeypatch.setattr(codeexec.subprocess, "run", run)
     assert codeexec.check_docker() == "sha256:abc"
-    inspect = [DOCKER, "image", "inspect", "--format", "{{.Id}}", "kumaru-sandbox"]
-    wake = [DOCKER, "run", "--rm", "--pull", "never", "--network", "none", "--entrypoint", "/bin/true", "kumaru-sandbox"]
+    inspect = [DOCKER, "image", "inspect", "--format", "{{.Id}}", "ghuumi-sandbox"]
+    wake = [DOCKER, "run", "--rm", "--pull", "never", "--network", "none", "--entrypoint", "/bin/true", "ghuumi-sandbox"]
     assert calls == [inspect, wake, inspect]
 
     calls.clear()
@@ -509,6 +509,6 @@ def test_check_docker_wakes_a_paused_docker_desktop_before_calling_the_image_mis
 
     state.update(awake=False, image=False)
     calls.clear()
-    with pytest.raises(ToolchainMissing, match="no image 'kumaru-sandbox'.*kumaru-sandbox:latest"):
+    with pytest.raises(ToolchainMissing, match="no image 'ghuumi-sandbox'.*ghuumi-sandbox:latest"):
         codeexec.check_docker()
     assert calls == [inspect, wake]

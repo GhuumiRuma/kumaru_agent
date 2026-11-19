@@ -12,9 +12,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from kumaru.cli import _build_overrides, app, main
-from kumaru.eval.benchmarks import runner
-from kumaru.eval.benchmarks.golden import GoldenSet
+from ghuumi.cli import _build_overrides, app, main
+from ghuumi.eval.benchmarks import runner
+from ghuumi.eval.benchmarks.golden import GoldenSet
 
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 WIDE = {"COLUMNS": "200"}  # rich wraps at the terminal width; keep table rows on one line
@@ -22,7 +22,7 @@ ECHO_THOUGHT = (
     "The user asked: hello. Echo cannot reason; this text only exercises the reasoning channel."
 )
 MINI_SET = [
-    {"id": "say", "prompt": "Say kumaru.", "grader": "contains", "answer": "kumaru", "tags": ["easy"]},
+    {"id": "say", "prompt": "Say ghuumi.", "grader": "contains", "answer": "ghuumi", "tags": ["easy"]},
     {
         "id": "four",
         "prompt": 'What is 2 + 2? Finish with "Answer: <number>".',
@@ -54,7 +54,7 @@ def echo_profile(scratch_dir: Path) -> Path:
 
 
 def run_cli(*args: str) -> str:
-    """Run `kumaru <args>` in-process; return its output without colour codes."""
+    """Run `ghuumi <args>` in-process; return its output without colour codes."""
     result = CliRunner().invoke(app, list(args), env=WIDE)
     if result.exit_code != 0:
         raise AssertionError(f"exit code {result.exit_code}:\n{result.output}") from result.exception
@@ -156,7 +156,7 @@ def test_errors_become_a_message_a_hint_and_exit_code_1(
     echo_profile: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     # HumanEval runs model-written code, so it must be opted into explicitly.
-    monkeypatch.setattr(sys, "argv", ["kumaru", "bench", "run", "humaneval", "-c", str(echo_profile)])
+    monkeypatch.setattr(sys, "argv", ["ghuumi", "bench", "run", "humaneval", "-c", str(echo_profile)])
     monkeypatch.setenv("COLUMNS", "200")
     with pytest.raises(SystemExit) as exit_info:
         main()
@@ -169,7 +169,7 @@ def test_errors_become_a_message_a_hint_and_exit_code_1(
 def test_an_unknown_sandbox_is_refused(
     echo_profile: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    argv = ["kumaru", "bench", "run", "multipl_e", "--allow-code-exec", "--sandbox", "vm", "-c", str(echo_profile)]
+    argv = ["ghuumi", "bench", "run", "multipl_e", "--allow-code-exec", "--sandbox", "vm", "-c", str(echo_profile)]
     monkeypatch.setattr(sys, "argv", argv)
     monkeypatch.setenv("COLUMNS", "200")
     with pytest.raises(SystemExit) as exit_info:

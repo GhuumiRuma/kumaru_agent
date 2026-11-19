@@ -6,16 +6,16 @@ from pathlib import Path
 
 import pytest
 
-from kumaru.core.errors import ConfigError
-from kumaru.core.registry import BENCHMARKS
-from kumaru.core.types import Role
-from kumaru.eval.benchmarks import codeexec, gsm8k
-from kumaru.eval.benchmarks.base import BenchItem, select_items
-from kumaru.eval.benchmarks.codeexec import Outcome
-from kumaru.eval.benchmarks.golden import DEFAULT_PATH, GRADERS, GoldenSet, grade_answer
-from kumaru.eval.benchmarks.gsm8k import GSM8K, gold_answer
-from kumaru.eval.benchmarks.humaneval import GUARD, HumanEval, assemble_program, run_program
-from kumaru.eval.benchmarks.mmlu_pro import MMLUPro, clean_options
+from ghuumi.core.errors import ConfigError
+from ghuumi.core.registry import BENCHMARKS
+from ghuumi.core.types import Role
+from ghuumi.eval.benchmarks import codeexec, gsm8k
+from ghuumi.eval.benchmarks.base import BenchItem, select_items
+from ghuumi.eval.benchmarks.codeexec import Outcome
+from ghuumi.eval.benchmarks.golden import DEFAULT_PATH, GRADERS, GoldenSet, grade_answer
+from ghuumi.eval.benchmarks.gsm8k import GSM8K, gold_answer
+from ghuumi.eval.benchmarks.humaneval import GUARD, HumanEval, assemble_program, run_program
+from ghuumi.eval.benchmarks.mmlu_pro import MMLUPro, clean_options
 
 
 def make_items(sizes: dict[str, int]) -> list[BenchItem]:
@@ -343,8 +343,8 @@ class TestHumanEval:
         assert "TypeError" in stderr
 
     def test_secrets_in_the_environment_are_withheld(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("KUMARU_TEST_SECRET", "s3cret")
-        program = "import os\nassert 'KUMARU_TEST_SECRET' not in os.environ\n"
+        monkeypatch.setenv("GHUUMI_TEST_SECRET", "s3cret")
+        program = "import os\nassert 'GHUUMI_TEST_SECRET' not in os.environ\n"
         assert run_program(program, timeout_s=30) == ("passed", "")
 
     def test_grade_reports_the_status(self) -> None:

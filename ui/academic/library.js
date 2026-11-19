@@ -166,7 +166,7 @@ function renderMessage(error) {
   const needsKey = error instanceof ApiError && error.status === 401;
   clear(hosts.list, emptyState({
     tone: "error",
-    title: needsKey ? "API key needed" : error.unreachable ? "Kumaru is not reachable" : "The library could not be loaded",
+    title: needsKey ? "API key needed" : error.unreachable ? "Ghuumi is not reachable" : "The library could not be loaded",
     body: error.message,
     actions: needsKey ? [button("Enter API key", { variant: "primary", onclick: (event) => openConnectionDialog(event.currentTarget) })]
       : [button("Try again", { variant: "primary", onclick: () => reload() })],

@@ -11,10 +11,10 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from typer.testing import CliRunner
 
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.models import Evidence, Relationship, Review, Source
-from kumaru.academic.monitor import UpdateMonitor, check_batch, check_updates
-from kumaru.academic.reliability import (
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.models import Evidence, Relationship, Review, Source
+from ghuumi.academic.monitor import UpdateMonitor, check_batch, check_updates
+from ghuumi.academic.reliability import (
     ClaimCreate,
     ClaimEvidence,
     ClaimReview,
@@ -22,11 +22,11 @@ from kumaru.academic.reliability import (
     NoticeCreate,
     NoticeReview,
 )
-from kumaru.academic.web import FetchError, PublicWeb, collect_source
-from kumaru.cli import app
-from kumaru.core.config import AcademicConfig
-from kumaru.core.errors import RequestError
-from kumaru.server.app import create_app
+from ghuumi.academic.web import FetchError, PublicWeb, collect_source
+from ghuumi.cli import app
+from ghuumi.core.config import AcademicConfig
+from ghuumi.core.errors import RequestError
+from ghuumi.server.app import create_app
 
 
 @pytest.fixture
@@ -391,7 +391,7 @@ def test_no_pagination_limit_hides_pending_notices(catalog):
 
 
 def test_due_batch_prefers_unchecked_sources_and_reports_failures(catalog, monkeypatch):
-    from kumaru.academic import monitor
+    from ghuumi.academic import monitor
 
     first = add_source(catalog)
     second = add_source(catalog, "second", "10.1234/second")
@@ -404,7 +404,7 @@ def test_due_batch_prefers_unchecked_sources_and_reports_failures(catalog, monke
 
 @pytest.mark.asyncio
 async def test_periodic_monitor_starts_stops_and_releases_admission(catalog, monkeypatch):
-    from kumaru.academic import monitor
+    from ghuumi.academic import monitor
 
     calls = []
     monkeypatch.setattr(monitor, "check_batch", lambda *args: calls.append(1) or {"results": [], "errors": []})

@@ -2,13 +2,13 @@
 
 import pytest
 
-from kumaru.agent.chat import ChatAgent
-from kumaru.agent.memory import DropOldestPolicy, NoTrimPolicy, SlidingWindowPolicy, get_policy
-from kumaru.agent.prompt import QUALITY_DIRECTIVES, build_system_prompt, ensure_system_message
-from kumaru.backends.echo import EchoBackend
-from kumaru.core.config import AgentConfig, BackendConfig, KumaruConfig, ThinkingModeConfig
-from kumaru.core.errors import ContextLengthExceededError
-from kumaru.core.types import GenerationParams, Message, Role
+from ghuumi.agent.chat import ChatAgent
+from ghuumi.agent.memory import DropOldestPolicy, NoTrimPolicy, SlidingWindowPolicy, get_policy
+from ghuumi.agent.prompt import QUALITY_DIRECTIVES, build_system_prompt, ensure_system_message
+from ghuumi.backends.echo import EchoBackend
+from ghuumi.core.config import AgentConfig, BackendConfig, GhuumiConfig, ThinkingModeConfig
+from ghuumi.core.errors import ContextLengthExceededError
+from ghuumi.core.types import GenerationParams, Message, Role
 
 
 def count_words(messages: list[Message]) -> int:
@@ -98,7 +98,7 @@ class TestMemoryPolicies:
 
 class TestChatAgent:
     def test_prepare_is_pure_and_respects_budget(self, loaded_echo_backend) -> None:
-        cfg = KumaruConfig(
+        cfg = GhuumiConfig(
             backend=BackendConfig(name="echo", model="echo", max_context_length=256, extra={"delay_s": 0}),
             agent=AgentConfig(max_history_tokens=260, memory_policy="drop_oldest"),
         )
@@ -130,7 +130,7 @@ class TestThinkingParams:
 
     @staticmethod
     def make_agent(thinking: bool | None = None) -> ChatAgent:
-        cfg = KumaruConfig(
+        cfg = GhuumiConfig(
             backend=BackendConfig(name="echo", model="echo", extra={"delay_s": 0}),
             generation=GenerationParams(max_tokens=100, temperature=0.7, thinking=thinking),
             thinking_mode=ThinkingModeConfig(max_tokens=4000, temperature=1.0, thinking_budget=1000),
@@ -181,7 +181,7 @@ class TestThinkingParams:
 
     def test_a_huge_answer_cap_still_leaves_half_the_window_for_history(self, monkeypatch) -> None:
         # qwen36 at --context 32768: reserving its 32k cap in full would leave 512 tokens.
-        cfg = KumaruConfig(
+        cfg = GhuumiConfig(
             backend=BackendConfig(name="echo", model="echo", max_context_length=32768, extra={"delay_s": 0}),
             agent=AgentConfig(max_history_tokens=65536),
         )
@@ -196,7 +196,7 @@ class TestThinkingParams:
 
     @pytest.mark.asyncio
     async def test_the_reply_is_capped_to_the_room_the_prompt_leaves(self) -> None:
-        cfg = KumaruConfig(
+        cfg = GhuumiConfig(
             backend=BackendConfig(name="echo", model="echo", max_context_length=2048, extra={"delay_s": 0}),
             generation=GenerationParams(max_tokens=2048),
         )

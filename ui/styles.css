@@ -1,4 +1,4 @@
-/* Kumaru UI — hand-written CSS, no framework, no build step.
+/* Ghuumi UI — hand-written CSS, no framework, no build step.
    Rationale: the entire UI is three static files the server can hand out
    directly. No npm, no bundler, no version drift. You can read every rule that
    affects what you see, and editing it requires nothing but a refresh. */

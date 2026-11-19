@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from kumaru.eval.benchmarks.extract import (
+from ghuumi.eval.benchmarks.extract import (
     defines_python,
     extract_choice,
     extract_code,

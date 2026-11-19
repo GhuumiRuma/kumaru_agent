@@ -16,7 +16,7 @@
 - the static shell in `ui\index.html`: sidebar panels, controls, the composer, the Think pill;
 - the markup `ui\app.js` builds at runtime: message rows (`messageEl()`), markdown (`renderMarkdown()`), thinking panels (`thinkingHtml()` and the live panel in `send()`), the streaming cursor, notes and the stats line.
 
-`index.html` loads it render-blocking from `<head>` (line 7). The server serves it from the repo's `ui\` folder at `/static/styles.css`, with the type pinned to `text/css` (`src\kumaru\server\app.py:43-47`), because browsers ignore a stylesheet served as `text/plain`.
+`index.html` loads it render-blocking from `<head>` (line 7). The server serves it from the repo's `ui\` folder at `/static/styles.css`, with the type pinned to `text/css` (`src\ghuumi\server\app.py:43-47`), because browsers ignore a stylesheet served as `text/plain`.
 
 What v0.2 changed (`git --no-pager diff ui\styles.css`):
 
@@ -271,5 +271,5 @@ Three animations ignore the user's motion preference: the loading dot (`pulse`, 
 
 - `ui\index.html` — the static elements and classes styled here; see `docs\howto\ui\index.html.md`
 - `ui\app.js` — emits the message, markdown and thinking markup and toggles every state hook; see `docs\howto\ui\app.js.md`
-- `src\kumaru\server\app.py` — serves this file at `/static/styles.css` (226–227) and pins its `text/css` type (43–47)
+- `src\ghuumi\server\app.py` — serves this file at `/static/styles.css` (226–227) and pins its `text/css` type (43–47)
 - `tests\test_server.py` — `test_ui_assets_are_served_with_browser_safe_types` (183) checks that content type

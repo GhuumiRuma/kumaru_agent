@@ -15,7 +15,7 @@ from collections.abc import Callable
 
 import pytest
 
-from kumaru.eval.benchmarks.codeparse import (
+from ghuumi.eval.benchmarks.codeparse import (
     LANGUAGES,
     chunks,
     defines,

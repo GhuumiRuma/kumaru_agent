@@ -125,7 +125,7 @@ function renderAll({ resetScroll = false } = {}) {
   const ctx = context();
   const tab = TABS.includes(state.route.tab) ? state.route.tab : "overview";
   state.route.tab = tab;
-  document.title = `${ctx.source.title} · Academic review · Kumaru`;
+  document.title = `${ctx.source.title} · Academic review · Ghuumi`;
   const panel = el("div", { id: "tab-panel", role: "tabpanel", class: "tab-panel", "aria-labelledby": `tab-${tab}`, tabindex: "0" }, RENDERERS[tab](ctx));
   const scroller = host.parentElement;
   const top = scroller.scrollTop;
@@ -170,7 +170,7 @@ export async function showSource(id, { force = false } = {}) {
 export function showGlance() {
   requests.next();
   current = null;
-  document.title = "Academic review · Kumaru";
+  document.title = "Academic review · Ghuumi";
   clear(host, renderGlance());
   applyPendingFocus();
 }

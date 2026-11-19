@@ -14,18 +14,18 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.discovery import discover
-from kumaru.academic.models import Evidence, Relationship, Review, Source
-from kumaru.academic.reliability import (
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.discovery import discover
+from ghuumi.academic.models import Evidence, Relationship, Review, Source
+from ghuumi.academic.reliability import (
     ClaimCreate,
     ClaimEvidence,
     ClaimReview,
     NoticeCreate,
     NoticeReview,
 )
-from kumaru.academic.scoring import USEFULNESS_POINTS, WEIGHTS, score_source
-from kumaru.academic.web import (
+from ghuumi.academic.scoring import USEFULNESS_POINTS, WEIGHTS, score_source
+from ghuumi.academic.web import (
     AccessBlocked,
     FetchError,
     Page,
@@ -35,10 +35,10 @@ from kumaru.academic.web import (
     inspect_source,
     public_addresses,
 )
-from kumaru.core.config import AcademicConfig
-from kumaru.core.errors import RequestError
-from kumaru.server import routes_academic
-from kumaru.server.app import create_app
+from ghuumi.core.config import AcademicConfig
+from ghuumi.core.errors import RequestError
+from ghuumi.server import routes_academic
+from ghuumi.server.app import create_app
 
 UI_DIR = Path(__file__).resolve().parents[1] / "ui"
 LIBRARY_ITEM_KEYS = {
@@ -297,7 +297,7 @@ def test_library_search_is_a_literal_case_insensitive_substring(catalog):
 def test_library_sort_orders_break_ties_by_id(catalog, monkeypatch):
     ticks = itertools.count(1)
     monkeypatch.setattr(
-        "kumaru.academic.catalog.now", lambda: f"2026-01-01T00:00:00.{next(ticks):06d}+00:00",
+        "ghuumi.academic.catalog.now", lambda: f"2026-01-01T00:00:00.{next(ticks):06d}+00:00",
     )
     banana = add(catalog, "banana", title="banana", citation_count=5, published_year=1900)
     apple = add(catalog, "apple", title="Apple", citation_count=None, published_year=None)
@@ -705,7 +705,7 @@ def test_dns_failure_is_transient(monkeypatch):
     (httpx.DecodingError("bad gzip"), False),
 ])
 def test_only_transport_errors_are_transient(monkeypatch, error, transient):
-    from kumaru.academic import web as module
+    from ghuumi.academic import web as module
 
     monkeypatch.setattr(module, "public_addresses", lambda *args: ["93.184.216.34"])
 

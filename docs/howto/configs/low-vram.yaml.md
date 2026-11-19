@@ -33,7 +33,7 @@ Do not use it without the quantization extras. Do not expect identical quality t
 
 ## How to use it
 
-Prerequisites, in the Kumaru folder. The profile runs on the `transformers` backend, so it needs `-Gpu` as well as `-Quant`:
+Prerequisites, in the Ghuumi folder. The profile runs on the `transformers` backend, so it needs `-Gpu` as well as `-Quant`:
 
 ```powershell
 .\scripts\setup.ps1 -Gpu -Quant    # elsewhere: pip install -e ".[torch,quant]"
@@ -42,19 +42,19 @@ Prerequisites, in the Kumaru folder. The profile runs on the `transformers` back
 Run:
 
 ```powershell
-kumaru serve -c low-vram
+ghuumi serve -c low-vram
 ```
 
 Run a terminal prompt:
 
 ```powershell
-kumaru chat -c low-vram -q "What does 4-bit quantization cost?"
+ghuumi chat -c low-vram -q "What does 4-bit quantization cost?"
 ```
 
 Inspect resolved settings:
 
 ```powershell
-kumaru config -c low-vram
+ghuumi config -c low-vram
 ```
 
 ## Tuning it
@@ -69,7 +69,7 @@ kumaru config -c low-vram
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Optional dependency 'bitsandbytes' is not installed.` when the model loads | The `quant` extra is missing; Kumaru checks for it before the weights load. | `.\scripts\setup.ps1 -Quant`, or `pip install -e ".[quant]"` in the Kumaru folder (the hint prints this). |
+| `Optional dependency 'bitsandbytes' is not installed.` when the model loads | The `quant` extra is missing; Ghuumi checks for it before the weights load. | `.\scripts\setup.ps1 -Quant`, or `pip install -e ".[quant]"` in the Ghuumi folder (the hint prints this). |
 | OOM despite 4-bit loading | KV cache, activations, or concurrency exceed VRAM. | Lower context and concurrency. |
 | Outputs are slightly worse than bf16 | NF4 quantization quality trade-off. | Use `local-gpu` if hardware permits. |
 | Slow first run | Hugging Face weights are downloading. | Wait for cache population; subsequent starts are faster. |
@@ -79,5 +79,5 @@ kumaru config -c low-vram
 
 - `configs/local-gpu.yaml` — bf16 profile for 24 GB GPUs.
 - `configs/cpu-only.yaml` — GGUF CPU profile.
-- `src/kumaru/core/config.py` — authoritative field schema.
+- `src/ghuumi/core/config.py` — authoritative field schema.
 

@@ -11,7 +11,7 @@
 # the best-understood trade-off available, which is why it is the default here.
 #
 # Requires:  .\scripts\setup.ps1 -Gpu -Quant   (elsewhere: pip install -e ".[torch,quant]")
-# Run:       kumaru serve -c low-vram
+# Run:       ghuumi serve -c low-vram
 
 backend:
   name: transformers

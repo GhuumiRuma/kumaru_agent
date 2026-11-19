@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 #
-# Kumaru's code sandbox: the image `kumaru bench run --sandbox docker` grades
+# Ghuumi's code sandbox: the image `ghuumi bench run --sandbox docker` grades
 # HumanEval and MultiPL-E in.
 #
 # STATUS: built and checked on 2026-10-23, with Docker Desktop 4.39.0 (engine
@@ -15,25 +15,25 @@
 #
 #   python scripts/check_graders.py humaneval multipl_e --sandbox docker --workers 2
 #
-# Build it once, from the Kumaru folder:
+# Build it once, from the Ghuumi folder:
 #
-#   docker build -t kumaru-sandbox -f docker/sandbox/Dockerfile .
+#   docker build -t ghuumi-sandbox -f docker/sandbox/Dockerfile .
 #
 # then grade inside it:
 #
-#   kumaru bench run multipl_e -c <config> --allow-code-exec --sandbox docker
+#   ghuumi bench run multipl_e -c <config> --allow-code-exec --sandbox docker
 #
 # Each program runs in its own container, started by
-# src/kumaru/eval/benchmarks/codeexec.py (docker_command): no network, a
+# src/ghuumi/eval/benchmarks/codeexec.py (docker_command): no network, a
 # read-only root, user nobody (65534), 2 CPUs, 2 GB of memory, 512 processes,
 # and only /work and /tmp writable (in memory). So everything a program needs
 # is installed here, at build time; nothing is downloaded while grading.
-# KUMARU_SANDBOX_IMAGE names another image.
+# GHUUMI_SANDBOX_IMAGE names another image.
 #
 # The tools must be where multipl_e.py (_docker_toolchain) and humaneval.py
 # look: python3, node, dotnet, javac, java, g++, go and rustc on PATH; tsc at
-# /opt/kumaru/typescript/node_modules/typescript/lib/tsc.js; the javatuples
-# jar at /opt/kumaru/javatuples-1.2.jar; a warm Go build cache at /opt/gocache.
+# /opt/ghuumi/typescript/node_modules/typescript/lib/tsc.js; the javatuples
+# jar at /opt/ghuumi/javatuples-1.2.jar; a warm Go build cache at /opt/gocache.
 
 # The base images, pinned by digest: each tag's multi-arch index as its
 # registry listed it on 2026-10-21, so a rebuild gets the same toolchains
@@ -58,7 +58,7 @@ RUN cp -r "$(rustc --print sysroot)" /opt/rust
 
 FROM ${NODE_IMAGE} AS node
 ARG TYPESCRIPT_VERSION
-RUN npm install --prefix /opt/kumaru/typescript --no-audit --no-fund "typescript@${TYPESCRIPT_VERSION}"
+RUN npm install --prefix /opt/ghuumi/typescript --no-audit --no-fund "typescript@${TYPESCRIPT_VERSION}"
 
 # .NET 10 builds MultiPL-E's C# (Ubuntu 24.04, which also has OpenJDK 21).
 FROM ${DOTNET_IMAGE}
@@ -70,12 +70,12 @@ RUN apt-get update \
 COPY --from=go /usr/local/go /usr/local/go
 COPY --from=rust /opt/rust /opt/rust
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /opt/kumaru/typescript /opt/kumaru/typescript
+COPY --from=node /opt/ghuumi/typescript /opt/ghuumi/typescript
 
 # MultiPL-E's Java tests import org.javatuples. Checked against Maven Central's SHA-256.
 ADD --chmod=644 --checksum=sha256:2eda5b19d9820e1cc2f69fcd01639a715a673c11f8507e3d1ed593cf765d5e0a \
     https://repo1.maven.org/maven2/org/javatuples/javatuples/1.2/javatuples-1.2.jar \
-    /opt/kumaru/javatuples-1.2.jar
+    /opt/ghuumi/javatuples-1.2.jar
 
 ENV PATH=/usr/local/go/bin:/opt/rust/bin:$PATH \
     GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-buildvcs=false CGO_ENABLED=0 GOENV=off \
@@ -107,10 +107,10 @@ RUN cd /tmp/warm \
  && GOCACHE=/opt/gocache go test -c -o warm.test warm_test.go \
  && ./warm.test \
  && cd / && rm -rf /tmp/warm \
- && chmod -R a+rX /opt/gocache /opt/kumaru /opt/rust \
+ && chmod -R a+rX /opt/gocache /opt/ghuumi /opt/rust \
  && python3 --version && node --version && dotnet --version && javac -version \
  && g++ --version && go version && rustc --version \
- && node /opt/kumaru/typescript/node_modules/typescript/lib/tsc.js --version
+ && node /opt/ghuumi/typescript/node_modules/typescript/lib/tsc.js --version
 
 WORKDIR /work
 USER 65534:65534

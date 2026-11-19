@@ -150,7 +150,7 @@ export function renderOverviewTab(ctx) {
       el("h3", { class: "tab-title", id: "scores-title" }, "Scores by subject"),
       el("p", { class: "quiet" }, "Explainable, evidence-weighted estimates, not probabilities. A source’s reputation is not proof of any claim inside it."),
       container
-        ? el("p", { class: "callout" }, icon("info"), el("span", {}, "A container’s reputation does not establish the accuracy of its contents, so Kumaru does not score it. Review the individual works it lists."))
+        ? el("p", { class: "callout" }, icon("info"), el("span", {}, "A container’s reputation does not establish the accuracy of its contents, so Ghuumi does not score it. Review the individual works it lists."))
         : ctx.detail.scores.map((score) => scoreCard({ score, formula: state.formula, source: ctx.source, level: 4 }))));
 }
 

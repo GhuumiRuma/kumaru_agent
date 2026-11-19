@@ -10,7 +10,7 @@
 
 `data/samples/corpus.txt` is plain UTF-8 text. `configs/train/pretrain-nano.yaml` points `data.text_file` at it. On the first run with a given `output_dir`, the packer reads the file 1,000,000 characters at a time, tokenizes each chunk, and appends the token ids to `runs/nano/tokens.bin`, a flat `uint32` file. Training reads that file as a memory map and cuts it into windows of `model.max_seq_length` tokens. Later runs with the same `output_dir` reuse `tokens.bin` and do not read the text again.
 
-The file is deliberately too small to produce a useful model: about 1,700 tokens with the profile's Qwen tokenizer, which is six 256-token windows. It exists so `kumaru train configs/train/pretrain-nano.yaml` can run end to end immediately.
+The file is deliberately too small to produce a useful model: about 1,700 tokens with the profile's Qwen tokenizer, which is six 256-token windows. It exists so `ghuumi train configs/train/pretrain-nano.yaml` can run end to end immediately.
 
 ## When to use this profile
 
@@ -70,19 +70,19 @@ model:
 Validate packing and config:
 
 ```powershell
-kumaru train configs/train/pretrain-nano.yaml --dry-run
+ghuumi train configs/train/pretrain-nano.yaml --dry-run
 ```
 
 Run the toy pretraining loop:
 
 ```powershell
-kumaru train configs/train/pretrain-nano.yaml
+ghuumi train configs/train/pretrain-nano.yaml
 ```
 
 For a larger corpus, edit `data.text_file` and `output_dir`, then dry-run again. The dry run packs the corpus and stops. Packing is the slow part on a big file: it ran at about 1.4 MB of text per second in local testing, about 1.5 hours for 8 GB, and it happens once per `output_dir`. Pack this way before any `torchrun` launch, whose other ranks stop waiting for rank 0 after PyTorch's process-group timeout:
 
 ```powershell
-kumaru train configs/train/pretrain-nano.yaml --dry-run
+ghuumi train configs/train/pretrain-nano.yaml --dry-run
 ```
 
 ## Tuning it
@@ -97,8 +97,8 @@ kumaru train configs/train/pretrain-nano.yaml --dry-run
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Training data not found: ... (data.text_file)` | `data.text_file` points to a missing path; `kumaru train` checks it before loading the tokenizer. | Correct the path in the training config. Relative paths resolve from the directory you run in. |
-| `Corpus not found` | The same missing path, reached through the `torchrun` entry point, which skips that check. | Correct the path; dry-run with `kumaru train` first. |
+| `Training data not found: ... (data.text_file)` | `data.text_file` points to a missing path; `ghuumi train` checks it before loading the tokenizer. | Correct the path in the training config. Relative paths resolve from the directory you run in. |
+| `Corpus not found` | The same missing path, reached through the `torchrun` entry point, which skips that check. | Correct the path; dry-run with `ghuumi train` first. |
 | `produced zero tokens` | Empty file or tokenizer issue. | Add text and verify tokenizer loads. |
 | `too few for seq_length` | Not enough packed tokens for one training window. | Add more text or lower `model.max_seq_length`. |
 | Old text still trains after editing `data.text_file` | `tokens.bin` in that `output_dir` was reused. | Set a new `output_dir`, or delete `tokens.bin` to repack. |
@@ -109,6 +109,6 @@ kumaru train configs/train/pretrain-nano.yaml --dry-run
 ## Related files
 
 - `configs/train/pretrain-nano.yaml` — pretraining config that consumes this file.
-- `src/kumaru/train/data.py` — `pack_corpus_to_memmap()` and `PackedTokenDataset`.
-- `src/kumaru/train/config.py` — `DataConfig` and `NanoModelConfig` fields.
+- `src/ghuumi/train/data.py` — `pack_corpus_to_memmap()` and `PackedTokenDataset`.
+- `src/ghuumi/train/config.py` — `DataConfig` and `NanoModelConfig` fields.
 

@@ -9,7 +9,7 @@
 # for AVX2/AVX-512 and are several times faster than PyTorch on CPU.
 #
 # Requires:  .\scripts\setup.ps1 -Gguf   (installs llama-cpp-python)
-# Run:       kumaru serve -c cpu-only
+# Run:       ghuumi serve -c cpu-only
 
 backend:
   name: llamacpp
