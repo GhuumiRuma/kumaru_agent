@@ -16,10 +16,16 @@
 
 This file defines the configuration models and the merge that builds one `KumaruConfig`. The top-level sections, in order, are:
 
-`backend`, `generation`, `thinking_mode`, `agent`, `server`, `telemetry`, `academic`, `education`
+`backend`, `generation`, `thinking_mode`, `agent`, `server`, `telemetry`, `academic`, `education`, `gaming`
 
 `education.runs_dirs` lists the benchmark-run folders the Education page reads; the
 first also receives `kumaru curriculum run`'s runs ([details](../server/education.md)).
+
+`gaming` holds settings that leave room for a game on the graphics card: `backend`
+overrides merged over `backend` by `KumaruConfig.with_gaming()` (for `serve --gaming`
+and `app --gaming`, under the command's own flags), and `below_free_gb`, under which
+`kumaru app` uses them by itself. The merged result is validated when the config loads,
+so a typo there fails at once, not mid-game ([desktop app](../desktop.md)).
 
 `academic` enables the optional academic HTTP catalogue (`enabled`, default false),
 sets its persistent SQLite `database`, and supplies optional `brave_api_key` for

@@ -72,6 +72,7 @@ Full walkthrough with troubleshooting: [`docs/QUICKSTART.md`](docs/QUICKSTART.md
 | Command | What it does |
 |---|---|
 | `kumaru serve` | Web UI + OpenAI-compatible API |
+| `kumaru app` | Kumaru as a desktop app: the chat in its own window, the model stopped when you close it. `kumaru app -c qwen36 --install` adds **Kumaru** and **Kumaru (gaming)** icons to the desktop and Start menu ([how](docs/howto/src/kumaru/desktop.md)) |
 | `kumaru chat` | Terminal REPL, no server in between. `--workspace DIR` lets it create and edit files and run builds and tests in that folder, with your yes for each change and command |
 | `kumaru info` | Versions, GPU, which optional components are installed |
 | `kumaru config` | Print the fully merged configuration — run this when something ignores your settings |
@@ -256,7 +257,7 @@ scripts/       setup.ps1 (install), verify.ps1 (layered self-check),
                get-llama-server.ps1 (inference engine), check_graders.py (grader proof),
                overnight.ps1 (frees the GPU and runs a long job while you sleep)
 docs/howto/    a page for every source file
-tests/         pytest suite (1432 tests), runs with no GPU in under a minute
+tests/         pytest suite (1440 tests), runs with no GPU in under a minute
 ```
 
 ## Requirements

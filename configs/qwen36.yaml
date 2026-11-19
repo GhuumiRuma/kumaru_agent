@@ -26,14 +26,12 @@
 # That leaves ~4 GiB of the card for Windows and whatever else is open.
 # (Qwen2.5-7B, a dense model 1/5 the size, needs 56 KiB/token of KV cache.)
 #
-# Smaller GPU, or sharing it with a game? Set llama_server.n_cpu_moe to keep
-# the expert weights of the first N layers in system RAM (~0.37 GiB of VRAM
-# freed per layer; e.g. 20 for 16 GB, 30 for 12 GB) and/or lower the context.
+# Smaller GPU? Set llama_server.n_cpu_moe to keep the expert weights of the
+# first N layers in system RAM (~0.37 GiB of VRAM freed per layer; e.g. 20 for
+# 16 GB, 30 for 12 GB) and/or lower the context.
 # Never let VRAM overflow: Windows silently spills into shared system memory
-# and speed collapses (measured: ~110 -> 7 tok/s). Measured on a 3090 next to
-# World of Warcraft (4.2 GiB): 11.9 GiB VRAM, ~27 tok/s, no spill:
-#   $env:KUMARU_BACKEND__LLAMA_SERVER__N_CPU_MOE = '18'
-#   kumaru serve -c qwen36 --context 65536
+# and speed collapses (measured: ~110 -> 7 tok/s). Sharing the card with a game
+# is the `gaming` section at the end: `kumaru serve -c qwen36 --gaming`.
 
 backend:
   name: llamacpp_server
@@ -81,3 +79,15 @@ server:
 
 telemetry:
   log_level: INFO
+
+# Room for a game (`--gaming`). Measured on a 3090 next to World of Warcraft
+# (4.2 GiB): 11.9 GiB VRAM, 15-27 tok/s (less while the game is busy), no spill.
+# `kumaru app` switches to it by itself when less than 21 GiB is free as it
+# starts: llama-server alone needs up to ~19.7 GiB, and llama.cpp's own fitting
+# (n_gpu_layers -1) was measured to fill the card beside a running game.
+gaming:
+  below_free_gb: 21
+  backend:
+    max_context_length: 65536
+    llama_server:
+      n_cpu_moe: 18

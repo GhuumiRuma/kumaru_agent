@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from kumaru.cli import _build_overrides, app, main
+from kumaru.cli import _build_overrides, _load, app, main
 from kumaru.eval.benchmarks import runner
 from kumaru.eval.benchmarks.golden import GoldenSet
 
@@ -77,6 +77,12 @@ def test_config_shows_that_a_flag_beats_the_profile(echo_profile: Path) -> None:
     text = run_cli("config", "-c", str(echo_profile), "-m", "flag-model")
     assert "model: flag-model" in text
     assert "delay_s: 0" in text  # the rest of the profile still applies
+
+
+def test_gaming_settings_sit_under_the_commands_own_flags() -> None:
+    cfg = _load("qwen36", gaming=True, context=32768)
+    assert cfg.backend.max_context_length == 32768  # the flag beats the gaming settings...
+    assert cfg.backend.llama_server.n_cpu_moe == 18  # ...which still apply
 
 
 def test_chat_answers_one_question_and_exits(echo_profile: Path) -> None:

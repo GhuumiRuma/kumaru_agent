@@ -241,6 +241,13 @@ A sampling preset that is applied over `generation` only while thinking is on. R
 |---|---|---|
 | `runs_dirs` | `[runs/bench]` | Folders of `kumaru bench run` results that the Education page (`/education`) reads, up to two levels deep; relative paths start at the Kumaru folder. The first is also where `kumaru curriculum run` puts a phase's run. Set it once for your machine with `$env:KUMARU_EDUCATION__RUNS_DIRS = '["D:/kumaru/runs/bench"]'` (a JSON list). [Details](../src/kumaru/server/education.md). |
 
+### `gaming`
+
+| Field | Default | Effect and notes |
+|---|---|---|
+| `below_free_gb` | `null` | `kumaru app` (and its "Kumaru" shortcut) uses the gaming settings by itself when less graphics memory than this, in GiB, is free as it starts, per `nvidia-smi`. `null` never switches. qwen36 sets `21`. |
+| `backend` | `{}` | `backend` fields merged over the profile's with `--gaming` (`kumaru serve`, `kumaru app`, the "Kumaru (gaming)" shortcut), under the command's own flags. qwen36 sets `max_context_length: 65536` and `llama_server.n_cpu_moe: 18`, measured beside a game. Validated at load. [Details](../src/kumaru/desktop.md). |
+
 ## How to use it
 
 Commands assume the venv is active; otherwise call `.\.venv\Scripts\kumaru.exe`.

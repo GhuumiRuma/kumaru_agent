@@ -96,7 +96,8 @@ The signatures show the CLI defaults. In Python, the real defaults are `typer.Op
 | `curriculum_app` | `typer.Typer(help="Study one area at a time: collect references for it and measure it, repeatably.", no_args_is_help=True)` | Mounted as `kumaru curriculum`. |
 | `console` | `Console()` | Module-level Rich console on stdout. All command output goes here, including the `error:` and `hint:` lines. Log records go to stderr. |
 | `CONTEXT_HELP` | `str` | The help text shared by every `--context`. |
-| `serve` | `serve(config: str = None, backend: str = None, model: str = None, device: str = None, adapter: str = None, context: int = None, host: str = None, port: int = None, log_level: str = None) -> None` | `kumaru serve`: prints the banner, then calls `kumaru.server.app.run(cfg)`, which blocks. |
+| `serve` | `serve(config: str = None, backend: str = None, model: str = None, device: str = None, adapter: str = None, context: int = None, host: str = None, port: int = None, log_level: str = None, gaming: bool = False) -> None` | `kumaru serve`: prints the banner, then calls `kumaru.server.app.run(cfg)`, which blocks. |
+| `desktop_app` | `desktop_app(config: str = None, gaming: bool = False, install: bool = False) -> None` | `kumaru app`: with `--install`, `desktop.install_shortcuts(...)`; otherwise `desktop.settings_for(...)`, then `desktop.run_app(cfg)`. With no console, an error also shows `desktop.notify(...)`. |
 | `chat` | `chat(config: str = None, backend: str = None, model: str = None, device: str = None, adapter: str = None, context: int = None, temperature: float = None, max_tokens: int = None, think: bool = None, thinking_budget: int = None, prompt: str = None, workspace: str = None) -> None` | `kumaru chat`: builds the config from the backend flags, then runs `asyncio.run(_chat_loop(cfg, prompt, overrides))` inside `_exit_cleanly_on_signals()`. `overrides` holds the four generation flags. `workspace` sets `agent.workspace.root` and adds `WORKSPACE_TOOLS` to `agent.enabled_tools`. |
 | `info` | `info() -> None` | `kumaru info`: versions, registered components, profiles, optional packages and CUDA devices. |
 | `show_config` | `show_config(config: str = None, backend: str = None, model: str = None) -> None` | `kumaru config`: prints `Panel(cfg.dump_yaml(), title="resolved configuration")`. |
@@ -114,7 +115,7 @@ The signatures show the CLI defaults. In Python, the real defaults are `typer.Op
 | `DISTILL_OUT_HELP`, `VAL_FRACTION_HELP`, `SPLIT_SEED_HELP`, `ARITHMETIC_HELP`, `EVAL_SET_HELP`, `DECONTAMINATE_HELP`, `FORCE_HELP` | `str` | Help texts shared by `distill build` and `distill gold`, so the two commands describe a shared flag identically. |
 | `main` | `main() -> None` | Console-script entry point. Calls `ensure_utf8_streams()`, then `app()`; a `KumaruError` prints `error:`/`hint:` and raises `SystemExit(1)`. Its `KeyboardInterrupt` branch (`interrupted`, exit 130) does not run in practice; see [Exit codes](#errors-and-exit-codes). |
 | `_build_overrides` | `_build_overrides(**kwargs: Any) -> dict[str, Any]` | Private, and the one place flags become config paths. Drops `None` values and unknown keys. `tests\test_cli.py` tests it directly. |
-| `_load` | `_load(config: str \| None, **flags: Any)` | Private. Returns the `KumaruConfig` from `load_config(config, overrides=_build_overrides(**flags))`. |
+| `_load` | `_load(config: str \| None, *, gaming: bool = False, **flags: Any)` | Private. Returns the `KumaruConfig` from `load_config(config, overrides=_build_overrides(**flags))`. With `gaming`, loads again with the profile's `gaming.backend` under those flags. |
 | `_chat_loop` | `async _chat_loop(cfg: Any, single_prompt: str \| None, overrides: dict[str, Any]) -> None` | Private. The terminal REPL behind `chat`. Builds `ChatAgent(backend, cfg, approver=_approve)` before `backend.load()`, so a bad knowledge pack, documentation index, tool name or project folder, or a backend that cannot call tools, fails before the model loads. Passes `overrides` to every `agent.stream` call, prints tool calls and results as they happen, and adds the turn's whole transcript to the history. |
 | `_approve` | `async _approve(request: Any) -> bool` | Private. The approver; `request` is an `ApprovalRequest`. Prints `request.summary` in a yellow panel titled with the tool name, with diff lines coloured and the `$` line of a command in bold, then discards type-ahead (`_discard_type_ahead`) and asks `Allow this? [y/N]`. Only `y` or `yes` (any case) approves; anything else, end of input or Ctrl+C is no. |
 | `_discard_type_ahead` | `_discard_type_ahead() -> None` | Private. Drops the keys typed before the approval prompt appeared, so that a `y` and Enter typed in reply to the model's prose cannot approve a change you have not seen. Only an interactive terminal is flushed (`msvcrt` on Windows, `termios.tcflush` elsewhere); piped answers are kept for the prompts. |
@@ -131,6 +132,7 @@ The examples are PowerShell, run from the repo root with the venv active; otherw
 | Command | Help text | Loads a model? |
 |---|---|---|
 | `kumaru serve` | Start the HTTP API and the web UI. | Yes, in the background after the server is up. |
+| `kumaru app` | Open Kumaru in its own window; closing it stops the server it started. `--install` adds desktop shortcuts. | Yes, unless a server is already running (and not with `--install`). |
 | `kumaru chat` | Chat in the terminal, with no server in between. | Yes, before the first prompt. |
 | `kumaru info` | Show versions, hardware, and which optional components are installed. | No. It imports torch and queries CUDA, so it is slow, especially on a cold start. |
 | `kumaru config` | Print the fully merged configuration and exit. | No. |
@@ -367,6 +369,17 @@ Model loads in the background; the UI shows progress.
 - **URLs.** They come from `server.host`, so `--host 0.0.0.0` prints `http://0.0.0.0:<port>`. That is a bind address, not one you can browse to.
 - **No thinking or sampling flags.** Thinking is chosen per request, by the UI toggle or `"thinking": true` in the body. Server-wide defaults come from YAML or env, e.g. `$env:KUMARU_GENERATION__THINKING = 'true'`.
 - **Logging.** `serve` follows `telemetry.log_level` (and `--log-level`), not `KUMARU_LOG_LEVEL`.
+- **`--gaming`** applies the profile's `gaming` settings, which leave room for a game on the graphics card ([qwen36's](../../configs/qwen36.yaml.md#share-the-gpu-with-a-game-or-use-a-smaller-card)). They sit over the profile and the environment and under the command's own flags, so `--gaming --context 32768` keeps 32,768. A profile without a `gaming:` section is refused.
+
+### Open it as a desktop app: `kumaru app`
+
+```powershell
+kumaru app -c qwen36 --install    # once: "Kumaru" and "Kumaru (gaming)" shortcuts (Windows)
+kumaru app -c qwen36              # the chat in its own window; closing it stops the model
+kumaru app -c qwen36 --gaming     # leave room for a game started afterwards
+```
+
+It starts the server unless one already answers on the profile's port, opens the chat in an Edge (or Chrome) app window, and stops the server it started when that window closes. It switches to the gaming settings by itself when less than `gaming.below_free_gb` of graphics memory is free. Run from a shortcut, it has no console: output goes to `runs\logs\kumaru-app.log` and an error shows a message box. Details: [`desktop.md`](desktop.md).
 
 ### Inspect the install: `kumaru info`
 

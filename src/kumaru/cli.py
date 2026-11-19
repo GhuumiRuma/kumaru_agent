@@ -85,10 +85,16 @@ def _build_overrides(**kwargs: Any) -> dict[str, Any]:
     return out
 
 
-def _load(config: str | None, **flags: Any):
-    from kumaru.core.config import load_config
+def _load(config: str | None, *, gaming: bool = False, **flags: Any):
+    from kumaru.core.config import deep_merge, load_config
 
-    return load_config(config, overrides=_build_overrides(**flags))
+    overrides = _build_overrides(**flags)
+    cfg = load_config(config, overrides=overrides)
+    if gaming:
+        cfg.with_gaming()  # refuses a profile without gaming settings
+        # Over the profile and the environment, under the command's own flags.
+        cfg = load_config(config, overrides=deep_merge({"backend": cfg.gaming.backend}, overrides))
+    return cfg
 
 
 # ---------------------------------------------------------------------------
@@ -105,9 +111,10 @@ def serve(
     host: str = typer.Option(None, "--host"),
     port: int = typer.Option(None, "--port", "-p"),
     log_level: str = typer.Option(None, "--log-level"),
+    gaming: bool = typer.Option(False, "--gaming", help="Use the profile's gaming settings, leaving room for a game."),
 ) -> None:
     """Start the HTTP API and the web UI."""
-    cfg = _load(config, backend=backend, model=model, device=device, adapter=adapter,
+    cfg = _load(config, gaming=gaming, backend=backend, model=model, device=device, adapter=adapter,
                 context=context, host=host, port=port, log_level=log_level)
 
     console.print(
@@ -127,6 +134,38 @@ def serve(
     from kumaru.server.app import run
 
     run(cfg)
+
+
+@app.command("app")
+def desktop_app(
+    config: str = typer.Option(None, "--config", "-c", help="YAML file or profile name."),
+    gaming: bool = typer.Option(False, "--gaming", help="Use the profile's gaming settings, leaving room for a game started afterwards."),
+    install: bool = typer.Option(False, "--install", help="Put Kumaru shortcuts on the desktop and in the Start menu (Windows)."),
+) -> None:
+    """Open Kumaru in its own window; closing it stops the server it started."""
+    from kumaru import desktop
+    from kumaru.core.errors import ConfigError
+
+    log = desktop.log_if_windowless()
+    try:
+        cfg = _load(config)
+        if install:
+            if not config:
+                raise ConfigError("Name the profile the shortcuts start.", hint="kumaru app -c qwen36 --install")
+            for path in desktop.install_shortcuts(desktop.profile_argument(config), gaming=bool(cfg.gaming.backend)):
+                console.print(f"[green]shortcut:[/] {escape(path)}")
+            return
+        free = desktop.free_graphics_gb() if cfg.gaming.below_free_gb and not gaming else None
+        cfg, gamed = desktop.settings_for(cfg, gaming=gaming, free_gb=free)
+        if gamed:
+            why = "asked for" if gaming else f"{free:.1f} GiB of graphics memory free, under {cfg.gaming.below_free_gb:g}"
+            console.print(f"[yellow]gaming settings[/] ({why}): leaving room on the graphics card")
+        desktop.run_app(cfg)
+    except Exception as exc:
+        if log is not None:  # no console: say what went wrong in a message box
+            text = f"{exc.message}\n\n{exc.hint or ''}" if isinstance(exc, KumaruError) else f"Kumaru stopped: {exc}"
+            desktop.notify(f"{text.strip()}\n\nDetails: {log}", error=True)
+        raise
 
 
 @app.command()

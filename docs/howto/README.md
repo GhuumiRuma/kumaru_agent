@@ -12,6 +12,8 @@ One page per file. Each page answers the same seven questions: what it does, why
 |---|---|---|
 | `src/kumaru/__init__.py` | [page](src/kumaru/__init__.md) | You want the public import surface |
 | `src/kumaru/cli.py` | [page](src/kumaru/cli.md) | Adding a command, or a flag behaves oddly |
+| `src/kumaru/desktop.py` | [page](src/kumaru/desktop.md) | **The desktop app**: shortcuts, the app window, and sharing the graphics card with a game |
+| `src/kumaru/__main__.py` | [page](src/kumaru/__main__.md) | Running `python -m kumaru` (what the shortcuts do) |
 | `src/kumaru/core/__init__.py` | [page](src/kumaru/core/__init__.md) | Understanding the layering rule |
 | `src/kumaru/core/types.py` | [page](src/kumaru/core/types.md) | Anything to do with messages or generation params |
 | `src/kumaru/core/errors.py` | [page](src/kumaru/core/errors.md) | Raising a new error, or mapping one to HTTP |

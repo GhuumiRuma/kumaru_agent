@@ -37,6 +37,17 @@ class TestConfigDefaults:
         with pytest.raises(ConfigError):
             load_config(overrides={"backend": {"typo": True}}, use_env=False)
 
+    def test_gaming_settings_merge_over_backend_and_a_typo_fails_at_load(self) -> None:
+        cfg = load_config("qwen36", use_env=False)
+        gamed = cfg.with_gaming()
+        assert (gamed.backend.max_context_length, gamed.backend.llama_server.n_cpu_moe) == (65536, 18)
+        assert gamed.backend.llama_server.parallel == cfg.backend.llama_server.parallel  # merged, not replaced
+        assert cfg.backend.llama_server.n_cpu_moe is None  # the original is untouched
+        with pytest.raises(ConfigError):
+            load_config(overrides={"gaming": {"backend": {"llama_server": {"n_cpu_mo": 18}}}}, use_env=False)
+        with pytest.raises(ConfigError, match="no gaming settings"):
+            KumaruConfig().with_gaming()
+
 
 class TestConfigFile:
     """`-c NAME` must never read a file that happens to sit in the current folder."""

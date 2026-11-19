@@ -180,3 +180,7 @@ academic:
 education:
   runs_dirs: [runs/bench]    # benchmark runs the /education page reads; relative = the Kumaru folder.
                              # The first is also where `kumaru curriculum run` puts a phase's run.
+
+gaming:
+  below_free_gb: null        # `kumaru app` uses the settings below by itself when less GiB is free
+  backend: {}                # merged over backend with --gaming (serve, app); see configs/qwen36.yaml
