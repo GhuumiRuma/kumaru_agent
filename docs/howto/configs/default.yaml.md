@@ -1,6 +1,6 @@
 # `configs\default.yaml`
 
-> The reference profile: every Kumaru setting at its code default, with a comment on each. As a profile, it serves Qwen2.5-7B-Instruct through Hugging Face transformers with an 8,192-token window on `127.0.0.1:8080`.
+> The reference profile: every Ghuumi setting at its code default, with a comment on each. As a profile, it serves Qwen2.5-7B-Instruct through Hugging Face transformers with an 8,192-token window on `127.0.0.1:8080`.
 
 **Read this when:**
 - you need to know what a setting does, its default and valid range, or which backend reads it;
@@ -12,10 +12,10 @@
 
 ## What it does
 
-`configs\default.yaml` sets every field of `KumaruConfig` (`src\kumaru\core\config.py`) to its code default. It omits only `backend.extra`, a free-form dict that defaults to `{}`. `kumaru config -c default` and a bare `kumaru config` print the same configuration with one exception: `backend.models_dir` is `~/.cache/kumaru/models` in the file and the expanded `C:\Users\<you>\.cache\kumaru\models` in the code. `llamacpp_server` is the only reader of that field and expands `~`, so the two behave the same.
+`configs\default.yaml` sets every field of `GhuumiConfig` (`src\ghuumi\core\config.py`) to its code default. It omits only `backend.extra`, a free-form dict that defaults to `{}`. `ghuumi config -c default` and a bare `ghuumi config` print the same configuration with one exception: `backend.models_dir` is `~/.cache/ghuumi/models` in the file and the expanded `C:\Users\<you>\.cache\ghuumi\models` in the code. `llamacpp_server` is the only reader of that field and expands `~`, so the two behave the same.
 
 Three consequences:
-- **No `-c` means the code defaults, not this file.** Kumaru reads `default.yaml` only with `-c default`. `kumaru serve` without `-c` runs the field defaults in `config.py`, which hold the same values. An edit to this file therefore does not change a run without `-c`.
+- **No `-c` means the code defaults, not this file.** Ghuumi reads `default.yaml` only with `-c default`. `ghuumi serve` without `-c` runs the field defaults in `config.py`, which hold the same values. An edit to this file therefore does not change a run without `-c`.
 - **Profiles are not layered on this file.** `load_config` merges a profile onto an empty dict, and Pydantic fills every missing field from the code. Editing `default.yaml` therefore changes only runs that pass `-c default`.
 - **Don't start a profile by copying this file.** A copy pins every value, including the ones you didn't mean to choose. Write only the fields you change ([Write a profile](#write-a-profile)).
 
@@ -25,24 +25,24 @@ At startup four layers are merged, and the later one wins:
 
 | Layer | Example |
 |---|---|
-| 1. Field defaults in `config.py`; for `generation`, `GenerationParams` in `src\kumaru\core\types.py` | `temperature: 0.7` |
+| 1. Field defaults in `config.py`; for `generation`, `GenerationParams` in `src\ghuumi\core\types.py` | `temperature: 0.7` |
 | 2. The YAML profile named by `-c` | `configs\test.yaml` sets `temperature: 0.0` |
-| 3. Environment variables `KUMARU_<SECTION>__<FIELD>` | `$env:KUMARU_GENERATION__TEMPERATURE = '0.3'` |
-| 4. CLI flags that set config fields ([table below](#cli-flags)) | `kumaru serve -c qwen36 --context 65536` |
+| 3. Environment variables `GHUUMI_<SECTION>__<FIELD>` | `$env:GHUUMI_GENERATION__TEMPERATURE = '0.3'` |
+| 4. CLI flags that set config fields ([table below](#cli-flags)) | `ghuumi serve -c qwen36 --context 65536` |
 
 `deep_merge` merges mappings key by key and replaces everything else whole. A list in a higher layer replaces the lower list and is never appended to it. That matters for `generation.stop`, `server.cors_origins`, `agent.enabled_tools`, `agent.workspace.allowed_commands` and `backend.llama_server.extra_args`.
 
-`-c` takes a profile name or a file path. A bare name, with no folder and no `.yaml` or `.yml` suffix, always becomes `<repo>\configs\<value>.yaml`, even when the current directory holds a file of that name. So profile names work from any directory, and a file in a project you run Kumaru in cannot pose as one. Any other value is a path, resolved against the current directory: `.\my-profile`, `my-profile.yaml`.
+`-c` takes a profile name or a file path. A bare name, with no folder and no `.yaml` or `.yml` suffix, always becomes `<repo>\configs\<value>.yaml`, even when the current directory holds a file of that name. So profile names work from any directory, and a file in a project you run Ghuumi in cannot pose as one. Any other value is a path, resolved against the current directory: `.\my-profile`, `my-profile.yaml`.
 
-Each request then resolves the decoding parameters once more (`ChatAgent.resolve_params` in `src\kumaru\agent\chat.py`):
+Each request then resolves the decoding parameters once more (`ChatAgent.resolve_params` in `src\ghuumi\agent\chat.py`):
 
 ```text
 generation  <  thinking_mode (only while thinking is on)  <  the request's own fields
 ```
 
 Thinking is on when the request turns it on, or when the request leaves it unset and `generation.thinking` is `true`. Request fields that are unset (`null`) never override, so a request cannot reset a value to `null`. Three consequences that surprise people:
-- **The sampling flags of `chat` and `bench run` are request fields.** `-t`, `--max-tokens`, `--think`/`--no-think` and `--thinking-budget` are sent with every request, as the web UI sends its settings, so they beat both `generation` and `thinking_mode`. `kumaru chat -c qwen36 -b echo --think -q hi` reports the preset's `max_tokens=32768, temperature=1.0`; adding `-t 0.2 --max-tokens 99` reports `max_tokens=99, temperature=0.2`. Without `--max-tokens`, `bench run` chooses the output cap per benchmark ([runner.md](../src/kumaru/eval/benchmarks/runner.md)).
-- **While thinking, `thinking_mode` beats `generation`.** A `generation` value from YAML or `KUMARU_GENERATION__*` loses to the same field of the preset: with `$env:KUMARU_GENERATION__TEMPERATURE = '0.3'`, the command above still reports `temperature=1.0`, and `0.3` applies only without `--think`. To change the thinking sampling for every request, set the preset: `$env:KUMARU_THINKING_MODE__TEMPERATURE = '0.6'` gives `temperature=0.6`.
+- **The sampling flags of `chat` and `bench run` are request fields.** `-t`, `--max-tokens`, `--think`/`--no-think` and `--thinking-budget` are sent with every request, as the web UI sends its settings, so they beat both `generation` and `thinking_mode`. `ghuumi chat -c qwen36 -b echo --think -q hi` reports the preset's `max_tokens=32768, temperature=1.0`; adding `-t 0.2 --max-tokens 99` reports `max_tokens=99, temperature=0.2`. Without `--max-tokens`, `bench run` chooses the output cap per benchmark ([runner.md](../src/ghuumi/eval/benchmarks/runner.md)).
+- **While thinking, `thinking_mode` beats `generation`.** A `generation` value from YAML or `GHUUMI_GENERATION__*` loses to the same field of the preset: with `$env:GHUUMI_GENERATION__TEMPERATURE = '0.3'`, the command above still reports `temperature=1.0`, and `0.3` applies only without `--think`. To change the thinking sampling for every request, set the preset: `$env:GHUUMI_THINKING_MODE__TEMPERATURE = '0.6'` gives `temperature=0.6`.
 - **`generation.thinking: null` skips the preset.** A request that doesn't mention thinking gets no `thinking_mode` preset, even when the model's chat template thinks by default. Profiles for thinking models set the field explicitly (`qwen36` sets `false`). The web UI always sends an explicit `thinking`.
 
 ### CLI flags
@@ -60,14 +60,14 @@ Thinking is on when the request turns it on, or when the request leaves it unset
 | `-w`, `--workspace` | `agent.workspace.root`, and appends the project-folder tools to the resolved `agent.enabled_tools` instead of replacing the list | `chat` |
 | `-t`/`--temperature`, `--max-tokens`, `--think`/`--no-think`, `--thinking-budget` | no config field: the request's `temperature`, `max_tokens`, `thinking`, `thinking_budget` | `chat`, `bench run` |
 
-The last row is request-level, as described above, so `kumaru config` cannot show it. Every other field is set by YAML or an environment variable.
+The last row is request-level, as described above, so `ghuumi config` cannot show it. Every other field is set by YAML or an environment variable.
 
 ### Validation
 
-Every section except `generation` rejects unknown keys (`extra="forbid"`), so a typo fails at load. The same applies to `KUMARU_*` variables:
+Every section except `generation` rejects unknown keys (`extra="forbid"`), so a typo fails at load. The same applies to `GHUUMI_*` variables:
 
 ```text
-error: Invalid configuration: 1 validation error for KumaruConfig
+error: Invalid configuration: 1 validation error for GhuumiConfig
 backend.modle
   Extra inputs are not permitted
 ```
@@ -79,13 +79,13 @@ Exceptions and gaps:
   - `generation`: `max_tokens` 1–131,072, `temperature` 0–2, `top_p` 0–1, `top_k` ≥ 0, `repetition_penalty` 0.5–2, `min_p` 0–1, `presence_penalty` −2–2, `thinking_budget` ≥ 0. `thinking_mode` has the same ranges.
   - `llama_server`: `parallel` 1–64, `n_cpu_moe` ≥ 0, `batch_size`/`ubatch_size` ≥ 1, `startup_timeout_s` > 0.
   - `agent`: `max_tool_iterations` 1–100, and `max_knowledge_chars` and `max_retrieved_chars` 0–24,000. In `agent.workspace`: `command_timeout_s` 1–3,600, `max_output_chars` 1,000–200,000, `max_file_bytes` 1,024–8,388,608, `max_list_entries` 10–10,000. `allowed_commands` takes bare program names only, and refuses shells and launchers: `Value error, 'cmd' is a shell or launcher, which could run any command`.
-- **`telemetry.log_level` is checked at load.** It must be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`, in any case and with any surrounding spaces; `WARN` becomes `WARNING` and `FATAL` becomes `CRITICAL`. Any other name fails before the server starts: `Invalid configuration: … telemetry.log_level  Input should be 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'`. Earlier builds accepted any string, and `kumaru serve` then died inside uvicorn with `KeyError: 'warn'`. The bare `KUMARU_LOG_LEVEL` variable is not a config field and is not checked; an unknown name there falls back to INFO.
+- **`telemetry.log_level` is checked at load.** It must be `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`, in any case and with any surrounding spaces; `WARN` becomes `WARNING` and `FATAL` becomes `CRITICAL`. Any other name fails before the server starts: `Invalid configuration: … telemetry.log_level  Input should be 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'`. Earlier builds accepted any string, and `ghuumi serve` then died inside uvicorn with `KeyError: 'warn'`. The bare `GHUUMI_LOG_LEVEL` variable is not a config field and is not checked; an unknown name there falls back to INFO.
 - **An empty section fails.** A header whose keys are all commented out is YAML `null`, which fails with `Input should be a valid dictionary or instance of ThinkingModeConfig` (or the respective section class). Delete the header too.
 - **Some values are checked only when used:**
   - `backend.name`, when the backend is created. Names are case-sensitive (`error: Unknown backend: 'Echo'.`, followed by the list). Aliases: `hf` → `transformers`, `gguf` → `llamacpp`, `llama-server`/`llama_server` → `llamacpp_server`, `ollama`/`vllm`/`remote` → `openai_compat`.
   - `agent.enabled_tools`, when the agent is built: `Unknown tool: 'x'. (Available tools: current_time, edit_file, list_files, read_file, run_command, write_file)`. A non-empty list also fails there on a backend that cannot call tools, which includes this profile's `transformers` (see the [`agent`](#agent) table).
   - `agent.knowledge_files` and `agent.knowledge_indexes`, also when the agent is built, before any model loads: `Invalid knowledge pack <path>: ...`, `Documentation index not found: <path>`.
-  - `agent.workspace.root`, when `kumaru chat` builds the agent: it must be an existing folder, not a whole drive, not one that contains your home folder, and not inside a `.git` folder.
+  - `agent.workspace.root`, when `ghuumi chat` builds the agent: it must be an existing folder, not a whole drive, not one that contains your home folder, and not inside a `.git` folder.
   - `backend.dtype`, when transformers loads: `Unknown dtype 'x'`.
   - `agent.memory_policy` is never checked. An unknown name logs `unknown memory_policy 'x'; using sliding_window`.
 
@@ -94,7 +94,7 @@ Exceptions and gaps:
 Use `default` in three cases:
 - **As the reference.** The comments in the file are the short form of this page.
 - **To serve Qwen2.5-7B-Instruct with transformers** on a GPU that holds it in 16-bit. The first run downloads the weights (~15 GB, according to `setup.ps1`'s hint) into the Hugging Face cache.
-- **As the code-defaults baseline when you debug a profile.** Compare `kumaru config -c <profile>` with `kumaru config`.
+- **As the code-defaults baseline when you debug a profile.** Compare `ghuumi config -c <profile>` with `ghuumi config`.
 
 For other situations a profile exists:
 
@@ -116,31 +116,31 @@ For other situations a profile exists:
 | Field | Default | Effect and notes |
 |---|---|---|
 | `name` | `transformers` | The engine: `transformers`, `llamacpp_server`, `llamacpp`, `openai_compat` or `echo` (aliases above). CLI `-b`. |
-| `model` | `Qwen/Qwen2.5-7B-Instruct` | Its meaning depends on the backend. `transformers`: a Hugging Face repo id or a local directory. `llamacpp_server`: `org/repo:QUANT`, `org/repo` with a single GGUF variant, or a `.gguf` path ([model specs](../src/kumaru/backends/llamacpp_server.md#model-specs)); also passed as `--alias`. `llamacpp`: an existing `.gguf` path, or a repo id whose file is chosen by `extra.gguf_filename`. `openai_compat`: the model name sent upstream. `echo`: a label. CLI `-m`. |
+| `model` | `Qwen/Qwen2.5-7B-Instruct` | Its meaning depends on the backend. `transformers`: a Hugging Face repo id or a local directory. `llamacpp_server`: `org/repo:QUANT`, `org/repo` with a single GGUF variant, or a `.gguf` path ([model specs](../src/ghuumi/backends/llamacpp_server.md#model-specs)); also passed as `--alias`. `llamacpp`: an existing `.gguf` path, or a repo id whose file is chosen by `extra.gguf_filename`. `openai_compat`: the model name sent upstream. `echo`: a label. CLI `-m`. |
 | `device` | `auto` | Read by `transformers` only. `auto` picks `cuda`, then `mps`, then `cpu`. On CUDA the model is placed with `device_map` (`extra.device_map`, default `"auto"`), so an index such as `cuda:1` does not choose the GPU; use `$env:CUDA_VISIBLE_DEVICES = '1'`. CLI `--device`. |
 | `dtype` | `auto` | `transformers` only. `auto` gives `bfloat16` on CUDA GPUs that support it, else `float16`, and `float32` on CPU and MPS. Also accepts `bf16`, `fp16` and `fp32`. |
 | `load_in_4bit` / `load_in_8bit` | `false` / `false` | `transformers` only, via bitsandbytes (`.\scripts\setup.ps1 -Quant`, on top of the `-Gpu` install that the transformers backend needs; `-Gpu -Quant` does both, in that order). 4-bit is NF4 with double quantization and computes in `dtype`. 4-bit wins if both are set. |
 | `attn_implementation` | `null` | `transformers` only. Passed to `from_pretrained` only when set, e.g. `flash_attention_2` if installed. |
 | `max_context_length` | `8192` | The context window. `transformers` clamps it to the checkpoint's maximum. `llamacpp` uses it as `n_ctx`. `llamacpp_server` passes it as `--ctx-size`, which sizes the KV cache. `openai_compat` and `echo` only report it. For every backend it also bounds the history budget (`agent.max_history_tokens`). CLI `--context` (≥ 512). |
 | `trust_remote_code` | `false` | `transformers` only. Runs Python code shipped in the model repo; enable it only for repos you trust. |
-| `max_batch_size` | `1` | `transformers` only. Greedy (temperature 0) requests that arrive together are decoded as one batch of up to this many (1–512); `1` turns batching off. Each decoding step reads the weights once for the whole batch: a benchmark of Qwen2.5-0.5B ran 4.6× faster at 8. It halves itself, for the rest of the load, after running out of GPU memory. In `bfloat16` a batched answer can differ from a one-at-a-time one where two tokens are near-tied; `float32` matches exactly. Streamed and sampled requests never batch. `bench run` keeps this many greedy questions in flight unless `-j` is given. [Details](../src/kumaru/backends/transformers_backend.md#mental-model). |
-| `adapter_path` | `null` | `transformers` backend only. A LoRA adapter directory from `kumaru train`, attached with peft (installed by `setup.ps1 -Gpu`). `extra.merge_adapter: true` folds it into the weights. Every other backend refuses to load while it is set: `The <name> backend cannot attach a LoRA adapter (backend.adapter_path is '<path>').` CLI `--adapter`. |
-| `base_url` | `null` | `openai_compat`: the API root; `null` means `http://127.0.0.1:11434/v1` (Ollama). `llamacpp_server`: setting it attaches to a server you started instead of spawning one ([attach mode](../src/kumaru/backends/llamacpp_server.md#attach-to-a-server-you-run-yourself)). |
-| `api_key` | `null` | Sent as `Authorization: Bearer <api_key>` by `openai_compat` and `llamacpp_server`. Prefer `$env:KUMARU_BACKEND__API_KEY` to a committed file. |
+| `max_batch_size` | `1` | `transformers` only. Greedy (temperature 0) requests that arrive together are decoded as one batch of up to this many (1–512); `1` turns batching off. Each decoding step reads the weights once for the whole batch: a benchmark of Qwen2.5-0.5B ran 4.6× faster at 8. It halves itself, for the rest of the load, after running out of GPU memory. In `bfloat16` a batched answer can differ from a one-at-a-time one where two tokens are near-tied; `float32` matches exactly. Streamed and sampled requests never batch. `bench run` keeps this many greedy questions in flight unless `-j` is given. [Details](../src/ghuumi/backends/transformers_backend.md#mental-model). |
+| `adapter_path` | `null` | `transformers` backend only. A LoRA adapter directory from `ghuumi train`, attached with peft (installed by `setup.ps1 -Gpu`). `extra.merge_adapter: true` folds it into the weights. Every other backend refuses to load while it is set: `The <name> backend cannot attach a LoRA adapter (backend.adapter_path is '<path>').` CLI `--adapter`. |
+| `base_url` | `null` | `openai_compat`: the API root; `null` means `http://127.0.0.1:11434/v1` (Ollama). `llamacpp_server`: setting it attaches to a server you started instead of spawning one ([attach mode](../src/ghuumi/backends/llamacpp_server.md#attach-to-a-server-you-run-yourself)). |
+| `api_key` | `null` | Sent as `Authorization: Bearer <api_key>` by `openai_compat` and `llamacpp_server`. Prefer `$env:GHUUMI_BACKEND__API_KEY` to a committed file. |
 | `timeout_s` | `300` | HTTP timeout of `openai_compat` and `llamacpp_server` requests. The connect timeout is fixed at 10 s. |
 | `model_path` | `null` | A local `.gguf` file. It wins over `model`. Read by `llamacpp` and `llamacpp_server`; both expand `~`. |
 | `n_gpu_layers` | `-1` | Shared by `llamacpp` and `llamacpp_server`, but `-1` means different things. `llamacpp`: the number of layers to offload; `-1` offloads every layer and the load fails if they do not fit (on Windows it may instead spill into shared memory and crawl); `0` is CPU only. `llamacpp_server`: `-1` omits `--n-gpu-layers`, so llama.cpp fits as many layers as free VRAM allows; any other value is passed as is. |
 | `n_threads` | `null` | CPU threads, as `n_threads` for `llamacpp` and `--threads` for `llamacpp_server`. Passed only when set and non-zero. |
-| `models_dir` | `~/.cache/kumaru/models` | `llamacpp_server` only. Where `org/repo:QUANT` specs are looked up and downloaded to, as `<models_dir>\<org>\<repo>\`. Point it at a large, fast disk. `llamacpp` downloads into the Hugging Face cache instead. |
+| `models_dir` | `~/.cache/ghuumi/models` | `llamacpp_server` only. Where `org/repo:QUANT` specs are looked up and downloaded to, as `<models_dir>\<org>\<repo>\`. Point it at a large, fast disk. `llamacpp` downloads into the Hugging Face cache instead. |
 
 ### `backend.llama_server`
 
-Read only by `llamacpp_server`. The full flag order is in [llamacpp_server.md](../src/kumaru/backends/llamacpp_server.md#from-config-to-command-line-build_server_args).
+Read only by `llamacpp_server`. The full flag order is in [llamacpp_server.md](../src/ghuumi/backends/llamacpp_server.md#from-config-to-command-line-build_server_args).
 
 | Field | Default | Flag | Effect and notes |
 |---|---|---|---|
 | `binary` | `null` | — | `null` searches `<repo>\tools\llama.cpp\` (installed by [get-llama-server.ps1](../scripts/get-llama-server.ps1.md)), then `PATH`. |
-| `host` | `127.0.0.1` | `--host` | Kumaru connects to this address as well, except that a wildcard bind is dialled on loopback: `0.0.0.0` as `127.0.0.1` and `::` as `::1` (Windows refuses to connect to `0.0.0.0`). A wildcard exposes the unauthenticated llama-server to the LAN; to share the model, expose Kumaru (`server.host`, with `server.api_key`) instead. |
+| `host` | `127.0.0.1` | `--host` | Ghuumi connects to this address as well, except that a wildcard bind is dialled on loopback: `0.0.0.0` as `127.0.0.1` and `::` as `::1` (Windows refuses to connect to `0.0.0.0`). A wildcard exposes the unauthenticated llama-server to the LAN; to share the model, expose Ghuumi (`server.host`, with `server.api_key`) instead. |
 | `port` | `null` | `--port` | `null` picks a free port at start. A fixed port that something already listens on fails the load with `Port <port> on <host> is already in use.`, so a leftover llama-server cannot answer in place of the new one. |
 | `parallel` | `4` | `--parallel` | Slots: concurrent requests batched into one forward pass. |
 | `kv_unified` | `true` | `--kv-unified` | One KV pool for all slots. Without it each slot gets `ctx-size / parallel` tokens. |
@@ -197,21 +197,21 @@ A sampling preset that is applied over `generation` only while thinking is on. R
 
 | Field | Default | Effect and notes |
 |---|---|---|
-| `system_prompt` | `"You are Kumaru, a precise and helpful assistant. …"` | The first part of the system message. Kumaru always appends its operating rules (`QUALITY_DIRECTIVES` in `src\kumaru\agent\prompt.py`) and today's date. Enabled tools are not listed here: their declarations go with each request, and the model's chat template renders them. An empty prompt still gets the rules and the date. Every nonblank client system message is appended after all of this, in the order sent, separated by blank lines. |
+| `system_prompt` | `"You are Ghuumi, a precise and helpful assistant. …"` | The first part of the system message. Ghuumi always appends its operating rules (`QUALITY_DIRECTIVES` in `src\ghuumi\agent\prompt.py`) and today's date. Enabled tools are not listed here: their declarations go with each request, and the model's chat template renders them. An empty prompt still gets the rules and the date. Every nonblank client system message is appended after all of this, in the order sent, separated by blank lines. |
 | `max_history_tokens` | `6144` | History budget per request: `min(max_history_tokens, max(512, context − min(max_tokens, context // 2) − 128 − tools))`, using the request's effective `max_tokens`. `tools` estimates the tool declarations (their JSON length ÷ 3, plus 150), and is 0 with no tools enabled. The reserve is capped at half the window because `max_tokens` is a ceiling, not a forecast. With the defaults that is `min(6144, 7040)` = 6,144. Tokens are counted by the backend: a real tokenizer for `transformers` and `llamacpp`, and a characters ÷ 3.6 estimate for the others. |
 | `memory_policy` | `sliding_window` | What to drop when the budget is exceeded. `sliding_window` keeps the system message plus the newest messages that fit, and always at least the newest two. `drop_oldest` removes messages from the front with no floor, and can drop the current question. `none` fails the request with HTTP 413 (`Conversation needs N tokens but the budget is B.`). |
-| `enabled_tools` | `[]` | Tools the model may call. Built in: `current_time` (read-only) and the project-folder tools `list_files`, `read_file`, `write_file`, `edit_file` and `run_command`, which `kumaru chat --workspace DIR` adds for you. Their declarations go with each request and the agent runs the calls, so the backend must call tools: `llamacpp_server`, `openai_compat` or `echo`. On this profile's `transformers` (and on `llamacpp`) a non-empty list fails before the model loads: `The transformers backend cannot call tools, and tools are enabled (...)`. Only `kumaru chat` asks you before each change and command; `serve`, the web UI, `eval` and `bench` never offer the tools that change things or use the project folder ([tools.md](../src/kumaru/agent/tools.md)). |
+| `enabled_tools` | `[]` | Tools the model may call. Built in: `current_time` (read-only) and the project-folder tools `list_files`, `read_file`, `write_file`, `edit_file` and `run_command`, which `ghuumi chat --workspace DIR` adds for you. Their declarations go with each request and the agent runs the calls, so the backend must call tools: `llamacpp_server`, `openai_compat` or `echo`. On this profile's `transformers` (and on `llamacpp`) a non-empty list fails before the model loads: `The transformers backend cannot call tools, and tools are enabled (...)`. Only `ghuumi chat` asks you before each change and command; `serve`, the web UI, `eval` and `bench` never offer the tools that change things or use the project folder ([tools.md](../src/ghuumi/agent/tools.md)). |
 | `max_tool_iterations` | `10` | Rounds of tool calls per message, 1–100. Calls after the last round are not run, and the reply ends with `[Stopped after 10 tool rounds (agent.max_tool_iterations). Reply 'continue' to let it keep going.]`. |
-| `workspace.root` | `null` | The project folder for the file and command tools; `kumaru chat --workspace DIR` sets it. The file tools refuse every path outside it ([workspace.md](../src/kumaru/agent/workspace.md)). |
-| `workspace.allowed_commands` | `[python, node, npm, npx, dotnet]` | Programs `run_command` may start, by bare name. Case and `.exe`, `.com`, `.cmd` or `.bat` are ignored, and duplicates dropped. A list replaces the default whole, so repeat the names you keep ([commands.md](../src/kumaru/agent/commands.md)). |
-| `workspace.command_timeout_s` | `300` | Time limit per command, 1–3600 s. At the limit the program and everything it started are stopped; on macOS and BSD, except programs that detached themselves ([commands.md](../src/kumaru/agent/commands.md)). The model can ask for less, never more. |
-| `workspace.max_output_chars` | `16000` | Most characters one tool call returns to the model. Longer command output keeps its start and end; `read_file` stops there and says which `offset` continues. A result whose chat control tokens were escaped gets a note of about 400 characters after that ([untrusted.md](../src/kumaru/agent/untrusted.md)). |
+| `workspace.root` | `null` | The project folder for the file and command tools; `ghuumi chat --workspace DIR` sets it. The file tools refuse every path outside it ([workspace.md](../src/ghuumi/agent/workspace.md)). |
+| `workspace.allowed_commands` | `[python, node, npm, npx, dotnet]` | Programs `run_command` may start, by bare name. Case and `.exe`, `.com`, `.cmd` or `.bat` are ignored, and duplicates dropped. A list replaces the default whole, so repeat the names you keep ([commands.md](../src/ghuumi/agent/commands.md)). |
+| `workspace.command_timeout_s` | `300` | Time limit per command, 1–3600 s. At the limit the program and everything it started are stopped; on macOS and BSD, except programs that detached themselves ([commands.md](../src/ghuumi/agent/commands.md)). The model can ask for less, never more. |
+| `workspace.max_output_chars` | `16000` | Most characters one tool call returns to the model. Longer command output keeps its start and end; `read_file` stops there and says which `offset` continues. A result whose chat control tokens were escaped gets a note of about 400 characters after that ([untrusted.md](../src/ghuumi/agent/untrusted.md)). |
 | `workspace.max_file_bytes` | `262144` | Largest file `read_file` reads or `write_file` and `edit_file` write (256 KB). |
 | `workspace.max_list_entries` | `500` | Most entries per `list_files` call. |
-| `expertise` | `[]` | Fixed engineering guidance added to the system prompt: any of `coding`, `playwright`, `windows` and `apis`. The `coder` profile turns on all four. [Details](../src/kumaru/agent/knowledge.md). |
-| `knowledge_files` | `[]` | Absolute paths to knowledge packs, which `kumaru learn` makes from one reviewed file. The packs go whole, in this order, into every system prompt. A missing or invalid pack stops startup before the model loads. |
+| `expertise` | `[]` | Fixed engineering guidance added to the system prompt: any of `coding`, `playwright`, `windows` and `apis`. The `coder` profile turns on all four. [Details](../src/ghuumi/agent/knowledge.md). |
+| `knowledge_files` | `[]` | Absolute paths to knowledge packs, which `ghuumi learn` makes from one reviewed file. The packs go whole, in this order, into every system prompt. A missing or invalid pack stops startup before the model loads. |
 | `max_knowledge_chars` | `6000` | The budget for all packs together, labels included: 0–24,000. Text past it is not sent. |
-| `knowledge_indexes` | `[]` | Absolute paths to documentation indexes, which `kumaru learn` makes from a folder. Each request searches them and puts the passages that best match the latest question at its start, cited and labelled as untrusted. A missing or unreadable index stops startup before the model loads. [Details](../src/kumaru/agent/doc_index.md). |
+| `knowledge_indexes` | `[]` | Absolute paths to documentation indexes, which `ghuumi learn` makes from a folder. Each request searches them and puts the passages that best match the latest question at its start, cited and labelled as untrusted. A missing or unreadable index stops startup before the model loads. [Details](../src/ghuumi/agent/doc_index.md). |
 | `max_retrieved_chars` | `6000` | The budget for each request's passages, citations included: 0–24,000, where `0` turns retrieval off. When the prompt budget is tight, older history is dropped first, then the passages are halved until they fit. Separate from `max_knowledge_chars`. |
 
 ### `server`
@@ -230,8 +230,8 @@ A sampling preset that is applied over `generation` only while thinking is on. R
 
 | Field | Default | Effect and notes |
 |---|---|---|
-| `log_level` | `INFO` | Applied by `kumaru serve` only (CLI `--log-level`). Every other command reads `$env:KUMARU_LOG_LEVEL`. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`, in any case; `WARN` and `FATAL` are accepted as aliases. It is validated at load, so a typo fails every command that loads the config, not only `serve` ([Validation](#validation)). |
-| `log_format` | `console` | `json` writes one JSON object per line to stderr; any other value gives console lines. `kumaru serve` only; other commands read `$env:KUMARU_LOG_FORMAT`. |
+| `log_level` | `INFO` | Applied by `ghuumi serve` only (CLI `--log-level`). Every other command reads `$env:GHUUMI_LOG_LEVEL`. One of `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL`, in any case; `WARN` and `FATAL` are accepted as aliases. It is validated at load, so a typo fails every command that loads the config, not only `serve` ([Validation](#validation)). |
+| `log_format` | `console` | `json` writes one JSON object per line to stderr; any other value gives console lines. `ghuumi serve` only; other commands read `$env:GHUUMI_LOG_FORMAT`. |
 | `metrics_enabled` | `true` | Not read. `/metrics` is always served. |
 | `trace_file` | `null` | Not read. No request trace is written. |
 
@@ -239,35 +239,35 @@ A sampling preset that is applied over `generation` only while thinking is on. R
 
 | Field | Default | Effect and notes |
 |---|---|---|
-| `runs_dirs` | `[runs/bench]` | Folders of `kumaru bench run` results that the Education page (`/education`) reads, up to two levels deep; relative paths start at the Kumaru folder. The first is also where `kumaru curriculum run` puts a phase's run. Set it once for your machine with `$env:KUMARU_EDUCATION__RUNS_DIRS = '["D:/kumaru/runs/bench"]'` (a JSON list). [Details](../src/kumaru/server/education.md). |
+| `runs_dirs` | `[runs/bench]` | Folders of `ghuumi bench run` results that the Education page (`/education`) reads, up to two levels deep; relative paths start at the Ghuumi folder. The first is also where `ghuumi curriculum run` puts a phase's run. Set it once for your machine with `$env:GHUUMI_EDUCATION__RUNS_DIRS = '["D:/ghuumi/runs/bench"]'` (a JSON list). [Details](../src/ghuumi/server/education.md). |
 
 ### `gaming`
 
 | Field | Default | Effect and notes |
 |---|---|---|
-| `below_free_gb` | `null` | `kumaru app` (and its "Kumaru" shortcut) uses the gaming settings by itself when less graphics memory than this, in GiB, is free as it starts, per `nvidia-smi`. `null` never switches. qwen36 sets `21`. |
-| `backend` | `{}` | `backend` fields merged over the profile's with `--gaming` (`kumaru serve`, `kumaru app`, the "Kumaru (gaming)" shortcut), under the command's own flags. qwen36 sets `max_context_length: 65536` and `llama_server.n_cpu_moe: 18`, measured beside a game. Validated at load. [Details](../src/kumaru/desktop.md). |
+| `below_free_gb` | `null` | `ghuumi app` (and its "Ghuumi" shortcut) uses the gaming settings by itself when less graphics memory than this, in GiB, is free as it starts, per `nvidia-smi`. `null` never switches. qwen36 sets `21`. |
+| `backend` | `{}` | `backend` fields merged over the profile's with `--gaming` (`ghuumi serve`, `ghuumi app`, the "Ghuumi (gaming)" shortcut), under the command's own flags. qwen36 sets `max_context_length: 65536` and `llama_server.n_cpu_moe: 18`, measured beside a game. Validated at load. [Details](../src/ghuumi/desktop.md). |
 
 ## How to use it
 
-Commands assume the venv is active; otherwise call `.\.venv\Scripts\kumaru.exe`.
+Commands assume the venv is active; otherwise call `.\.venv\Scripts\ghuumi.exe`.
 
 ### Inspect the resolved configuration
 
 ```powershell
-kumaru config                        # code defaults
-kumaru config -c default             # this file: the same except models_dir
-kumaru config -c qwen36 -b echo      # another profile with its backend swapped
+ghuumi config                        # code defaults
+ghuumi config -c default             # this file: the same except models_dir
+ghuumi config -c qwen36 -b echo      # another profile with its backend swapped
 ```
 
-`kumaru config` takes only `-c`, `-b` and `-m`, and never loads a model. It prints both API keys in clear text, so redact the output before you share it.
+`ghuumi config` takes only `-c`, `-b` and `-m`, and never loads a model. It prints both API keys in clear text, so redact the output before you share it.
 
 ### Run it
 
 ```powershell
 .\scripts\setup.ps1 -Gpu             # CUDA torch, transformers, peft
-kumaru chat -c default -q "Explain KV caching in two paragraphs."
-kumaru serve -c default              # API and UI on http://127.0.0.1:8080
+ghuumi chat -c default -q "Explain KV caching in two paragraphs."
+ghuumi serve -c default              # API and UI on http://127.0.0.1:8080
 ```
 
 ### Check precedence without a model
@@ -275,34 +275,34 @@ kumaru serve -c default              # API and UI on http://127.0.0.1:8080
 The echo backend prints the values that reached it:
 
 ```powershell
-kumaru chat -c test -q hi                    # ... temperature=0.0  (profile)
-$env:KUMARU_GENERATION__TEMPERATURE = '0.3'
-kumaru chat -c test -q hi                    # ... temperature=0.3  (environment beats profile)
-kumaru chat -c test -t 0.5 -q hi             # ... temperature=0.5  (flag beats environment)
-Remove-Item Env:KUMARU_GENERATION__TEMPERATURE
+ghuumi chat -c test -q hi                    # ... temperature=0.0  (profile)
+$env:GHUUMI_GENERATION__TEMPERATURE = '0.3'
+ghuumi chat -c test -q hi                    # ... temperature=0.3  (environment beats profile)
+ghuumi chat -c test -t 0.5 -q hi             # ... temperature=0.5  (flag beats environment)
+Remove-Item Env:GHUUMI_GENERATION__TEMPERATURE
 ```
 
 ### Override with environment variables
 
-The form is `KUMARU_<SECTION>__<FIELD>`. Use a double underscore between levels; single underscores belong to the names. Names are case-insensitive.
+The form is `GHUUMI_<SECTION>__<FIELD>`. Use a double underscore between levels; single underscores belong to the names. Names are case-insensitive.
 
 ```powershell
-$env:KUMARU_BACKEND__MODEL = 'Qwen/Qwen2.5-1.5B-Instruct'
-$env:KUMARU_THINKING_MODE__TEMPERATURE = '0.6'
-$env:KUMARU_BACKEND__LLAMA_SERVER__N_CPU_MOE = '18'
-$env:KUMARU_BACKEND__EXTRA__DELAY_S = '0.05'
-kumaru config -c test                        # check what won
-Get-ChildItem Env:KUMARU_* | Remove-Item     # clear them all
+$env:GHUUMI_BACKEND__MODEL = 'Qwen/Qwen2.5-1.5B-Instruct'
+$env:GHUUMI_THINKING_MODE__TEMPERATURE = '0.6'
+$env:GHUUMI_BACKEND__LLAMA_SERVER__N_CPU_MOE = '18'
+$env:GHUUMI_BACKEND__EXTRA__DELAY_S = '0.05'
+ghuumi config -c test                        # check what won
+Get-ChildItem Env:GHUUMI_* | Remove-Item     # clear them all
 ```
 
 Rules:
-- **Some names are skipped silently.** That covers names without `__` (such as `KUMARU_LOG_LEVEL`, which the logger reads directly) and unknown sections (`KUMARU_BACKNED__MODEL`).
+- **Some names are skipped silently.** That covers names without `__` (such as `GHUUMI_LOG_LEVEL`, which the logger reads directly) and unknown sections (`GHUUMI_BACKNED__MODEL`).
 - **A misspelt field in a known section fails** like a YAML typo, except in `generation`, which ignores it.
 - **`setx` persists a variable for new shells only**, not for the current one.
 
 Values are parsed as YAML:
 
-| You set | Kumaru gets | Consequence |
+| You set | Ghuumi gets | Consequence |
 |---|---|---|
 | `'0.3'`, `'18'` | float, int | |
 | `'true'`/`'yes'`/`'on'`, `'false'`/`'no'`/`'off'` | `True`, `False` | `flash_attn` maps them back to `on`/`off`. A string field such as `api_key` fails unless quoted: `"'yes'"` |
@@ -312,7 +312,7 @@ Values are parsed as YAML:
 | `'12345'` | int | `api_key` fails: `Input should be a valid string`. Set `'"12345"'` |
 | `'Be terse. #1 rule'` | `'Be terse.'` | ` #` starts a YAML comment. Wrap the value in quotes: `"'Be terse. #1 rule'"` |
 | `'Rule: be terse'` | a mapping | `system_prompt` fails. Quote it as above |
-| `D:\kumaru\models` | unchanged | Windows paths are safe |
+| `D:\ghuumi\models` | unchanged | Windows paths are safe |
 
 ### Write a profile
 
@@ -329,7 +329,7 @@ agent:
   max_history_tokens: 12288
 ```
 
-Run `kumaru config -c my-profile`, then `kumaru serve -c my-profile`. Every omitted field, here `generation.max_tokens` (1,024) for example, comes from the code.
+Run `ghuumi config -c my-profile`, then `ghuumi serve -c my-profile`. Every omitted field, here `generation.max_tokens` (1,024) for example, comes from the code.
 
 ### Override per request
 
@@ -361,20 +361,20 @@ The web UI sends `thinking` with every message, plus `thinking_budget` when Thin
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Invalid configuration: … Extra inputs are not permitted` | A misspelt key in YAML or in a `KUMARU_*` name | The error names the path, e.g. `backend.modle` |
-| A `generation` value has no effect | `generation` ignores misspelt keys, and a misspelt section in a variable name (`KUMARU_GENERATON__…`) is skipped | Compare with `kumaru config` |
+| `Invalid configuration: … Extra inputs are not permitted` | A misspelt key in YAML or in a `GHUUMI_*` name | The error names the path, e.g. `backend.modle` |
+| A `generation` value has no effect | `generation` ignores misspelt keys, and a misspelt section in a variable name (`GHUUMI_GENERATON__…`) is skipped | Compare with `ghuumi config` |
 | `Input should be a valid dictionary or instance of …` | A section header with every key commented out is `null` | Delete the header, or keep one key |
 | `Input should be a valid string` for `api_key` or another string field | YAML read a digits-only value as an int, or `yes`/`no`/`on`/`off` as a boolean; variables are parsed the same way | Quote it: `"12345"` in YAML, `'"12345"'` in a variable |
 | `Input should be 'on', 'off' or 'auto'` for `flash_attn` | Another value, e.g. `1` or `enabled` | `on`, `off` or `auto` |
 | `error: Config file not found: x` | Neither an existing path nor a profile in `configs\` | Use a name from the `Available profiles:` hint |
 | `error: Unknown backend: 'Echo'.` | Backend names are case-sensitive | Use a name from the hint |
-| `generation.temperature` or `.max_tokens` is ignored while thinking | `thinking_mode` beats `generation` when thinking is on | Set the field in `thinking_mode` (`$env:KUMARU_THINKING_MODE__TEMPERATURE`), or pass `-t`/`--max-tokens`, which are request fields |
+| `generation.temperature` or `.max_tokens` is ignored while thinking | `thinking_mode` beats `generation` when thinking is on | Set the field in `thinking_mode` (`$env:GHUUMI_THINKING_MODE__TEMPERATURE`), or pass `-t`/`--max-tokens`, which are request fields |
 | The model thinks, but with the non-thinking sampling | `generation.thinking: null`: the template thinks by default, but the preset needs an explicit `true` | Set `generation.thinking`, or send `thinking: true` |
-| `telemetry.log_level: DEBUG` changes nothing for `chat` or `bench run` | Only `kumaru serve` applies `telemetry` | `$env:KUMARU_LOG_LEVEL = 'DEBUG'` |
-| `Invalid configuration: … telemetry.log_level … Input should be 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'` | A level name Kumaru doesn't know, such as `verbose`, in YAML, `KUMARU_TELEMETRY__LOG_LEVEL` or `--log-level` | One of the five names, in any case; `WARN` and `FATAL` also work |
+| `telemetry.log_level: DEBUG` changes nothing for `chat` or `bench run` | Only `ghuumi serve` applies `telemetry` | `$env:GHUUMI_LOG_LEVEL = 'DEBUG'` |
+| `Invalid configuration: … telemetry.log_level … Input should be 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'` | A level name Ghuumi doesn't know, such as `verbose`, in YAML, `GHUUMI_TELEMETRY__LOG_LEVEL` or `--log-level` | One of the five names, in any case; `WARN` and `FATAL` also work |
 | `request_timeout_s`, `metrics_enabled` or `trace_file` has no effect | Not implemented | — |
-| `The transformers backend cannot call tools, and tools are enabled (agent.enabled_tools, or kumaru chat --workspace).` | `agent.enabled_tools` or `--workspace` on a backend without tool calling: this profile's `transformers`, or `llamacpp` | `-c qwen36` (`llamacpp_server`), or `openai_compat` with a server that parses tool calls |
-| The log says `not offering write_file, ...: they need approval, and nobody here can give it` | `serve`, the web UI, `eval` and `bench` cannot ask you before a change or a command, so they withhold those tools | `kumaru chat --workspace DIR` |
+| `The transformers backend cannot call tools, and tools are enabled (agent.enabled_tools, or ghuumi chat --workspace).` | `agent.enabled_tools` or `--workspace` on a backend without tool calling: this profile's `transformers`, or `llamacpp` | `-c qwen36` (`llamacpp_server`), or `openai_compat` with a server that parses tool calls |
+| The log says `not offering write_file, ...: they need approval, and nobody here can give it` | `serve`, the web UI, `eval` and `bench` cannot ask you before a change or a command, so they withhold those tools | `ghuumi chat --workspace DIR` |
 | `Value error, 'C:/tools/node.exe' is not a bare program name (no paths or spaces)`, or `... is a shell or launcher, which could run any command` | A path, a space or a shell in `agent.workspace.allowed_commands` | List each program by bare name (`node`), and never a shell |
 | HTTP 413 `Conversation needs N tokens but the budget is B.` | `memory_policy: none` and the history is over budget | `sliding_window`, or a larger budget |
 | HTTP 503 `Backend is still loading.` | The backend took more than 600 s to load, e.g. during the first download | Retry once it has loaded; the wait is fixed |
@@ -383,16 +383,16 @@ The web UI sends `thinking` with every message, plus `thinking_budget` when Thin
 | `device: cuda:1` still loads on GPU 0 | CUDA placement uses `device_map`, which ignores the index | `$env:CUDA_VISIBLE_DEVICES = '1'`, or `backend.extra.device_map` |
 | The UI gets 401 `Invalid or missing API key.` | `server.api_key` is set, and the UI sends no `Authorization` header | Call the API with the header, or run without a key on localhost |
 | Another web page can call your local API | `cors_origins: ["*"]` with credentials allowed | `cors_origins: []`, or list your own origins |
-| API keys appear in `kumaru config` output | It prints the resolved config verbatim | Redact before you share it |
+| API keys appear in `ghuumi config` output | It prints the resolved config verbatim | Redact before you share it |
 
 ## Related files
 
-- `src\kumaru\core\config.py`: the schema, `load_config` and `env_overrides` ([config.md](../src/kumaru/core/config.md)).
-- `src\kumaru\core\types.py`: `GenerationParams` and its `merged()` ([types.md](../src/kumaru/core/types.md)).
-- `src\kumaru\agent\chat.py`: `resolve_params` and the history budget ([chat.md](../src/kumaru/agent/chat.md)). `memory.py` holds the policies ([memory.md](../src/kumaru/agent/memory.md)), `prompt.py` the system prompt ([prompt.md](../src/kumaru/agent/prompt.md)), `tools.py` the tools ([tools.md](../src/kumaru/agent/tools.md)), `workspace.py` the project-folder tools ([workspace.md](../src/kumaru/agent/workspace.md)) and `commands.py` `run_command` ([commands.md](../src/kumaru/agent/commands.md)).
-- `src\kumaru\cli.py`: the flags ([cli.md](../src/kumaru/cli.md)).
-- `src\kumaru\server\app.py`, `routes_chat.py` and `schemas.py`: CORS, admission, auth and the request fields ([app.md](../src/kumaru/server/app.md), [routes_chat.md](../src/kumaru/server/routes_chat.md), [schemas.md](../src/kumaru/server/schemas.md)).
-- `src\kumaru\core\logging.py`: `KUMARU_LOG_LEVEL` and `KUMARU_LOG_FORMAT` ([logging.md](../src/kumaru/core/logging.md)).
-- The backends: [transformers_backend.md](../src/kumaru/backends/transformers_backend.md), [llamacpp_server.md](../src/kumaru/backends/llamacpp_server.md), [llamacpp_backend.md](../src/kumaru/backends/llamacpp_backend.md), [openai_compat.md](../src/kumaru/backends/openai_compat.md) and [echo.md](../src/kumaru/backends/echo.md).
+- `src\ghuumi\core\config.py`: the schema, `load_config` and `env_overrides` ([config.md](../src/ghuumi/core/config.md)).
+- `src\ghuumi\core\types.py`: `GenerationParams` and its `merged()` ([types.md](../src/ghuumi/core/types.md)).
+- `src\ghuumi\agent\chat.py`: `resolve_params` and the history budget ([chat.md](../src/ghuumi/agent/chat.md)). `memory.py` holds the policies ([memory.md](../src/ghuumi/agent/memory.md)), `prompt.py` the system prompt ([prompt.md](../src/ghuumi/agent/prompt.md)), `tools.py` the tools ([tools.md](../src/ghuumi/agent/tools.md)), `workspace.py` the project-folder tools ([workspace.md](../src/ghuumi/agent/workspace.md)) and `commands.py` `run_command` ([commands.md](../src/ghuumi/agent/commands.md)).
+- `src\ghuumi\cli.py`: the flags ([cli.md](../src/ghuumi/cli.md)).
+- `src\ghuumi\server\app.py`, `routes_chat.py` and `schemas.py`: CORS, admission, auth and the request fields ([app.md](../src/ghuumi/server/app.md), [routes_chat.md](../src/ghuumi/server/routes_chat.md), [schemas.md](../src/ghuumi/server/schemas.md)).
+- `src\ghuumi\core\logging.py`: `GHUUMI_LOG_LEVEL` and `GHUUMI_LOG_FORMAT` ([logging.md](../src/ghuumi/core/logging.md)).
+- The backends: [transformers_backend.md](../src/ghuumi/backends/transformers_backend.md), [llamacpp_server.md](../src/ghuumi/backends/llamacpp_server.md), [llamacpp_backend.md](../src/ghuumi/backends/llamacpp_backend.md), [openai_compat.md](../src/ghuumi/backends/openai_compat.md) and [echo.md](../src/ghuumi/backends/echo.md).
 - `ui\app.js`: what the UI sends ([app.js.md](../ui/app.js.md)).
 - `docs\BENCHMARKS.md`: scores measured with these profiles ([BENCHMARKS.md](../../BENCHMARKS.md)).

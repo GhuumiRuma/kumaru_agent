@@ -18,9 +18,9 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
-from kumaru.core.config import REPO_ROOT
-from kumaru.train.config import OptimConfig, load_train_config
-from kumaru.train.finetune_lora import (
+from ghuumi.core.config import REPO_ROOT
+from ghuumi.train.config import OptimConfig, load_train_config
+from ghuumi.train.finetune_lora import (
     _filter_kwargs,
     _peak_gpu_memory_gb,
     _training_arguments,

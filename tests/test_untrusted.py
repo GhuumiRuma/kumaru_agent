@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from kumaru.agent import untrusted
-from kumaru.agent.untrusted import (
+from ghuumi.agent import untrusted
+from ghuumi.agent.untrusted import (
     CONTROL_TOKEN,
     MAX_CONTROL_TOKEN_CHARS,
     neutralize_control_tokens,
@@ -111,7 +111,7 @@ def test_restore_gives_back_exactly_what_was_escaped() -> None:
         assert restore_control_tokens(neutralize_control_tokens(text)) == text, text
 
 
-def test_the_module_imports_nothing_from_kumaru() -> None:
+def test_the_module_imports_nothing_from_ghuumi() -> None:
     # Any module may import it, so it must not import any of them.
     tree = ast.parse(Path(untrusted.__file__).read_text(encoding="utf-8"))
     imported = {

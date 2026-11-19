@@ -1,6 +1,6 @@
 # `configs\curriculum\cs-foundations.yaml`
 
-> Phase 1 of Kumaru's curriculum: computer science fundamentals to graduate level, measured and supplied with references before any programming language.
+> Phase 1 of Ghuumi's curriculum: computer science fundamentals to graduate level, measured and supplied with references before any programming language.
 
 **Read this when:** you run or repeat phase 1, or copy it to start the next phase.
 
@@ -9,7 +9,7 @@
 ## What it does
 
 ```powershell
-kumaru curriculum run configs\curriculum\cs-foundations.yaml -c qwen36
+ghuumi curriculum run configs\curriculum\cs-foundations.yaml -c qwen36
 ```
 
 - **Measures** with `supergpqa_cs` (all 763 graduate CS questions, 10 areas) and `supergpqa_stem` (1,000 of the other science and engineering questions, 6 areas), thinking off. Results go to `<first education.runs_dirs>\cs-foundations-qwen36-nothink` and show on the Education page.
@@ -29,5 +29,5 @@ kumaru curriculum run configs\curriculum\cs-foundations.yaml -c qwen36
 
 ## Related files
 
-- [`../src/kumaru/train/curriculum.md`](../src/kumaru/train/curriculum.md): the command and the file format.
-- [`../src/kumaru/eval/benchmarks/supergpqa.md`](../src/kumaru/eval/benchmarks/supergpqa.md): the benchmark.
+- [`../src/ghuumi/train/curriculum.md`](../src/ghuumi/train/curriculum.md): the command and the file format.
+- [`../src/ghuumi/eval/benchmarks/supergpqa.md`](../src/ghuumi/eval/benchmarks/supergpqa.md): the benchmark.

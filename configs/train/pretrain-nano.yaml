@@ -21,11 +21,11 @@
 # corpus into <output_dir>/tokens.bin, and later runs reuse that file without
 # re-reading `text_file`.
 #
-#   kumaru train configs/train/pretrain-nano.yaml --dry-run
-#   kumaru train configs/train/pretrain-nano.yaml
+#   ghuumi train configs/train/pretrain-nano.yaml --dry-run
+#   ghuumi train configs/train/pretrain-nano.yaml
 #
 # Multi-GPU (same loop, no code change):
-#   torchrun --nproc_per_node=4 -m kumaru.train.pretrain_nano configs/train/pretrain-nano.yaml
+#   torchrun --nproc_per_node=4 -m ghuumi.train.pretrain_nano configs/train/pretrain-nano.yaml
 #
 # Requires: .\scripts\setup.ps1 -Gpu   (elsewhere: pip install -e ".[train]")
 

@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from kumaru.agent.doc_chunks import (
+from ghuumi.agent.doc_chunks import (
     MAX_CHUNK_CHARS,
     MAX_RST_DEPTH,
     SUPPORTED_SUFFIXES,
@@ -328,7 +328,7 @@ A paragraph
 
     A continuation paragraph, indented four.
 
-        npm install kumaru
+        npm install ghuumi
 
 !!! note
     An admonition paragraph is prose.
@@ -342,7 +342,7 @@ A paragraph
         '```\nelement.innerHTML = "<span>OK</span>";\n// <!-- not a comment --> [not](a link)\n```'
         in text_out
     )
-    assert "```\nnpm install kumaru\n```" in text_out
+    assert "```\nnpm install ghuumi\n```" in text_out
     assert text_out.count("```") == 4
     for prose in ("continued by an indented line.", "A continuation paragraph", "An admonition paragraph"):
         assert prose in text_out

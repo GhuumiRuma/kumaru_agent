@@ -1,11 +1,11 @@
-# One-shot setup for Kumaru on Windows.
+# One-shot setup for Ghuumi on Windows.
 #
 #   .\scripts\setup.ps1              # base install + test tools, no GPU deps
 #   .\scripts\setup.ps1 -Gpu         # + PyTorch CUDA + training stack
 #   .\scripts\setup.ps1 -Gpu -Quant  # + bitsandbytes for 4-bit / QLoRA
 #
 # Everything installs into .venv in the repo root. Nothing touches your system
-# Python, so removing .venv fully uninstalls Kumaru.
+# Python, so removing .venv fully uninstalls Ghuumi.
 
 [CmdletBinding()]
 param(
@@ -41,9 +41,9 @@ $py = Join-Path $repo ".venv\Scripts\python.exe"
 
 # --- base ------------------------------------------------------------------
 # The dev extra (pytest, ruff, mypy, numpy) is small, and verify.ps1 runs the tests.
-Step "Installing Kumaru (base: server, UI, CLI, plus the test tools)"
+Step "Installing Ghuumi (base: server, UI, CLI, plus the test tools)"
 & $py -m pip install -e ".[dev]" --quiet
-Assert-Success "Installing Kumaru"
+Assert-Success "Installing Ghuumi"
 
 # --- torch -----------------------------------------------------------------
 # PyTorch is installed separately because the correct wheel depends on your
@@ -113,15 +113,15 @@ if ($Gguf) {
 
 # --- verify ----------------------------------------------------------------
 Step "Verifying installation"
-& $py -m kumaru.cli info
-Assert-Success "Verifying the installation (kumaru info)"
+& $py -m ghuumi.cli info
+Assert-Success "Verifying the installation (ghuumi info)"
 
 Write-Host "`nSetup complete." -ForegroundColor Green
 Write-Host "Next:" -ForegroundColor Green
 Write-Host "  .\.venv\Scripts\Activate.ps1"
-Write-Host "  kumaru serve -c test        # verify the stack, no model download"
+Write-Host "  ghuumi serve -c test        # verify the stack, no model download"
 if ($Gpu) {
-    Write-Host "  kumaru serve -c local-gpu   # real model (~15 GB on first run)"
+    Write-Host "  ghuumi serve -c local-gpu   # real model (~15 GB on first run)"
 } else {
     Write-Host "  .\scripts\setup.ps1 -Gpu    # add GPU support when ready"
 }

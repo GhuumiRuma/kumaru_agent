@@ -30,7 +30,7 @@
          settings chat actually uses.
 ```
 
-**Imports point downward only.** `core` imports nothing from Kumaru. `backends` imports only `core`. `agent` imports `core` and `backends`. `server` imports everything below it. Only `cli.py` imports `train` and `eval`, so the server never loads training or benchmark code.
+**Imports point downward only.** `core` imports nothing from Ghuumi. `backends` imports only `core`. `agent` imports `core` and `backends`. `server` imports everything below it. Only `cli.py` imports `train` and `eval`, so the server never loads training or benchmark code.
 
 This is not aesthetic. It buys three concrete things:
 
@@ -68,7 +68,7 @@ Everything above the backend layer is written once, against that interface. Five
 | Backend | What it runs | Use it for |
 |---|---|---|
 | `echo` | No model; replies with your own message | Tests, and UI work without a GPU |
-| `transformers` | PyTorch, in-process | Models and LoRA adapters from `kumaru train` |
+| `transformers` | PyTorch, in-process | Models and LoRA adapters from `ghuumi train` |
 | `llamacpp` | llama.cpp through its Python bindings, in-process | One user, simple setups |
 | `llamacpp_server` | llama.cpp's own `llama-server`, as a child process | The default: `qwen36` and other GGUF models ([Decision 13](#decision-13--the-default-engine-runs-as-a-child-process)) |
 | `openai_compat` | Any OpenAI-style server: vLLM, SGLang, a hosted API | Bigger hardware |
@@ -116,9 +116,9 @@ A worker thread makes *waiting* concurrent, not *generation*. The in-process bac
 
 - Any replica can serve any request.
 - No session affinity, no sticky routing, no shared cache.
-- Scaling out is `docker compose up --scale kumaru=8` behind a round-robin load balancer.
+- Scaling out is `docker compose up --scale ghuumi=8` behind a round-robin load balancer.
 
-Statefulness is easy to add and very hard to remove. Persistence belongs in a store the *caller* owns — in Kumaru's UI, that is `localStorage` — not smuggled into the agent.
+Statefulness is easy to add and very hard to remove. Persistence belongs in a store the *caller* owns — in Ghuumi's UI, that is `localStorage` — not smuggled into the agent.
 
 ---
 
@@ -133,7 +133,7 @@ A semaphore in `server/app.py` caps in-flight generations. Requests beyond the c
 
 **Why it is load-bearing, not polish.** On one GPU, admitting unlimited concurrency makes every request slower *and* eventually triggers a CUDA OOM that kills the process. Bounded admission converts a hard crash into graceful queueing — the difference between a service that degrades and one that dies.
 
-With `llamacpp_server` there are two queues. Kumaru admits `max_concurrent_requests` (8); the engine runs `llama_server.parallel` of them at once (4 slots) and queues the rest itself. The engine's limit protects VRAM: llama-server reserves its KV cache when it starts, so an extra request waits for a free slot rather than running out of memory. Kumaru's limit protects the API server from an unbounded backlog.
+With `llamacpp_server` there are two queues. Ghuumi admits `max_concurrent_requests` (8); the engine runs `llama_server.parallel` of them at once (4 slots) and queues the rest itself. The engine's limit protects VRAM: llama-server reserves its KV cache when it starts, so an extra request waits for a free slot rather than running out of memory. Ghuumi's limit protects the API server from an unbounded backlog.
 
 The same reasoning produces the tool-round cap in `agent/chat.py` (`agent.max_tool_iterations`, 10 rounds per message). Tool calling is an unbounded loop driven by a stochastic process; without a cap, one confused model burns your GPU indefinitely. Limits on unbounded loops are safety properties.
 
@@ -154,25 +154,25 @@ This is the difference between "it's broken" and "it's warming up", and it costs
 ## Decision 7 — Three registries, with entry points
 
 ```python
-BACKENDS   = Registry("backend",   entry_point_group="kumaru.backends")
-TOOLS      = Registry("tool",      entry_point_group="kumaru.tools")
-BENCHMARKS = Registry("benchmark", entry_point_group="kumaru.benchmarks")
+BACKENDS   = Registry("backend",   entry_point_group="ghuumi.backends")
+TOOLS      = Registry("tool",      entry_point_group="ghuumi.tools")
+BENCHMARKS = Registry("benchmark", entry_point_group="ghuumi.benchmarks")
 ```
 
 Components announce themselves with a decorator; the system resolves them by name from config at runtime.
 
-**Lazy registration** matters for startup time: `BACKENDS.register_lazy("transformers", "kumaru.backends.transformers_backend:TransformersBackend")` records a dotted path without importing torch. `kumaru --help` stays instant, and `kumaru serve --backend echo` never pays for a multi-second torch import.
+**Lazy registration** matters for startup time: `BACKENDS.register_lazy("transformers", "ghuumi.backends.transformers_backend:TransformersBackend")` records a dotted path without importing torch. `ghuumi --help` stays instant, and `ghuumi serve --backend echo` never pays for a multi-second torch import.
 
-**Entry points** extend this across package boundaries. Someone can publish `kumaru-mamba` with:
+**Entry points** extend this across package boundaries. Someone can publish `ghuumi-mamba` with:
 
 ```toml
-[project.entry-points."kumaru.backends"]
-mamba = "kumaru_mamba:MambaBackend"
+[project.entry-points."ghuumi.backends"]
+mamba = "ghuumi_mamba:MambaBackend"
 ```
 
-`pip install kumaru-mamba`, and it appears in your UI dropdown. No fork, no patch, no change to this repository. A broken third-party plugin is logged and skipped rather than crashing startup — one bad plugin must never take down the application.
+`pip install ghuumi-mamba`, and it appears in your UI dropdown. No fork, no patch, no change to this repository. A broken third-party plugin is logged and skipped rather than crashing startup — one bad plugin must never take down the application.
 
-Benchmarks follow the same pattern. The built-ins are lazy entries (`BENCHMARKS.register_lazy("gsm8k", "kumaru.eval.benchmarks.gsm8k:GSM8K")`), datasets download only when a run needs them, and a separate package can add benchmarks under the `kumaru.benchmarks` group. A suite name stands for several of them: `multipl_e` runs one benchmark per programming language (`BENCHMARK_SUITES`). [GUIDE.md](../GUIDE.md#add-a-benchmark) walks through adding one.
+Benchmarks follow the same pattern. The built-ins are lazy entries (`BENCHMARKS.register_lazy("gsm8k", "ghuumi.eval.benchmarks.gsm8k:GSM8K")`), datasets download only when a run needs them, and a separate package can add benchmarks under the `ghuumi.benchmarks` group. A suite name stands for several of them: `multipl_e` runs one benchmark per programming language (`BENCHMARK_SUITES`). [GUIDE.md](../GUIDE.md#add-a-benchmark) walks through adding one.
 
 ---
 
@@ -182,7 +182,7 @@ Benchmarks follow the same pattern. The built-ins are lazy entries (`BENCHMARKS.
 
 **Why.** Core types must be free to refactor. Wire schemas are what external clients depend on. Collapsing them saves a few lines today and makes every internal rename a breaking API change forever.
 
-The wire schemas mirror OpenAI's shapes, which means the official SDK, LangChain, LlamaIndex, Continue.dev, and most chat frontends work against Kumaru with only a changed `base_url`. **You inherit an ecosystem instead of building one.**
+The wire schemas mirror OpenAI's shapes, which means the official SDK, LangChain, LlamaIndex, Continue.dev, and most chat frontends work against Ghuumi with only a changed `base_url`. **You inherit an ecosystem instead of building one.**
 
 One detail: every generation field on `ChatCompletionRequest` defaults to `None`, so "absent" is distinguishable from "explicitly zero". Otherwise a client library that helpfully sends `temperature=1.0` would silently stomp your tuned server defaults.
 
@@ -193,7 +193,7 @@ One detail: every generation field on `ChatCompletionRequest` defaults to `None`
 Four sources, explicit precedence, about forty lines of obvious code in `core/config.py`:
 
 ```
-field defaults  <  YAML  <  KUMARU_* env  <  CLI overrides
+field defaults  <  YAML  <  GHUUMI_* env  <  CLI overrides
 ```
 
 We use Pydantic for validation but not for source resolution. **Precedence bugs in configuration are miserable to debug**, and being able to *read* the rule end to end is worth more than the abstraction that would hide it.
@@ -220,7 +220,7 @@ Two details in `app.js` worth knowing:
 
 ## Decision 11 — Training writes its own provenance
 
-Every `kumaru train` run writes `train_config.yaml`, `metrics.json`, and `example_preview.txt` into its output directory alongside the weights.
+Every `ghuumi train` run writes `train_config.yaml`, `metrics.json`, and `example_preview.txt` into its output directory alongside the weights.
 
 **Why.** A checkpoint without its recipe is an artifact you cannot reproduce, cannot trust, and cannot improve on. Six months later, "what produced this adapter?" needs a precise answer.
 
@@ -248,11 +248,11 @@ Having both is the point: one file to learn from, one file to work with.
 
 - **Upgrades are downloads.** Support for a new architecture is `.\scripts\get-llama-server.ps1 -Version bNNNNN`: a new binary, checksum-verified and swapped in whole, with no compiler and no Python change.
 - **Batching.** `llama-server` runs several requests in one forward pass (`llama_server.parallel` slots). [SCALABILITY.md](SCALABILITY.md#what-batching-buys-measured-on-this-machine) shows what that is worth on this machine.
-- **Crash isolation.** A CUDA out-of-memory error kills the child, not the API server. Kumaru reports the engine's last log lines with a hint.
+- **Crash isolation.** A CUDA out-of-memory error kills the child, not the API server. Ghuumi reports the engine's last log lines with a hint.
 - **Exact memory release.** Stopping the process returns all of its VRAM. An in-process engine depends on Python dropping every reference and PyTorch's caching allocator letting go. This is what makes the UI's model switch (close the old model, then load the new one) reliable.
-- **Thinking handled by the engine.** With `--jinja`, `llama-server` applies the model's own chat template, which reads the `enable_thinking` switch Kumaru sends. It returns the thinking as `reasoning_content`, which maps onto Kumaru's `reasoning` channel, and it enforces the thinking budget (`reasoning_budget_tokens`).
+- **Thinking handled by the engine.** With `--jinja`, `llama-server` applies the model's own chat template, which reads the `enable_thinking` switch Ghuumi sends. It returns the thinking as `reasoning_content`, which maps onto Ghuumi's `reasoning` channel, and it enforces the thinking budget (`reasoning_budget_tokens`).
 
-**The hazard, and the fix.** A model server that outlives its parent silently holds about 20 GB of VRAM. On Windows the child joins a Job Object with `KILL_ON_JOB_CLOSE`, so the OS kills it even when Kumaru is killed from Task Manager. On Linux it receives `SIGTERM` when the parent dies (`PR_SET_PDEATHSIG`). An `atexit` hook covers normal exits everywhere.
+**The hazard, and the fix.** A model server that outlives its parent silently holds about 20 GB of VRAM. On Windows the child joins a Job Object with `KILL_ON_JOB_CLOSE`, so the OS kills it even when Ghuumi is killed from Task Manager. On Linux it receives `SIGTERM` when the parent dies (`PR_SET_PDEATHSIG`). An `atexit` hook covers normal exits everywhere.
 
 **The cost.** A second process and a local HTTP hop per request, both small next to generating tokens; and a binary per platform. `get-llama-server.ps1` is Windows-only; elsewhere, install llama.cpp and put `llama-server` on `PATH`.
 
@@ -265,11 +265,11 @@ Having both is the point: one file to learn from, one file to work with.
 **What we did** (`eval/benchmarks/`):
 
 - **The same questions for every model.** A seeded sample (100 per benchmark by default, seed 1234) means two runs answer identical questions and can be compared question by question. Pairing removes the difference in question difficulty, which is much of the noise.
-- **Paired statistics.** `kumaru bench compare` counts the questions only one model got right and tests them with an exact McNemar test. It puts a paired bootstrap interval on the difference and applies Holm's correction across benchmarks. It says "B better" only when the corrected test agrees (`stats.py`, and `verdict()` in `runner.py`).
+- **Paired statistics.** `ghuumi bench compare` counts the questions only one model got right and tests them with an exact McNemar test. It puts a paired bootstrap interval on the difference and applies Holm's correction across benchmarks. It says "B better" only when the corrected test agrees (`stats.py`, and `verdict()` in `runner.py`).
 - **Every answer is saved as soon as it is graded.** Each record is appended to `items.jsonl` and flushed. A record holds the output, the thinking, the extracted answer, the verdict, the token count and why generation stopped. A crash or Ctrl+C loses only the questions in flight; re-running with `--out` resumes, and failed questions are retried.
 - **A fingerprint guards each run.** A hash of the model, adapter, decoding settings, seed and prompt mode is stored with the results; for the code benchmarks it also covers where programs run, the compiler versions and, on Windows, a memory cap other than the default. Resuming with different settings is refused, so two experiments are never silently mixed. Each record also stores a hash of its question, answer budget and seed, and a resume reuses the saved answer only if that hash still matches. (That hash leaves out the agent's system prompt, which states today's date; otherwise a run resumed the next day would ask every question again.) Neither hash covers grader code, and a resume keeps saved verdicts, so after changing a grader start a new run folder.
 - **One seed per question,** derived from the run seed and the question ID, so sampling does not depend on the order in which concurrent answers finish. Batched GPU arithmetic is still not bit-exact, which is one reason [BENCHMARKS.md](BENCHMARKS.md) compares a run with a repeat of itself.
-- **Graders are tested like code.** `scripts/check_graders.py` grades each dataset's reference answers, phrased the ways models phrase them. Every one must grade correct, and a wrong answer must grade wrong. The IFEval checks are compared with Google's reference implementation. MultiPL-E's languages have no reference answers, so Kumaru re-grades answers that MultiPL-E's authors graded with their own harness, and must reach the same verdicts, bar a few documented toolchain differences.
+- **Graders are tested like code.** `scripts/check_graders.py` grades each dataset's reference answers, phrased the ways models phrase them. Every one must grade correct, and a wrong answer must grade wrong. The IFEval checks are compared with Google's reference implementation. MultiPL-E's languages have no reference answers, so Ghuumi re-grades answers that MultiPL-E's authors graded with their own harness, and must reach the same verdicts, bar a few documented toolchain differences.
 - **Model-written code is opt-in.** HumanEval and MultiPL-E run code a model wrote, so they need `--allow-code-exec`. Each program gets an empty temporary folder, a scrubbed environment and time limits (15 seconds to run), and everything it started is killed when it ends; on Windows its memory is also capped. HumanEval's Python also has the destructive parts of `os`, `shutil` and `subprocess` disabled. That stops accidents, not attackers. `--sandbox docker` runs each program in a container with no network instead, from an image built from `docker/sandbox/Dockerfile`; use it, a VM or another container for models you do not trust.
 - **A missing compiler is not a score.** A MultiPL-E language whose compiler is missing, or which grades a known answer wrongly, is skipped with a note, never scored 0, so a score always means the model's code was run.
 
@@ -283,12 +283,12 @@ Having both is the point: one file to learn from, one file to work with.
 
 **The problem.** To build an app, a website or a game, a model has to write several files, run the build and the tests, read the failures and fix them. Printing code in the chat leaves all of that to you. But a model that can write files and run programs can also do damage, by mistake or because a file it read told it to.
 
-**What we did.** `kumaru chat --workspace DIR` turns on five tools: `list_files`, `read_file`, `write_file` and `edit_file` (`agent/workspace.py`), and `run_command` (`agent/commands.py`). `ChatAgent` runs the loop. The tool declarations go with each request. `llamacpp_server` and `openai_compat` return the model's calls, `echo` scripts calls for tests, and the other backends refuse tools. The agent runs each call and sends the result back, for at most `agent.max_tool_iterations` rounds per message.
+**What we did.** `ghuumi chat --workspace DIR` turns on five tools: `list_files`, `read_file`, `write_file` and `edit_file` (`agent/workspace.py`), and `run_command` (`agent/commands.py`). `ChatAgent` runs the loop. The tool declarations go with each request. `llamacpp_server` and `openai_compat` return the model's calls, `echo` scripts calls for tests, and the other backends refuse tools. The agent runs each call and sends the result back, for at most `agent.max_tool_iterations` rounds per message.
 
 - **A call does nothing by itself.** A tool that would change something first returns an `Action`: the path and a unified diff, or the exact command line, its folder and its time limit. `ToolBelt` shows it to an approver and applies it only on yes. Listing and reading need no approval.
 - **No approver, no such tools.** Only the terminal can ask. The server, the web UI, `eval` and `bench` build `ChatAgent` without an approver, so it withholds every tool that changes something or uses the project folder.
 - **One folder.** Every path must be provably inside the folder. `..`, absolute paths, other drives and UNC paths, links and junctions, alternate data streams, device names and `.git` are refused.
-- **No shell.** A command is an argv list for a program named in `agent.workspace.allowed_commands`, and shells and launchers are refused when the config loads. It runs with a reduced environment, so API keys stay out. At its time limit, everything it started is stopped, even programs that detached themselves: on Windows it runs in a Job Object from its first instruction (as in Decision 13), and on Linux its process group is killed and then Kumaru, a child subreaper, kills what is left. If that cannot be set up, the command is not run. macOS and BSD stop only the process group, and the approval prompt says so.
+- **No shell.** A command is an argv list for a program named in `agent.workspace.allowed_commands`, and shells and launchers are refused when the config loads. It runs with a reduced environment, so API keys stay out. At its time limit, everything it started is stopped, even programs that detached themselves: on Windows it runs in a Job Object from its first instruction (as in Decision 13), and on Linux its process group is killed and then Ghuumi, a child subreaper, kills what is left. If that cannot be set up, the command is not run. macOS and BSD stop only the process group, and the approval prompt says so.
 - **Results are data.** Before the model reads a result, its chat control tokens are escaped (`agent/untrusted.py`): llama-server would otherwise read `<|im_end|>` and `<|im_start|>system` in a file as a real turn. Only what the model reads changes, never the files.
 
 **What it is not.** The folder confines the file tools, not the programs. An approved `python` or `npm` command runs with your permissions and can do anything they can. File contents and command output are untrusted text, so read each request before you answer `y`. For code you do not trust, use a container or a VM.
@@ -304,10 +304,10 @@ Having both is the point: one file to learn from, one file to work with.
 | A database | The agent is stateless. Adding persistence would undo the property that makes scaling trivial. |
 | User accounts / multi-tenancy | This is a local-first tool. Bearer-token auth exists for when you bind beyond localhost. |
 | A vector store | Documentation retrieval is keyword search (BM25) in one SQLite file per documentation set (`agent/doc_index.py`), so no embedding model competes with the LLM for the GPU. Embeddings can join it in `find_passages`, and retrieval over history is a `MemoryPolicy`; both plug in without core changes. |
-| Tool approval over HTTP | Only `kumaru chat` can ask you before a change or a command, so the server and the web UI never offer those tools (Decision 15). |
+| Tool approval over HTTP | Only `ghuumi chat` can ask you before a change or a command, so the server and the web UI never offer those tools (Decision 15). |
 | A JS framework | See Decision 10. |
 | Prometheus / OpenTelemetry | `Metrics` is ~30 lines with the same call sites. Swap it when you need it. |
-| A sandbox built into Kumaru | Running model-written code locally stops accidents, not attackers. Real isolation is a container (`--sandbox docker`) or a VM, and Kumaru should not pretend to be one. The project folder confines the file tools; commands you approve run with your permissions. |
+| A sandbox built into Ghuumi | Running model-written code locally stops accidents, not attackers. Real isolation is a container (`--sandbox docker`) or a VM, and Ghuumi should not pretend to be one. The project folder confines the file tools; commands you approve run with your permissions. |
 | An LLM judge for grading | Every built-in grader is deterministic and checked against answer keys. A judge model has its own error rate; see [BENCHMARKS.md §10](BENCHMARKS.md#10-where-evaluation-goes-next). |
 
 Each of these is an *addition*, not a *refactor*. That is the test every design decision here had to pass.

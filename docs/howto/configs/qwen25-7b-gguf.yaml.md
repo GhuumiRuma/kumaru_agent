@@ -11,7 +11,7 @@
 
 ## What it does
 
-The profile runs `Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M` through the [`llamacpp_server`](../src/kumaru/backends/llamacpp_server.md) backend. That is the model v0.1 used by default (in bf16 via transformers, `configs\local-gpu.yaml`), now as a 4-bit GGUF on the v0.2 engine. The rest of the setup:
+The profile runs `Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M` through the [`llamacpp_server`](../src/ghuumi/backends/llamacpp_server.md) backend. That is the model v0.1 used by default (in bf16 via transformers, `configs\local-gpu.yaml`), now as a 4-bit GGUF on the v0.2 engine. The rest of the setup:
 - a 32,768-token window, the model's native one;
 - 4 batched slots sharing one KV pool;
 - Qwen2.5's own `generation_config.json` sampling values;
@@ -74,22 +74,22 @@ llama-server.exe --model <models_dir>\Qwen\Qwen2.5-7B-Instruct-GGUF\qwen2.5-7b-i
 
 ```powershell
 .\scripts\get-llama-server.ps1                 # once
-kumaru serve -c qwen25-7b-gguf                 # UI at http://127.0.0.1:8080
-kumaru chat  -c qwen25-7b-gguf -q "Explain KV caching in two sentences."
-kumaru config -c qwen25-7b-gguf                # resolved settings, no model load
+ghuumi serve -c qwen25-7b-gguf                 # UI at http://127.0.0.1:8080
+ghuumi chat  -c qwen25-7b-gguf -q "Explain KV caching in two sentences."
+ghuumi config -c qwen25-7b-gguf                # resolved settings, no model load
 ```
 
 An 8 GB card:
 
 ```powershell
-kumaru serve -c qwen25-7b-gguf --context 16384     # KV 0.875 GiB; history budget becomes 12,160
+ghuumi serve -c qwen25-7b-gguf --context 16384     # KV 0.875 GiB; history budget becomes 12,160
 ```
 
 A/B against the smart profile. Use the same benchmark, `--limit` and `--seed`, so both runs get the same questions:
 
 ```powershell
-kumaru bench run gsm8k -c qwen25-7b-gguf --limit 100
-kumaru bench run gsm8k -c qwen36 --limit 100
+ghuumi bench run gsm8k -c qwen25-7b-gguf --limit 100
+ghuumi bench run gsm8k -c qwen36 --limit 100
 ```
 
 **Thinking.** `--think`, the UI's Think button and request-level `thinking` are accepted but change nothing. The flag reaches the chat template as `enable_thinking`, which Qwen2.5's template does not use, and the profile has no `thinking_mode` preset to switch to. Treat this model as non-thinking in comparisons.
@@ -115,6 +115,6 @@ kumaru bench run gsm8k -c qwen36 --limit 100
 ## Related files
 
 - `configs\qwen36.yaml` — the smart profile this one is compared against.
-- `src\kumaru\backends\llamacpp_server.py` — download, shard matching, process lifecycle.
+- `src\ghuumi\backends\llamacpp_server.py` — download, shard matching, process lifecycle.
 - `configs\local-gpu.yaml` — the same model in bf16 on transformers (v0.1 path).
 - `docs\BENCHMARKS.md` — baseline and comparison scores.

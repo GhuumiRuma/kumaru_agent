@@ -87,7 +87,7 @@ export const ACCESS = {
   paywall: { label: "Paywall", short: "Paywall", icon: "lock", tone: "warn",
     meaning: "Reading requires payment or a subscription." },
   inaccessible: { label: "Application inaccessible", short: "Inaccessible", icon: "ban", tone: "err",
-    meaning: "Kumaru could not retrieve it: robots refusal, a browser challenge, an unsupported format or a dead link." },
+    meaning: "Ghuumi could not retrieve it: robots refusal, a browser challenge, an unsupported format or a dead link." },
   unknown: { label: "Unknown", short: "Access unknown", icon: "question", tone: "dim",
     meaning: "Access has not been established yet." },
 };

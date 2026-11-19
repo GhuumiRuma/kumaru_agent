@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from kumaru.agent.untrusted import neutralize_control_tokens
-from kumaru.agent.workspace import (
+from ghuumi.agent.untrusted import neutralize_control_tokens
+from ghuumi.agent.workspace import (
     EditFileTool,
     ListFilesTool,
     ReadFileTool,
@@ -21,8 +21,8 @@ from kumaru.agent.workspace import (
     WriteFileTool,
     _keep_endings,
 )
-from kumaru.core.config import WorkspaceConfig
-from kumaru.core.errors import ConfigError, ToolError
+from ghuumi.core.config import WorkspaceConfig
+from ghuumi.core.errors import ConfigError, ToolError
 
 windows_only = pytest.mark.skipif(os.name != "nt", reason="junctions exist only on Windows")
 
@@ -386,7 +386,7 @@ async def test_write_file_shows_a_diff_and_writes_nothing_until_applied(ws: Work
     assert not (root / "src").exists()
     assert await action.apply() == "Created src/app.js (2 lines, 27 B)."
     assert (root / "src" / "app.js").read_bytes() == b"let a = 1;\nconsole.log(a);\n"
-    assert not list(root.rglob(".kumaru-*.tmp"))
+    assert not list(root.rglob(".ghuumi-*.tmp"))
 
 
 async def test_write_file_replaces_a_whole_file(ws: Workspace, root: Path) -> None:
@@ -522,7 +522,7 @@ def test_edit_file_refusals(ws: Workspace, root: Path) -> None:
             ws.plan_edit(path, old, new)
 
 
-# Tool results show chat control tokens escaped (kumaru.agent.untrusted), and the
+# Tool results show chat control tokens escaped (ghuumi.agent.untrusted), and the
 # model copies old_text from what it read.
 RESTORED = (
     "(old_text matched once its escaped chat control tokens, as tool results show them, "

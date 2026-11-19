@@ -16,7 +16,7 @@
 ## How to open it
 
 ```powershell
-kumaru serve -c qwen36      # then open http://127.0.0.1:8080/education
+ghuumi serve -c qwen36      # then open http://127.0.0.1:8080/education
 ```
 
 The page reads results only; it works while a benchmark is running (from another window), and costs no model tokens.
@@ -24,4 +24,4 @@ The page reads results only; it works while a benchmark is running (from another
 ## Related files
 
 - [`education.js.md`](education.js.md), [`education.css.md`](education.css.md).
-- [`../src/kumaru/server/app.md`](../src/kumaru/server/app.md): serves `/education`.
+- [`../src/ghuumi/server/app.md`](../src/ghuumi/server/app.md): serves `/education`.

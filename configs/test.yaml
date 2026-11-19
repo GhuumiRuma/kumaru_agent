@@ -5,8 +5,8 @@
 #   * develop and test the UI, routing, and streaming without a GPU
 #   * bisect a failure — if echo works, the bug is in the model layer
 #
-#   kumaru serve -c test
-#   kumaru chat  -c test -q "hello"
+#   ghuumi serve -c test
+#   ghuumi chat  -c test -q "hello"
 
 backend:
   name: echo

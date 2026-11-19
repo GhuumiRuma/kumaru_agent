@@ -52,7 +52,7 @@ This installs FastAPI, Pydantic, Typer and httpx, plus pytest, ruff, mypy and nu
 ## Step 2 — Prove the install works, without downloading a model
 
 ```powershell
-kumaru serve -c test
+ghuumi serve -c test
 ```
 
 Open **http://127.0.0.1:8080** and send a message. You will get an instant, streaming, canned reply from the `echo` backend.
@@ -65,7 +65,7 @@ Stop it with `Ctrl+C`.
 
 ## Step 3 — Run the smart model: Qwen3.6 (no PyTorch needed)
 
-On an NVIDIA GPU with 24 GB (RTX 3090 or 4090), this is the model to use. Qwen3.6-35B-A3B is a *mixture of experts*: 35B parameters hold its knowledge, but only about 3B of them work on any given token. So it answers like a large model at the speed of a small one, about 110 tokens/s on a 3090. Kumaru runs it with llama.cpp's own server, a single program you download once, so this step needs no PyTorch.
+On an NVIDIA GPU with 24 GB (RTX 3090 or 4090), this is the model to use. Qwen3.6-35B-A3B is a *mixture of experts*: 35B parameters hold its knowledge, but only about 3B of them work on any given token. So it answers like a large model at the speed of a small one, about 110 tokens/s on a 3090. Ghuumi runs it with llama.cpp's own server, a single program you download once, so this step needs no PyTorch.
 
 **3a. Install the engine** (once):
 
@@ -75,10 +75,10 @@ On an NVIDIA GPU with 24 GB (RTX 3090 or 4090), this is the model to use. Qwen3.
 
 It downloads a pinned build of llama.cpp's `llama-server` into `tools\llama.cpp\`, checks it against GitHub's published SHA-256, and lists the GPUs it can see. Re-running it is safe: it does nothing when that build is already installed. NVIDIA driver older than 580? Add `-Flavor cuda-12.4`. AMD or Intel GPU: `-Flavor vulkan`.
 
-**3b. Choose where the weights go** (optional). The model file is 17.7 GB, saved by default under `%USERPROFILE%\.cache\kumaru\models`. To keep it off `C:`:
+**3b. Choose where the weights go** (optional). The model file is 17.7 GB, saved by default under `%USERPROFILE%\.cache\ghuumi\models`. To keep it off `C:`:
 
 ```powershell
-setx KUMARU_BACKEND__MODELS_DIR D:\kumaru\models
+setx GHUUMI_BACKEND__MODELS_DIR D:\ghuumi\models
 ```
 
 `setx` only reaches terminals opened *after* it runs, so open a new one.
@@ -86,7 +86,7 @@ setx KUMARU_BACKEND__MODELS_DIR D:\kumaru\models
 **3c. Serve it:**
 
 ```powershell
-kumaru serve -c qwen36
+ghuumi serve -c qwen36
 ```
 
 Open **http://127.0.0.1:8080**. The first start downloads the weights; the UI shows `loading model…` until they are in place. Later starts take about 15 seconds.
@@ -96,8 +96,8 @@ Open **http://127.0.0.1:8080**. The first start downloads the weights; the UI sh
 **Gaming on the same GPU?** Qwen3.6 alone uses about 19.7 GB of the 3090's 24 GB. When something else needs VRAM, start it like this instead (measured next to World of Warcraft: 11.9 GB, about 27 tokens/s):
 
 ```powershell
-$env:KUMARU_BACKEND__LLAMA_SERVER__N_CPU_MOE = '18'
-kumaru serve -c qwen36 --context 65536
+$env:GHUUMI_BACKEND__LLAMA_SERVER__N_CPU_MOE = '18'
+ghuumi serve -c qwen36 --context 65536
 ```
 
 If you only want to chat, you are done: skip to [Step 6](#step-6--confirm-it-is-actually-working). Steps 4 and 5 add PyTorch, which fine-tuning and the `local-gpu` / `low-vram` profiles need.
@@ -133,7 +133,7 @@ pip install -e ".[train]"
 Verify:
 
 ```powershell
-kumaru info
+ghuumi info
 ```
 
 You want to see a `cuda:0` row naming your GPU. If it says `unavailable (CPU only)` while you do have an NVIDIA card, you installed the CPU wheel. Running the CUDA command again will not replace it, because pip sees torch is already installed. Uninstall it first: `pip uninstall -y torch`, then run the CUDA command above. Or run `.\scripts\setup.ps1 -Gpu`, which replaces a CPU-only build itself.
@@ -143,7 +143,7 @@ You want to see a `cuda:0` row naming your GPU. If it says `unavailable (CPU onl
 ## Step 5 — Run a model through PyTorch
 
 ```powershell
-kumaru serve -c local-gpu
+ghuumi serve -c local-gpu
 ```
 
 **First run downloads ~15 GB.** It goes to your Hugging Face cache (`%USERPROFILE%\.cache\huggingface`), so it happens exactly once. The server starts immediately and the UI shows `loading model…` — the download is happening in the background, and `/healthz` reports `loading` rather than failing.
@@ -153,7 +153,7 @@ Once the dot turns green, ask it something.
 **Impatient?** Start with the 1.5B model — about 3 GB, downloads in a minute or two, and is genuinely usable:
 
 ```powershell
-kumaru serve --model Qwen/Qwen2.5-1.5B-Instruct
+ghuumi serve --model Qwen/Qwen2.5-1.5B-Instruct
 ```
 
 ---
@@ -161,7 +161,7 @@ kumaru serve --model Qwen/Qwen2.5-1.5B-Instruct
 ## Step 6 — Confirm it is actually working
 
 ```powershell
-kumaru eval --suite smoke -c qwen36      # or -c local-gpu, whichever you serve
+ghuumi eval --suite smoke -c qwen36      # or -c local-gpu, whichever you serve
 ```
 
 Six quick questions checking factual recall, arithmetic, format compliance, code generation, and calibrated uncertainty. You get a pass rate and speed numbers.
@@ -170,12 +170,12 @@ Record this number. It is your baseline. Every future change — a new model, qu
 
 Expected on an RTX 3090 with Qwen2.5-7B in bf16: **6/6 passed, 30–45 tok/s, time-to-first-token 200–500 ms.**
 
-The smoke suite tells you the model runs. To measure how good it is (accuracy on public benchmarks, with error bars, and whether a change really helped), use `kumaru bench`:
+The smoke suite tells you the model runs. To measure how good it is (accuracy on public benchmarks, with error bars, and whether a change really helped), use `ghuumi bench`:
 
 ```powershell
 pip install -e ".[bench]"
-kumaru bench run golden -c qwen36            # your own 27 questions, a few minutes
-kumaru bench run gsm8k mmlu_pro -c qwen36    # math and knowledge, 100 questions each
+ghuumi bench run golden -c qwen36            # your own 27 questions, a few minutes
+ghuumi bench run gsm8k mmlu_pro -c qwen36    # math and knowledge, 100 questions each
 ```
 
 [BENCHMARKS.md](BENCHMARKS.md) explains the method and the measured results.
@@ -192,7 +192,7 @@ from openai import OpenAI
 client = OpenAI(base_url="http://127.0.0.1:8080/v1", api_key="not-needed")
 
 stream = client.chat.completions.create(
-    model="kumaru",
+    model="ghuumi",
     messages=[{"role": "user", "content": "Explain gradient accumulation in two sentences."}],
     stream=True,
 )
@@ -208,7 +208,7 @@ curl http://127.0.0.1:8080/v1/chat/completions `
   -d '{\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}'
 ```
 
-> PowerShell mangles quotes inside `curl` arguments. If you get a JSON decode error, that is PowerShell, not Kumaru. Use the Python snippet, or put the body in a file and use `-d '@body.json'`.
+> PowerShell mangles quotes inside `curl` arguments. If you get a JSON decode error, that is PowerShell, not Ghuumi. Use the Python snippet, or put the body in a file and use `-d '@body.json'`.
 
 ---
 
@@ -217,9 +217,9 @@ curl http://127.0.0.1:8080/v1/chat/completions `
 No server, no browser:
 
 ```powershell
-kumaru chat -c qwen36                                      # interactive REPL
-kumaru chat -c qwen36 -q "What is grouped-query attention?"   # one question, then exit
-kumaru chat -c qwen36 --think -q "How many primes are below 100?"   # reason first
+ghuumi chat -c qwen36                                      # interactive REPL
+ghuumi chat -c qwen36 -q "What is grouped-query attention?"   # one question, then exit
+ghuumi chat -c qwen36 --think -q "How many primes are below 100?"   # reason first
 ```
 
 `/reset` clears history, `/exit` quits.
@@ -236,18 +236,18 @@ kumaru chat -c qwen36 --think -q "How many primes are below 100?"   # reason fir
 | `llama-server exited during startup` | Usually not enough free VRAM | Close other GPU apps, or use the gaming recipe in Step 3 |
 | Qwen3.6 drops from ~110 to single-digit tok/s | VRAM overflowed into shared system memory (Task Manager → GPU → "Shared GPU memory" grows) | The gaming recipe in Step 3; raise `N_CPU_MOE` further if needed |
 | `You are sending unauthenticated requests to the HF Hub` | No Hugging Face token set | Harmless. Setting `HF_TOKEN` only makes downloads faster |
-| `torch not installed` in `kumaru info` | Step 4 skipped | See Step 4 (not needed for `qwen36`) |
+| `torch not installed` in `ghuumi info` | Step 4 skipped | See Step 4 (not needed for `qwen36`) |
 | `cuda: unavailable` but you have a GPU | CPU-only PyTorch wheel | Reinstall with `--index-url .../cu126` |
-| Generation is very slow (< 5 tok/s) on a GPU | Model silently offloaded to CPU | `kumaru info` shows the device; lower `max_context_length` or use 4-bit |
-| `Port 8080 is already in use` | Another process has it | `kumaru serve --port 8090` |
+| Generation is very slow (< 5 tok/s) on a GPU | Model silently offloaded to CPU | `ghuumi info` shows the device; lower `max_context_length` or use 4-bit |
+| `Port 8080 is already in use` | Another process has it | `ghuumi serve --port 8090` |
 | UI loads but replies never arrive | A proxy is buffering the SSE stream | Connect directly, bypassing the proxy |
-| `bitsandbytes` errors with `load_in_4bit` | Optional dep missing | `.\scripts\setup.ps1 -Quant` (or `pip install -e ".[quant]"` in the Kumaru folder) |
+| `bitsandbytes` errors with `load_in_4bit` | Optional dep missing | `.\scripts\setup.ps1 -Quant` (or `pip install -e ".[quant]"` in the Ghuumi folder) |
 
 When in doubt, these two commands answer most questions:
 
 ```powershell
-kumaru info              # what is installed, what hardware is visible
-kumaru config -c local-gpu   # what settings actually won, after all four config layers
+ghuumi info              # what is installed, what hardware is visible
+ghuumi config -c local-gpu   # what settings actually won, after all four config layers
 ```
 
 ---

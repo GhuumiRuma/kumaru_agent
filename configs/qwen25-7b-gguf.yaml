@@ -5,8 +5,8 @@
 # model — so a score difference against `qwen36` is attributable to the model.
 # It is also the right choice for GPUs with ~8 GB of VRAM.
 #
-#   kumaru serve -c qwen25-7b-gguf
-#   kumaru bench run gsm8k -c qwen25-7b-gguf --limit 100
+#   ghuumi serve -c qwen25-7b-gguf
+#   ghuumi bench run gsm8k -c qwen25-7b-gguf --limit 100
 #
 # VRAM: weights 4.4 GiB (a 4.7 GB file) + KV 56 KiB/token x 32k = 1.75 GiB,
 # plus compute buffers -> ~7 GiB total (estimate). Lower --context to fit 8 GB.

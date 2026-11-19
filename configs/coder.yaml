@@ -1,5 +1,5 @@
 # Coding assistant with reviewed, on-demand reference learning.
-# kumaru chat -c coder  |  kumaru serve -c coder
+# ghuumi chat -c coder  |  ghuumi serve -c coder
 # Uses the default transformers backend; override backend/model for your hardware.
 agent:
   expertise: [coding, playwright, windows, apis]

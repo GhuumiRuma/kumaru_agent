@@ -8,15 +8,15 @@
 
 ## What it does
 
-1. **Checks the job can start.** `kumaru train …` runs once with `--dry-run`. If that fails, the script stops before closing anything and shows why, for example `PyTorch is not installed`.
+1. **Checks the job can start.** `ghuumi train …` runs once with `--dry-run`. If that fails, the script stops before closing anything and shows why, for example `PyTorch is not installed`.
 2. **Lists the programs holding graphics memory**: Task Manager's "Dedicated GPU memory", read per process from Windows' performance counters, with how much each holds. `-AllApps` adds every other program with a window. It asks once.
 3. **Closes them.** Each of their windows gets a close request, as its X button sends; whatever is still running 20 seconds later is stopped by process id. It then prints the graphics memory in use before and after.
 4. **Keeps Windows from sleeping** while the job runs (`SetThreadExecutionState`). No power setting changes: when the script ends, the normal sleep timer applies again. The screen can still turn off.
-5. **Runs the job** from the Kumaru folder, in the same window, showing how long it has run and the graphics memory in use. It writes `runs\overnight\<date-time>\`:
+5. **Runs the job** from the Ghuumi folder, in the same window, showing how long it has run and the graphics memory in use. It writes `runs\overnight\<date-time>\`:
 
    | File | Holds |
    |---|---|
-   | `log.txt` | The job's standard error: Kumaru's log lines and training progress |
+   | `log.txt` | The job's standard error: Ghuumi's log lines and training progress |
    | `output.txt` | The job's standard output |
    | `gpu.csv` | Graphics memory in use (dedicated, and shared with RAM) once a minute |
    | `summary.txt` | The summary below |
@@ -44,7 +44,7 @@ It closes **whole programs**. A browser's graphics process is traced up to the b
 
 | Parameter | Type | Default | Effect |
 |---|---|---|---|
-| `-Run` (first, by position) | string | none | The job, in quotes, as you would type it in the Kumaru folder. `kumaru` means this folder's `.venv\Scripts\kumaru.exe` when there is one, otherwise the first on your PATH. |
+| `-Run` (first, by position) | string | none | The job, in quotes, as you would type it in the Ghuumi folder. `ghuumi` means this folder's `.venv\Scripts\ghuumi.exe` when there is one, otherwise the first on your PATH. |
 | `-Preview` | switch | off | Check the job and list what would be closed; close and start nothing. Without a job, only list. |
 | `-AllApps` | switch | off | Also close every other program with a window |
 | `-Keep` | string[] | none | Programs never to close: `-Keep Discord,Spotify` |
@@ -57,13 +57,13 @@ Exit codes: the job's own; `1` when the dry run fails or you answer no; `2` when
 
 ```powershell
 # First, see what it would close, and check the job can start
-.\scripts\overnight.ps1 -Preview "kumaru train configs\train\lora-qwen.yaml"
+.\scripts\overnight.ps1 -Preview "ghuumi train configs\train\lora-qwen.yaml"
 
 # Then, before bed
-.\scripts\overnight.ps1 "kumaru train configs\train\lora-qwen.yaml"
+.\scripts\overnight.ps1 "ghuumi train configs\train\lora-qwen.yaml"
 
 # Keep Discord running, and run a long benchmark instead
-.\scripts\overnight.ps1 -Keep Discord "kumaru bench run gsm8k -c qwen36 --full"
+.\scripts\overnight.ps1 -Keep Discord "ghuumi bench run gsm8k -c qwen36 --full"
 ```
 
 - **Quote the job.** Unquoted, PowerShell would read the job's options, such as `-c`, as the script's own; the script refuses and shows the quoted form.
@@ -75,7 +75,7 @@ Exit codes: the job's own; `1` when the dry run fails or you answer no; `2` when
 A run looks like this. The programs are the ones measured on the RTX 3090 above; the times and the peak are an example.
 
 ```
->> Checking the job can start: kumaru train configs\train\lora-qwen.yaml --dry-run
+>> Checking the job can start: ghuumi train configs\train\lora-qwen.yaml --dry-run
    OK
 
 >> Programs to close
@@ -89,7 +89,7 @@ A run looks like this. The programs are the ones measured on the RTX 3090 above;
 Close them and start the job? [y/N]: y
 ...
 ================ Overnight run ================
-Job       kumaru train configs\train\lora-qwen.yaml
+Job       ghuumi train configs\train\lora-qwen.yaml
 Result    finished (exit code 0)
 Time      Tue 23:05 to Wed 00:41, 1h 36m
 Graphics  peak 11.9 GB in use
@@ -107,13 +107,13 @@ Logs      C:\...\runs\overnight\20261117-230512
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Put the whole job in quotes` | The job was given without quotes | `.\scripts\overnight.ps1 "kumaru train …"` |
+| `Put the whole job in quotes` | The job was given without quotes | `.\scripts\overnight.ps1 "ghuumi train …"` |
 | `The dry run failed … PyTorch is not installed` | This folder's `.venv` has no training stack | `.\scripts\setup.ps1 -Gpu -Quant` |
-| `Can't find the program 'kumaru'` | No `.venv` in this folder | `.\scripts\setup.ps1` |
+| `Can't find the program 'ghuumi'` | No `.venv` in this folder | `.\scripts\setup.ps1` |
 | `could not be closed (it may run as administrator)` | A program started as administrator can't be stopped without administrator rights | Close it yourself, or start the script as administrator |
 | A closed program comes back | Something restarts it, such as NVIDIA's container restarting its overlay | `-Keep` it, or turn off its overlay or start-up setting |
 | `Windows is waiting to restart for an update…` | An update is installed and Windows may restart overnight | Restart first, or pause updates in Settings > Windows Update |
-| The job stopped in the night with no summary | The PC restarted, or the window was closed | A LoRA run continues from its last checkpoint: `kumaru train <recipe> --resume <output_dir>\checkpoint-N`. A benchmark resumes when you repeat its command. |
+| The job stopped in the night with no summary | The PC restarted, or the window was closed | A LoRA run continues from its last checkpoint: `ghuumi train <recipe> --resume <output_dir>\checkpoint-N`. A benchmark resumes when you repeat its command. |
 | `Windows doesn't report graphics memory per program here` | Windows 10 before version 1709 has no per-process GPU counters | `-AllApps` |
 | `log.txt` stays empty until a non-Python job ends | That program buffers its output when it writes to a file | Nothing to fix; Python jobs get `PYTHONUNBUFFERED=1` |
 
@@ -128,4 +128,4 @@ Logs      C:\...\runs\overnight\20261117-230512
 - `docs/TRAINING.md` — what to run, and what it costs
 - `configs/train/` — the training recipes
 - `scripts/setup.ps1` — installs the training stack (`-Gpu -Quant`)
-- `src/kumaru/train/finetune_lora.py` — `--dry-run` and `--resume`
+- `src/ghuumi/train/finetune_lora.py` — `--dry-run` and `--resume`

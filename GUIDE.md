@@ -1,4 +1,4 @@
-# The Kumaru Programming Guide
+# The Ghuumi Programming Guide
 
 > How to actually use this thing, day to day, the way you'd use any other serious tool.
 
@@ -38,7 +38,7 @@ When you want to change something, that rule tells you where to go:
 | Add a capability | a new `Tool` in `agent/tools.py` |
 | Add an engine | a new `Backend` subclass |
 | Measure something new | a new `Benchmark` in `eval/benchmarks/` |
-| Change what it *is* | `kumaru train` |
+| Change what it *is* | `ghuumi train` |
 
 ---
 
@@ -49,33 +49,33 @@ When you want to change something, that rule tells you where to go:
 Later wins:
 
 ```
-field defaults  <  YAML file  <  KUMARU_* env vars  <  CLI flags
+field defaults  <  YAML file  <  GHUUMI_* env vars  <  CLI flags
 ```
 
 ```powershell
-kumaru serve                                  # defaults
-kumaru serve -c local-gpu                     # + YAML profile
-$env:KUMARU_BACKEND__MODEL="Qwen/Qwen2.5-14B-Instruct"   # + env
-kumaru serve -c local-gpu --port 8090         # + CLI flag (wins)
+ghuumi serve                                  # defaults
+ghuumi serve -c local-gpu                     # + YAML profile
+$env:GHUUMI_BACKEND__MODEL="Qwen/Qwen2.5-14B-Instruct"   # + env
+ghuumi serve -c local-gpu --port 8090         # + CLI flag (wins)
 ```
 
 ### The single most useful command
 
 ```powershell
-kumaru config -c local-gpu
+ghuumi config -c local-gpu
 ```
 
-This prints the **fully merged** configuration. Whenever Kumaru appears to be ignoring a setting, run this before anything else. It converts "which layer won?" from a guess into a fact. It is also what you should paste into a bug report.
+This prints the **fully merged** configuration. Whenever Ghuumi appears to be ignoring a setting, run this before anything else. It converts "which layer won?" from a guess into a fact. It is also what you should paste into a bug report.
 
 ### Env var syntax
 
-`KUMARU_` + section + `__` + field, upper-cased:
+`GHUUMI_` + section + `__` + field, upper-cased:
 
 ```powershell
-$env:KUMARU_BACKEND__MODEL      = "Qwen/Qwen2.5-1.5B-Instruct"
-$env:KUMARU_BACKEND__LOAD_IN_4BIT = "true"
-$env:KUMARU_SERVER__PORT        = "9000"
-$env:KUMARU_GENERATION__TEMPERATURE = "0.2"
+$env:GHUUMI_BACKEND__MODEL      = "Qwen/Qwen2.5-1.5B-Instruct"
+$env:GHUUMI_BACKEND__LOAD_IN_4BIT = "true"
+$env:GHUUMI_SERVER__PORT        = "9000"
+$env:GHUUMI_GENERATION__TEMPERATURE = "0.2"
 ```
 
 Values are parsed with YAML rules, so `true`, `42`, and `0.7` arrive as the right Python type.
@@ -100,7 +100,7 @@ agent:
     Show corrected code. Never speculate about code you cannot see.
 ```
 
-Kumaru always appends its own quality directives (`agent/prompt.py`), so you get answer-first formatting and anti-fabrication guardrails on top of whatever persona you write.
+Ghuumi always appends its own quality directives (`agent/prompt.py`), so you get answer-first formatting and anti-fabrication guardrails on top of whatever persona you write.
 
 Keep it short. A 2,000-token system prompt costs 2,000 tokens on *every single request* and dilutes attention across instructions that matter.
 
@@ -121,17 +121,17 @@ Put two or three ideal exchanges in the message list before the real question. F
 
 ### 4. Thinking (one click; costs time on every answer)
 
-With `qwen36`, the **Think** button (or `kumaru chat --think`) lets the model reason privately before it answers. It helps most on multi-step math, logic and code, and little on recall or conversation. The cost is time: thousands of extra tokens per answer. The **thinking budget** slider caps them; at the cap the model is told to answer with what it has. Measured gains and costs: [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+With `qwen36`, the **Think** button (or `ghuumi chat --think`) lets the model reason privately before it answers. It helps most on multi-step math, logic and code, and little on recall or conversation. The cost is time: thousands of extra tokens per answer. The **thinking budget** slider caps them; at the cap the model is told to answer with what it has. Measured gains and costs: [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ### 5. A better model (minutes + download)
 
 ```powershell
-kumaru serve -c qwen36
+ghuumi serve -c qwen36
 ```
 
 Qwen3.6-35B-A3B is a mixture of experts: the knowledge of a 35B model at the speed of a much smaller one (about 110 tokens/s on a 3090). On a 24 GB GPU it is the biggest jump available without training. Other GGUF models load the same way, with `--model org/repo:QUANT`. Check the new model's card for its recommended sampling settings, because the profile's presets are Qwen's.
 
-Before switching for good, measure: run the same benchmarks on both models and let `kumaru bench compare` tell you whether the difference is real or noise ([`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)).
+Before switching for good, measure: run the same benchmarks on both models and let `ghuumi bench compare` tell you whether the difference is real or noise ([`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)).
 
 ### 6. Fine-tuning (an evening)
 
@@ -149,7 +149,7 @@ from openai import OpenAI
 client = OpenAI(base_url="http://127.0.0.1:8080/v1", api_key="not-needed")
 
 resp = client.chat.completions.create(
-    model="kumaru",
+    model="ghuumi",
     messages=[{"role": "user", "content": "Summarize this error: ..."}],
     temperature=0.0,
 )
@@ -162,10 +162,10 @@ Lowest latency — no HTTP hop:
 
 ```python
 import asyncio
-from kumaru.agent.chat import ChatAgent
-from kumaru.core.config import load_config
-from kumaru.core.registry import BACKENDS
-from kumaru.core.types import Message
+from ghuumi.agent.chat import ChatAgent
+from ghuumi.core.config import load_config
+from ghuumi.core.registry import BACKENDS
+from ghuumi.core.types import Message
 
 async def main():
     cfg = load_config("local-gpu")
@@ -185,7 +185,7 @@ asyncio.run(main())
 ### Piping into a shell workflow
 
 ```powershell
-kumaru chat -q "Write a PowerShell one-liner that finds files over 100MB" 2>$null
+ghuumi chat -q "Write a PowerShell one-liner that finds files over 100MB" 2>$null
 ```
 
 `2>$null` discards the log lines on stderr, leaving only the answer on stdout.
@@ -194,12 +194,12 @@ kumaru chat -q "Write a PowerShell one-liner that finds files over 100MB" 2>$nul
 
 ```powershell
 mkdir C:\projects\snake
-kumaru chat -c qwen36 --workspace C:\projects\snake
+ghuumi chat -c qwen36 --workspace C:\projects\snake
 ```
 
 Then ask for what you want: "Make a snake game as one HTML file, with a Node test for the game logic, and run the test." In that folder the model can list, read, create and edit files, and run `python`, `node`, `npm`, `npx` and `dotnet`, never a shell. Before each change it shows you the diff, and before each command the exact command line. Nothing happens until you answer `y`; listing and reading need no answer.
 
-Paths outside the folder are refused. Commands you approve run with your permissions, so read each one before you say yes. The server and the web UI never offer these tools, because they cannot ask. Details: [`docs/howto/src/kumaru/cli.md`](docs/howto/src/kumaru/cli.md#let-it-work-in-a-project-folder-kumaru-chat---workspace).
+Paths outside the folder are refused. Commands you approve run with your permissions, so read each one before you say yes. The server and the web UI never offer these tools, because they cannot ask. Details: [`docs/howto/src/ghuumi/cli.md`](docs/howto/src/ghuumi/cli.md#let-it-work-in-a-project-folder-ghuumi-chat---workspace).
 
 ### Point another tool at it
 
@@ -208,7 +208,7 @@ Anything that accepts an OpenAI base URL works: Continue.dev, Cursor, Aider, Lan
 ```
 Base URL: http://127.0.0.1:8080/v1
 API key:  anything (unset by default)
-Model:    kumaru
+Model:    ghuumi
 ```
 
 ---
@@ -219,19 +219,19 @@ When something is wrong, climb this in order. Each rung isolates a layer.
 
 **1. Is the application stack healthy?**
 ```powershell
-kumaru serve -c test
+ghuumi serve -c test
 ```
 Echo backend, no model. If this works, the bug is in the model layer. If it does not, the bug is in the app layer. This one bisection saves hours.
 
 **2. Is the environment right?**
 ```powershell
-kumaru info
+ghuumi info
 ```
 Shows Python, GPU, VRAM, bf16 support, and which optional packages are installed.
 
 **3. Is the config what you think?**
 ```powershell
-kumaru config -c local-gpu
+ghuumi config -c local-gpu
 ```
 
 **4. What is the server actually doing?**
@@ -243,21 +243,21 @@ curl http://127.0.0.1:8080/metrics     # request counts, latency, tok/s
 
 **5. Turn up the logs.**
 ```powershell
-kumaru serve --log-level DEBUG
+ghuumi serve --log-level DEBUG
 ```
 
 **6. Measure instead of guessing.**
 ```powershell
-kumaru eval --suite speed
-kumaru eval --suite smoke
-kumaru bench run golden -c qwen36     # your own questions, graded, every answer saved
+ghuumi eval --suite speed
+ghuumi eval --suite smoke
+ghuumi bench run golden -c qwen36     # your own questions, graded, every answer saved
 ```
 
 ### Common symptoms
 
 | Symptom | Almost always |
 |---|---|
-| Slow on a GPU (< 5 tok/s) | Model offloaded to CPU. Check `device` in `kumaru info`. |
+| Slow on a GPU (< 5 tok/s) | Model offloaded to CPU. Check `device` in `ghuumi info`. |
 | `qwen36` drops from ~110 tok/s to single digits | VRAM spilled into shared system memory, usually because another app (a game) took some. Use the GPU-sharing recipe in [QUICKSTART Step 3](docs/QUICKSTART.md#step-3--run-the-smart-model-qwen36-no-pytorch-needed). |
 | `llama-server exited during startup` | Not enough free VRAM, or the port is taken. The error ends with the last lines of llama-server's log. |
 | Think answers take minutes | Expected: thinking spends thousands of tokens. Lower the thinking budget, or save Think for hard questions. |
@@ -266,7 +266,7 @@ kumaru bench run golden -c qwen36     # your own questions, graded, every answer
 | Answers ignore the system prompt | Context overflowed and trimming dropped it, or the model is too small. |
 | Replies arrive all at once | A proxy is buffering the SSE stream. Connect directly. |
 | Model repeats itself | Raise temperature; set `repetition_penalty: 1.1`; check stop sequences. |
-| Works in `kumaru chat`, fails over HTTP | A serialization issue. Check `/v1/info` and the server logs. |
+| Works in `ghuumi chat`, fails over HTTP | A serialization issue. Check `/v1/info` and the server logs. |
 
 ---
 
@@ -277,9 +277,9 @@ kumaru bench run golden -c qwen36     # your own questions, graded, every answer
 Two steps. Nothing existing changes.
 
 ```python
-# src/kumaru/agent/tools.py  (or your own module)
-from kumaru.agent.tools import Tool
-from kumaru.core.registry import TOOLS
+# src/ghuumi/agent/tools.py  (or your own module)
+from ghuumi.agent.tools import Tool
+from ghuumi.core.registry import TOOLS
 
 @TOOLS.register("word_count")
 class WordCountTool(Tool):
@@ -305,11 +305,11 @@ agent:
 
 The `description` field is the API documentation the *model* reads. Write it for that audience.
 
-The model calls tools only on a backend that supports them: `qwen36` (`llamacpp_server`) or `openai_compat`. A read-only tool runs as soon as the model asks, in every interface, the HTTP server included, so it must be harmless whoever is asking. A tool that changes anything sets `read_only = False` and implements `prepare()`. It then runs only in `kumaru chat`, after you approve what it will do. For files, build on the project-folder tools, which never leave their folder. Both patterns are in [`docs/howto/src/kumaru/agent/tools.md`](docs/howto/src/kumaru/agent/tools.md#how-to-extend-it).
+The model calls tools only on a backend that supports them: `qwen36` (`llamacpp_server`) or `openai_compat`. A read-only tool runs as soon as the model asks, in every interface, the HTTP server included, so it must be harmless whoever is asking. A tool that changes anything sets `read_only = False` and implements `prepare()`. It then runs only in `ghuumi chat`, after you approve what it will do. For files, build on the project-folder tools, which never leave their folder. Both patterns are in [`docs/howto/src/ghuumi/agent/tools.md`](docs/howto/src/ghuumi/agent/tools.md#how-to-extend-it).
 
 ### Add a backend
 
-Subclass `Backend`, implement four methods, decorate. See [`docs/howto/src/kumaru/backends/base.md`](docs/howto/src/kumaru/backends/base.md) for a complete worked example.
+Subclass `Backend`, implement four methods, decorate. See [`docs/howto/src/ghuumi/backends/base.md`](docs/howto/src/ghuumi/backends/base.md) for a complete worked example.
 
 ```python
 @BACKENDS.register("my_engine")
@@ -325,7 +325,7 @@ class MyBackend(Backend):
 ### Ship an extension as a separate package
 
 ```toml
-[project.entry-points."kumaru.backends"]
+[project.entry-points."ghuumi.backends"]
 mamba = "my_package:MambaBackend"
 ```
 
@@ -336,9 +336,9 @@ mamba = "my_package:MambaBackend"
 Subclass `Benchmark`: `load()` returns the questions, `grade()` scores one answer. A complete, working example (ARC-Challenge, 1,172 science questions):
 
 ```python
-# src/kumaru/eval/benchmarks/arc.py
-from kumaru.eval.benchmarks.base import BenchItem, Benchmark, Grade, load_hf_rows
-from kumaru.eval.benchmarks.extract import extract_choice
+# src/ghuumi/eval/benchmarks/arc.py
+from ghuumi.eval.benchmarks.base import BenchItem, Benchmark, Grade, load_hf_rows
+from ghuumi.eval.benchmarks.extract import extract_choice
 
 PROMPT = (
     "Answer the following science question. Think step by step, then finish your answer "
@@ -373,24 +373,24 @@ class ARCChallenge(Benchmark):
         return Grade(correct=letter == item.answer, extracted=letter, detail={"method": method})
 ```
 
-Register it with one line in `src/kumaru/core/registry.py`, next to the others:
+Register it with one line in `src/ghuumi/core/registry.py`, next to the others:
 
 ```python
-BENCHMARKS.register_lazy("arc", "kumaru.eval.benchmarks.arc:ARCChallenge")
+BENCHMARKS.register_lazy("arc", "ghuumi.eval.benchmarks.arc:ARCChallenge")
 ```
 
-Then `kumaru bench run arc -c qwen36`. A separate package registers through the `kumaru.benchmarks` entry point instead, as for backends above.
+Then `ghuumi bench run arc -c qwen36`. A separate package registers through the `ghuumi.benchmarks` entry point instead, as for backends above.
 
-**Before trusting a score, prove the grader.** Feed it the dataset's own answers, phrased the ways a model phrases them, plus wrong answers. It must accept every right one and reject every wrong one. `scripts/check_graders.py` does exactly this for the built-in benchmarks; copy its pattern. Details: [`docs/howto/src/kumaru/eval/benchmarks/base.md`](docs/howto/src/kumaru/eval/benchmarks/base.md).
+**Before trusting a score, prove the grader.** Feed it the dataset's own answers, phrased the ways a model phrases them, plus wrong answers. It must accept every right one and reject every wrong one. `scripts/check_graders.py` does exactly this for the built-in benchmarks; copy its pattern. Details: [`docs/howto/src/ghuumi/eval/benchmarks/base.md`](docs/howto/src/ghuumi/eval/benchmarks/base.md).
 
 ---
 
 ## Part 7 — Habits that pay off
 
-1. **Baseline first.** `kumaru eval --suite smoke --output baseline.json` for speed and sanity; `kumaru bench run golden gsm8k mmlu_pro -c <profile>` for accuracy. Every later claim is relative to these numbers.
+1. **Baseline first.** `ghuumi eval --suite smoke --output baseline.json` for speed and sanity; `ghuumi bench run golden gsm8k mmlu_pro -c <profile>` for accuracy. Every later claim is relative to these numbers.
 2. **Change one thing at a time.** Two simultaneous changes tell you nothing about either.
-3. **Hold the randomness fixed, then test the difference.** Compare runs with the same seed and the same decoding preset, and let `kumaru bench compare` decide whether a gap is real. Temperature 0 is the classic advice, but Qwen advises against greedy decoding for its current models (it causes endless repetition). And when several requests are batched on a GPU, even temperature 0 is not guaranteed to repeat bit for bit. So two identical runs still differ a little; [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) measures by how much.
-4. **Archive the config with the artifact.** `kumaru train` does this automatically. A checkpoint without its recipe is not reproducible.
+3. **Hold the randomness fixed, then test the difference.** Compare runs with the same seed and the same decoding preset, and let `ghuumi bench compare` decide whether a gap is real. Temperature 0 is the classic advice, but Qwen advises against greedy decoding for its current models (it causes endless repetition). And when several requests are batched on a GPU, even temperature 0 is not guaranteed to repeat bit for bit. So two identical runs still differ a little; [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) measures by how much.
+4. **Archive the config with the artifact.** `ghuumi train` does this automatically. A checkpoint without its recipe is not reproducible.
 5. **Smoke-test the small model first.** `configs/train/lora-small.yaml` catches pipeline bugs in five minutes that would otherwise cost an evening.
 6. **Read `example_preview.txt` before every training run.** It is the single highest-yield thirty seconds in the whole workflow.
 7. **Watch `gnorm` during training.** A gradient-norm spike precedes a NaN loss by several steps.
@@ -403,17 +403,17 @@ Then `kumaru bench run arc -c qwen36`. A separate package registers through the 
 | Question | File |
 |---|---|
 | What settings exist? | `configs/default.yaml` — every knob, commented |
-| How does config resolution work? | `src/kumaru/core/config.py` |
-| How does plugin discovery work? | `src/kumaru/core/registry.py` |
-| What must a backend implement? | `src/kumaru/backends/base.py` |
-| How does Kumaru run llama.cpp? | `src/kumaru/backends/llamacpp_server.py` |
-| How is a model scored? | `src/kumaru/eval/benchmarks/`, and [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
-| How is the prompt assembled? | `src/kumaru/agent/prompt.py` |
-| What gets dropped when context fills? | `src/kumaru/agent/memory.py` |
-| What may the agent change or run, and who approves it? | `src/kumaru/agent/tools.py`, `workspace.py` and `commands.py` |
-| What are the HTTP endpoints? | `src/kumaru/server/routes_chat.py` |
-| How does loss masking work? | `src/kumaru/train/data.py` |
-| What is a transformer, exactly? | `src/kumaru/train/model_nano.py` |
+| How does config resolution work? | `src/ghuumi/core/config.py` |
+| How does plugin discovery work? | `src/ghuumi/core/registry.py` |
+| What must a backend implement? | `src/ghuumi/backends/base.py` |
+| How does Ghuumi run llama.cpp? | `src/ghuumi/backends/llamacpp_server.py` |
+| How is a model scored? | `src/ghuumi/eval/benchmarks/`, and [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
+| How is the prompt assembled? | `src/ghuumi/agent/prompt.py` |
+| What gets dropped when context fills? | `src/ghuumi/agent/memory.py` |
+| What may the agent change or run, and who approves it? | `src/ghuumi/agent/tools.py`, `workspace.py` and `commands.py` |
+| What are the HTTP endpoints? | `src/ghuumi/server/routes_chat.py` |
+| How does loss masking work? | `src/ghuumi/train/data.py` |
+| What is a transformer, exactly? | `src/ghuumi/train/model_nano.py` |
 | Per-file operating manuals | `docs/howto/` |
 
 ---

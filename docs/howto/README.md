@@ -10,76 +10,76 @@ One page per file. Each page answers the same seven questions: what it does, why
 
 | File | Page | Read it when |
 |---|---|---|
-| `src/kumaru/__init__.py` | [page](src/kumaru/__init__.md) | You want the public import surface |
-| `src/kumaru/cli.py` | [page](src/kumaru/cli.md) | Adding a command, or a flag behaves oddly |
-| `src/kumaru/desktop.py` | [page](src/kumaru/desktop.md) | **The desktop app**: shortcuts, the app window, and sharing the graphics card with a game |
-| `src/kumaru/__main__.py` | [page](src/kumaru/__main__.md) | Running `python -m kumaru` (what the shortcuts do) |
-| `src/kumaru/core/__init__.py` | [page](src/kumaru/core/__init__.md) | Understanding the layering rule |
-| `src/kumaru/core/types.py` | [page](src/kumaru/core/types.md) | Anything to do with messages or generation params |
-| `src/kumaru/core/errors.py` | [page](src/kumaru/core/errors.md) | Raising a new error, or mapping one to HTTP |
-| `src/kumaru/core/config.py` | [page](src/kumaru/core/config.md) | Adding a setting, or a setting is being ignored |
-| `src/kumaru/core/registry.py` | [page](src/kumaru/core/registry.md) | Adding a plugin, or writing an extension package |
-| `src/kumaru/core/logging.py` | [page](src/kumaru/core/logging.md) | Changing log format, or shipping logs off-box |
+| `src/ghuumi/__init__.py` | [page](src/ghuumi/__init__.md) | You want the public import surface |
+| `src/ghuumi/cli.py` | [page](src/ghuumi/cli.md) | Adding a command, or a flag behaves oddly |
+| `src/ghuumi/desktop.py` | [page](src/ghuumi/desktop.md) | **The desktop app**: shortcuts, the app window, and sharing the graphics card with a game |
+| `src/ghuumi/__main__.py` | [page](src/ghuumi/__main__.md) | Running `python -m ghuumi` (what the shortcuts do) |
+| `src/ghuumi/core/__init__.py` | [page](src/ghuumi/core/__init__.md) | Understanding the layering rule |
+| `src/ghuumi/core/types.py` | [page](src/ghuumi/core/types.md) | Anything to do with messages or generation params |
+| `src/ghuumi/core/errors.py` | [page](src/ghuumi/core/errors.md) | Raising a new error, or mapping one to HTTP |
+| `src/ghuumi/core/config.py` | [page](src/ghuumi/core/config.md) | Adding a setting, or a setting is being ignored |
+| `src/ghuumi/core/registry.py` | [page](src/ghuumi/core/registry.md) | Adding a plugin, or writing an extension package |
+| `src/ghuumi/core/logging.py` | [page](src/ghuumi/core/logging.md) | Changing log format, or shipping logs off-box |
 
 ## Backends — inference engines behind one interface
 
 | File | Page | Read it when |
 |---|---|---|
-| `backends/__init__.py` | [page](src/kumaru/backends/__init__.md) | Orienting yourself in the backend layer |
-| `backends/base.py` | [page](src/kumaru/backends/base.md) | **Writing a new backend** — start here |
-| `backends/echo.py` | [page](src/kumaru/backends/echo.md) | You want the smallest complete example |
-| `backends/transformers_backend.py` | [page](src/kumaru/backends/transformers_backend.md) | Running locally on a GPU; tuning VRAM or speed |
-| `backends/llamacpp_backend.py` | [page](src/kumaru/backends/llamacpp_backend.md) | Low VRAM, CPU-only, or GGUF models |
-| `backends/llamacpp_server.py` | [page](src/kumaru/backends/llamacpp_server.md) | **The engine behind `qwen36`**: thinking, batching, sharing the GPU |
-| `backends/openai_compat.py` | [page](src/kumaru/backends/openai_compat.md) | Moving to vLLM, Ollama, or a remote endpoint |
+| `backends/__init__.py` | [page](src/ghuumi/backends/__init__.md) | Orienting yourself in the backend layer |
+| `backends/base.py` | [page](src/ghuumi/backends/base.md) | **Writing a new backend** — start here |
+| `backends/echo.py` | [page](src/ghuumi/backends/echo.md) | You want the smallest complete example |
+| `backends/transformers_backend.py` | [page](src/ghuumi/backends/transformers_backend.md) | Running locally on a GPU; tuning VRAM or speed |
+| `backends/llamacpp_backend.py` | [page](src/ghuumi/backends/llamacpp_backend.md) | Low VRAM, CPU-only, or GGUF models |
+| `backends/llamacpp_server.py` | [page](src/ghuumi/backends/llamacpp_server.md) | **The engine behind `qwen36`**: thinking, batching, sharing the GPU |
+| `backends/openai_compat.py` | [page](src/ghuumi/backends/openai_compat.md) | Moving to vLLM, Ollama, or a remote endpoint |
 
 ## Agent — prompt, memory, tools
 
 | File | Page | Read it when |
 |---|---|---|
-| `agent/__init__.py` | [page](src/kumaru/agent/__init__.md) | Orienting yourself in the agent layer |
-| `agent/chat.py` | [page](src/kumaru/agent/chat.md) | Changing how a turn is orchestrated |
-| `agent/prompt.py` | [page](src/kumaru/agent/prompt.md) | Tuning answer quality, or injecting context |
-| `agent/memory.py` | [page](src/kumaru/agent/memory.md) | Conversations get truncated; adding summarization or RAG |
-| `agent/knowledge.py` | [page](src/kumaru/agent/knowledge.md) | Coding guidance; importing reference packs with `kumaru learn` |
-| `agent/doc_index.py` | [page](src/kumaru/agent/doc_index.md) | **Indexing a documentation folder** with `kumaru learn`; which passages reach each answer |
-| `agent/doc_chunks.py` | [page](src/kumaru/agent/doc_chunks.md) | A documentation format converts badly; adding a format |
-| `agent/tools.py` | [page](src/kumaru/agent/tools.md) | **Adding a capability the model can call** |
-| `agent/workspace.py` | [page](src/kumaru/agent/workspace.md) | The project folder: what the agent may list, read, create and edit |
-| `agent/commands.py` | [page](src/kumaru/agent/commands.md) | Which programs the agent may run, and how they are contained |
-| `agent/untrusted.py` | [page](src/kumaru/agent/untrusted.md) | Tool results, references or excerpts show `&lt;\|im_end\|&gt;`; escaping chat control tokens in untrusted text |
+| `agent/__init__.py` | [page](src/ghuumi/agent/__init__.md) | Orienting yourself in the agent layer |
+| `agent/chat.py` | [page](src/ghuumi/agent/chat.md) | Changing how a turn is orchestrated |
+| `agent/prompt.py` | [page](src/ghuumi/agent/prompt.md) | Tuning answer quality, or injecting context |
+| `agent/memory.py` | [page](src/ghuumi/agent/memory.md) | Conversations get truncated; adding summarization or RAG |
+| `agent/knowledge.py` | [page](src/ghuumi/agent/knowledge.md) | Coding guidance; importing reference packs with `ghuumi learn` |
+| `agent/doc_index.py` | [page](src/ghuumi/agent/doc_index.md) | **Indexing a documentation folder** with `ghuumi learn`; which passages reach each answer |
+| `agent/doc_chunks.py` | [page](src/ghuumi/agent/doc_chunks.md) | A documentation format converts badly; adding a format |
+| `agent/tools.py` | [page](src/ghuumi/agent/tools.md) | **Adding a capability the model can call** |
+| `agent/workspace.py` | [page](src/ghuumi/agent/workspace.md) | The project folder: what the agent may list, read, create and edit |
+| `agent/commands.py` | [page](src/ghuumi/agent/commands.md) | Which programs the agent may run, and how they are contained |
+| `agent/untrusted.py` | [page](src/ghuumi/agent/untrusted.md) | Tool results, references or excerpts show `&lt;\|im_end\|&gt;`; escaping chat control tokens in untrusted text |
 
 ## Server — the HTTP surface
 
 | File | Page | Read it when |
 |---|---|---|
-| `server/__init__.py` | [page](src/kumaru/server/__init__.md) | Orienting yourself in the server layer |
-| `server/app.py` | [page](src/kumaru/server/app.md) | Startup, lifecycle, metrics, concurrency limits |
-| `server/schemas.py` | [page](src/kumaru/server/schemas.md) | Changing the public API contract |
-| `server/routes_chat.py` | [page](src/kumaru/server/routes_chat.md) | **Every HTTP endpoint, documented** |
-| `server/education.py` | [page](src/kumaru/server/education.md) | A bar on the Education page looks wrong or is missing |
-| `server/routes_education.py` | [page](src/kumaru/server/routes_education.md) | `GET /v1/education`: the newest benchmark results per area |
+| `server/__init__.py` | [page](src/ghuumi/server/__init__.md) | Orienting yourself in the server layer |
+| `server/app.py` | [page](src/ghuumi/server/app.md) | Startup, lifecycle, metrics, concurrency limits |
+| `server/schemas.py` | [page](src/ghuumi/server/schemas.md) | Changing the public API contract |
+| `server/routes_chat.py` | [page](src/ghuumi/server/routes_chat.md) | **Every HTTP endpoint, documented** |
+| `server/education.py` | [page](src/ghuumi/server/education.md) | A bar on the Education page looks wrong or is missing |
+| `server/routes_education.py` | [page](src/ghuumi/server/routes_education.md) | `GET /v1/education`: the newest benchmark results per area |
 
 ## Training
 
 | File | Page | Read it when |
 |---|---|---|
-| `train/__init__.py` | [page](src/kumaru/train/__init__.md) | Deciding which training path you need |
-| `train/config.py` | [page](src/kumaru/train/config.md) | **Every training YAML field, explained** |
-| `train/curriculum.py` | [page](src/kumaru/train/curriculum.md) | **Studying one area at a time**: measuring it and collecting its references, repeatably |
-| `train/data.py` | [page](src/kumaru/train/data.md) | Dataset format, loss masking, token packing |
-| `train/distill.py` | [page](src/kumaru/train/distill.md) | **Distilling a large model into a small one**: building and auditing the data |
-| `train/finetune_lora.py` | [page](src/kumaru/train/finetune_lora.md) | Running or debugging a LoRA fine-tune |
-| `train/model_nano.py` | [page](src/kumaru/train/model_nano.md) | **What a transformer actually is**, component by component |
-| `train/pretrain_nano.py` | [page](src/kumaru/train/pretrain_nano.md) | The training loop; scaling to multi-GPU |
-| `train/runner.py` | [page](src/kumaru/train/runner.md) | Adding a training task |
+| `train/__init__.py` | [page](src/ghuumi/train/__init__.md) | Deciding which training path you need |
+| `train/config.py` | [page](src/ghuumi/train/config.md) | **Every training YAML field, explained** |
+| `train/curriculum.py` | [page](src/ghuumi/train/curriculum.md) | **Studying one area at a time**: measuring it and collecting its references, repeatably |
+| `train/data.py` | [page](src/ghuumi/train/data.md) | Dataset format, loss masking, token packing |
+| `train/distill.py` | [page](src/ghuumi/train/distill.md) | **Distilling a large model into a small one**: building and auditing the data |
+| `train/finetune_lora.py` | [page](src/ghuumi/train/finetune_lora.md) | Running or debugging a LoRA fine-tune |
+| `train/model_nano.py` | [page](src/ghuumi/train/model_nano.md) | **What a transformer actually is**, component by component |
+| `train/pretrain_nano.py` | [page](src/ghuumi/train/pretrain_nano.md) | The training loop; scaling to multi-GPU |
+| `train/runner.py` | [page](src/ghuumi/train/runner.md) | Adding a training task |
 
 ## Evaluation
 
 | File | Page | Read it when |
 |---|---|---|
-| `eval/__init__.py` | [page](src/kumaru/eval/__init__.md) | Orienting yourself |
-| `eval/harness.py` | [page](src/kumaru/eval/harness.md) | Writing your own eval suite; adding an LLM judge |
+| `eval/__init__.py` | [page](src/ghuumi/eval/__init__.md) | Orienting yourself |
+| `eval/harness.py` | [page](src/ghuumi/eval/harness.md) | Writing your own eval suite; adding an LLM judge |
 
 ## Benchmarks: how good is the model, and did a change help?
 
@@ -87,21 +87,21 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 
 | File | Page | Read it when |
 |---|---|---|
-| `eval/benchmarks/__init__.py` | [page](src/kumaru/eval/benchmarks/__init__.md) | Orienting yourself |
-| `eval/benchmarks/base.py` | [page](src/kumaru/eval/benchmarks/base.md) | **Adding a benchmark** — start here |
-| `eval/benchmarks/runner.py` | [page](src/kumaru/eval/benchmarks/runner.md) | Running, resuming and comparing; what a run folder holds |
-| `eval/benchmarks/stats.py` | [page](src/kumaru/eval/benchmarks/stats.md) | Confidence intervals and significance tests, in plain terms |
-| `eval/benchmarks/extract.py` | [page](src/kumaru/eval/benchmarks/extract.md) | A right answer was graded wrong |
-| `eval/benchmarks/gsm8k.py` | [page](src/kumaru/eval/benchmarks/gsm8k.md) | Math word problems |
-| `eval/benchmarks/mmlu_pro.py` | [page](src/kumaru/eval/benchmarks/mmlu_pro.md) | Knowledge and reasoning, 14 subjects |
-| `eval/benchmarks/supergpqa.py` | [page](src/kumaru/eval/benchmarks/supergpqa.md) | **Graduate level, per area**: computer science in 10 subfields, and the other sciences |
-| `eval/benchmarks/ifeval.py` | [page](src/kumaru/eval/benchmarks/ifeval.md) | Instruction following and its four scores |
-| `eval/benchmarks/ifeval_checks.py` | [page](src/kumaru/eval/benchmarks/ifeval_checks.md) | One IFEval instruction type behaves oddly |
-| `eval/benchmarks/humaneval.py` | [page](src/kumaru/eval/benchmarks/humaneval.md) | Code generation; what the code-execution guard does and does not stop |
-| `eval/benchmarks/multipl_e.py` | [page](src/kumaru/eval/benchmarks/multipl_e.md) | **Which programming languages the model is weak in**: HumanEval in JavaScript, TypeScript, C#, Java, C++, Go, Rust and Python; the toolchains each needs |
-| `eval/benchmarks/codeexec.py` | [page](src/kumaru/eval/benchmarks/codeexec.md) | How model-written programs run: limits, process-tree kill, `--sandbox docker` |
-| `eval/benchmarks/codeparse.py` | [page](src/kumaru/eval/benchmarks/codeparse.md) | A MultiPL-E answer was cut or assembled wrongly |
-| `eval/benchmarks/golden.py` | [page](src/kumaru/eval/benchmarks/golden.md) | **Writing your own questions**: the format and the graders |
+| `eval/benchmarks/__init__.py` | [page](src/ghuumi/eval/benchmarks/__init__.md) | Orienting yourself |
+| `eval/benchmarks/base.py` | [page](src/ghuumi/eval/benchmarks/base.md) | **Adding a benchmark** — start here |
+| `eval/benchmarks/runner.py` | [page](src/ghuumi/eval/benchmarks/runner.md) | Running, resuming and comparing; what a run folder holds |
+| `eval/benchmarks/stats.py` | [page](src/ghuumi/eval/benchmarks/stats.md) | Confidence intervals and significance tests, in plain terms |
+| `eval/benchmarks/extract.py` | [page](src/ghuumi/eval/benchmarks/extract.md) | A right answer was graded wrong |
+| `eval/benchmarks/gsm8k.py` | [page](src/ghuumi/eval/benchmarks/gsm8k.md) | Math word problems |
+| `eval/benchmarks/mmlu_pro.py` | [page](src/ghuumi/eval/benchmarks/mmlu_pro.md) | Knowledge and reasoning, 14 subjects |
+| `eval/benchmarks/supergpqa.py` | [page](src/ghuumi/eval/benchmarks/supergpqa.md) | **Graduate level, per area**: computer science in 10 subfields, and the other sciences |
+| `eval/benchmarks/ifeval.py` | [page](src/ghuumi/eval/benchmarks/ifeval.md) | Instruction following and its four scores |
+| `eval/benchmarks/ifeval_checks.py` | [page](src/ghuumi/eval/benchmarks/ifeval_checks.md) | One IFEval instruction type behaves oddly |
+| `eval/benchmarks/humaneval.py` | [page](src/ghuumi/eval/benchmarks/humaneval.md) | Code generation; what the code-execution guard does and does not stop |
+| `eval/benchmarks/multipl_e.py` | [page](src/ghuumi/eval/benchmarks/multipl_e.md) | **Which programming languages the model is weak in**: HumanEval in JavaScript, TypeScript, C#, Java, C++, Go, Rust and Python; the toolchains each needs |
+| `eval/benchmarks/codeexec.py` | [page](src/ghuumi/eval/benchmarks/codeexec.md) | How model-written programs run: limits, process-tree kill, `--sandbox docker` |
+| `eval/benchmarks/codeparse.py` | [page](src/ghuumi/eval/benchmarks/codeparse.md) | A MultiPL-E answer was cut or assembled wrongly |
+| `eval/benchmarks/golden.py` | [page](src/ghuumi/eval/benchmarks/golden.md) | **Writing your own questions**: the format and the graders |
 | `data/bench/golden.jsonl` | [page](data/bench/golden.jsonl.md) | Your golden set: what each question tests |
 | `scripts/check_graders.py` | [page](scripts/check_graders.py.md) | Proving the graders right against the datasets' answer keys, and MultiPL-E's against its own verdicts |
 

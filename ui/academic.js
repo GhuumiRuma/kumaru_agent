@@ -44,16 +44,16 @@ async function applyRoute({ initial = false } = {}) {
   });
   const changedView = (previous.view === "source" ? "library" : previous.view) !== view;
   if (route.view === "source") {
-    document.title = "Academic review · Kumaru";
+    document.title = "Academic review · Ghuumi";
     markSelected();
     await showSource(route.sourceId);
     if (!initial && narrow.matches && previous.sourceId !== route.sourceId) focusTitle();
   } else if (route.view === "library") {
     markSelected();
     showGlance();
-    document.title = `${TITLES.library} · Academic review · Kumaru`;
+    document.title = `${TITLES.library} · Academic review · Ghuumi`;
   } else {
-    document.title = `${TITLES[view]} · Academic review · Kumaru`;
+    document.title = `${TITLES[view]} · Academic review · Ghuumi`;
     if (view === "containers") showContainers(); else showQueue();
   }
   if (!initial && changedView) $(`${view}-title`)?.focus({ preventScroll: true });

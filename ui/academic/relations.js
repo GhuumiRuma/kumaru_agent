@@ -11,7 +11,7 @@ const SHOWN = 6;
 
 const SENTENCES = [
   { value: "contains", label: "This source contains…", kind: "contains", reverse: false,
-    hint: "Membership is not peer review, and it does not give Kumaru the full text." },
+    hint: "Membership is not peer review, and it does not give Ghuumi the full text." },
   { value: "contained", label: "This source is contained in…", kind: "contains", reverse: true,
     hint: "The other source becomes a parent; its own parents become this source’s ancestors." },
   { value: "cites", label: "This source cites…", kind: "cites", reverse: false, hint: "A citation is context, not evidence that either source is correct." },

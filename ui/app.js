@@ -1,4 +1,4 @@
-/* Kumaru chat UI.
+/* Ghuumi chat UI.
  *
  * Three things worth understanding before you edit this file:
  *
@@ -33,7 +33,7 @@ const MAX_TOKEN_STEPS = [256, 512, 1024, 2048, 4096, 8192, 16384, 32768];
 const BUDGET_STEPS = [256, 512, 1024, 2048, 4096, 8192, 16384, 24576, null];
 
 const state = {
-  messages: JSON.parse(localStorage.getItem("kumaru.messages") || "[]"),
+  messages: JSON.parse(localStorage.getItem("ghuumi.messages") || "[]"),
   streaming: false,
   controller: null,
   info: null,
@@ -173,12 +173,12 @@ function isNearBottom(el = $("messages"), slack = 120) {
 function persist() {
   const recent = state.messages.slice(-100);
   try {
-    localStorage.setItem("kumaru.messages", JSON.stringify(recent));
+    localStorage.setItem("ghuumi.messages", JSON.stringify(recent));
   } catch {
     // Long thoughts can exceed the ~5 MB localStorage quota. Answers matter
     // more than thoughts, so drop the thoughts and try once more.
     try {
-      localStorage.setItem("kumaru.messages", JSON.stringify(recent.map(({ reasoning, ...m }) => m)));
+      localStorage.setItem("ghuumi.messages", JSON.stringify(recent.map(({ reasoning, ...m }) => m)));
     } catch {
       // Storage full or disabled: chat still works, it just won't survive a reload.
     }
@@ -345,8 +345,8 @@ async function send() {
         }
         if (choice?.finish_reason) finish = choice.finish_reason;
 
-        if (evt.kumaru) {
-          const k = evt.kumaru;
+        if (evt.ghuumi) {
+          const k = evt.ghuumi;
           updateStats(k);
           if (k.thinking_ms != null) thinkingMs = k.thinking_ms;
           meta = `${k.tokens_per_second ?? "?"} tok/s · first token ${Math.round(k.time_to_first_token_ms ?? 0)}ms · ${k.completion_tokens ?? 0} tokens`;

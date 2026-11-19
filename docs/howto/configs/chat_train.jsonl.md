@@ -2,7 +2,7 @@
 
 > Sample supervised fine-tuning dataset in JSON Lines chat format.
 
-**Read this when:** you are building an SFT dataset, debugging `kumaru train ... --dry-run`, or deciding whether an example should train the assistant response only.
+**Read this when:** you are building an SFT dataset, debugging `ghuumi train ... --dry-run`, or deciding whether an example should train the assistant response only.
 
 ---
 
@@ -14,7 +14,7 @@
 {"messages":[{"role":"user","content":"..."},{"role":"assistant","content":"..."}]}
 ```
 
-`src/kumaru/train/data.py` reads this file with `load_chat_jsonl()`, validates every line, skips examples with no non-empty assistant message, and reports line numbers for malformed JSON or missing fields.
+`src/ghuumi/train/data.py` reads this file with `load_chat_jsonl()`, validates every line, skips examples with no non-empty assistant message, and reports line numbers for malformed JSON or missing fields.
 
 ## When to use this profile
 
@@ -102,13 +102,13 @@ Example line:
 Validate with a training config:
 
 ```powershell
-kumaru train configs/train/lora-small.yaml --dry-run
+ghuumi train configs/train/lora-small.yaml --dry-run
 ```
 
 Then train the small smoke adapter:
 
 ```powershell
-kumaru train configs/train/lora-small.yaml
+ghuumi train configs/train/lora-small.yaml
 ```
 
 Use your own file by editing the config:
@@ -122,7 +122,7 @@ data:
 Then validate:
 
 ```powershell
-kumaru train configs/train/lora-qwen.yaml --dry-run
+ghuumi train configs/train/lora-qwen.yaml --dry-run
 ```
 
 ## Tuning it
@@ -146,8 +146,8 @@ kumaru train configs/train/lora-qwen.yaml --dry-run
 
 ## Related files
 
-- `src/kumaru/train/data.py` — authoritative loader, Alpaca conversion, and loss masking.
+- `src/ghuumi/train/data.py` — authoritative loader, Alpaca conversion, and loss masking.
 - `configs/train/lora-small.yaml` — fast validation profile.
 - `configs/train/lora-qwen.yaml` — 7B QLoRA profile.
-- `src/kumaru/train/config.py` — fields such as `data.train_file`, `eval_split`, and `max_seq_length`.
+- `src/ghuumi/train/config.py` — fields such as `data.train_file`, `eval_split`, and `max_seq_length`.
 

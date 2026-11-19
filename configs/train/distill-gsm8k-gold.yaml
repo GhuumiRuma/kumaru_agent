@@ -7,11 +7,11 @@
 # gain. Read each pair from its own comparison: "no difference" means none was
 # detected, not that there was none.
 #
-#   kumaru distill gold -o runs/distill/data-gold --match runs/distill/data-teacher
-#   kumaru train configs/train/distill-gsm8k-gold.yaml
-#   kumaru bench run gsm8k -c student --full --max-tokens 1024 --adapter runs/distill/qwen1.5b-gold/adapter --label student-gold -o runs/distill/eval-gold
-#   kumaru bench compare runs/distill/eval-gold runs/distill/eval-teacher
-#   kumaru bench compare runs/distill/eval-base runs/distill/eval-gold
+#   ghuumi distill gold -o runs/distill/data-gold --match runs/distill/data-teacher
+#   ghuumi train configs/train/distill-gsm8k-gold.yaml
+#   ghuumi bench run gsm8k -c student --full --max-tokens 1024 --adapter runs/distill/qwen1.5b-gold/adapter --label student-gold -o runs/distill/eval-gold
+#   ghuumi bench compare runs/distill/eval-gold runs/distill/eval-teacher
+#   ghuumi bench compare runs/distill/eval-base runs/distill/eval-gold
 #
 # Identical to distill-gsm8k.yaml apart from the data files, output_dir and
 # run_name; a test enforces it. Change both files together. It takes the same

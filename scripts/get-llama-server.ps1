@@ -17,15 +17,15 @@
 #   * llama-server batches concurrent requests across "slots". That is what
 #     makes benchmark runs finish in minutes instead of hours.
 #   * It is a separate process. A crash or OOM in the engine cannot take the
-#     Kumaru server down with it, and VRAM is returned to the OS on exit.
+#     Ghuumi server down with it, and VRAM is returned to the OS on exit.
 #
 # Safety: every zip is checked against the SHA-256 digest GitHub publishes for
 # the release, and the new build is unpacked and test-started next to the old
 # one before it replaces anything. A failed download or update leaves the
-# current install working. Updating while Kumaru runs is fine: the running
-# llama-server keeps its old build until Kumaru restarts.
+# current install working. Updating while Ghuumi runs is fine: the running
+# llama-server keeps its old build until Ghuumi restarts.
 #
-# The Kumaru backend `llamacpp_server` finds the binary here automatically.
+# The Ghuumi backend `llamacpp_server` finds the binary here automatically.
 # Nothing is installed system-wide: deleting tools\llama.cpp uninstalls it.
 
 [CmdletBinding()]
@@ -40,7 +40,7 @@ param(
     [switch]$Force
 )
 
-# The llama.cpp build this version of Kumaru is tested and benchmarked with.
+# The llama.cpp build this version of Ghuumi is tested and benchmarked with.
 $PinnedVersion = "b11541"
 $DefaultFlavor = "cuda-13.4"
 
@@ -56,7 +56,7 @@ function Step($msg) { Write-Host "`n>> $msg" -ForegroundColor Cyan }
 
 function Show-PinHint($version) {
     if ($version -ne $PinnedVersion) {
-        Write-Host ("Kumaru is tested with llama.cpp $PinnedVersion; this is $version. Plain re-runs keep " +
+        Write-Host ("Ghuumi is tested with llama.cpp $PinnedVersion; this is $version. Plain re-runs keep " +
             "$version. To go back: .\scripts\get-llama-server.ps1 -Version $PinnedVersion") -ForegroundColor Yellow
     }
 }
@@ -75,7 +75,7 @@ $defaultDestination = Join-Path $repo "tools\llama.cpp"
 if (-not $Destination) { $Destination = $defaultDestination }
 # Absolute and without a trailing slash, so "$Destination.new" is a sibling folder.
 $Destination = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Destination).TrimEnd('\', '/')
-$marker = Join-Path $Destination "kumaru-install.json"
+$marker = Join-Path $Destination "ghuumi-install.json"
 $server = Join-Path $Destination "llama-server.exe"
 
 # ---- What to install --------------------------------------------------------
@@ -85,7 +85,7 @@ if (Test-Path -LiteralPath $marker) {
     try { $installed = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json } catch { $installed = $null }
 }
 # A version chosen with -Version is recorded as pinned=false and kept by later
-# plain runs. Everything else follows $PinnedVersion, so pulling a newer Kumaru
+# plain runs. Everything else follows $PinnedVersion, so pulling a newer Ghuumi
 # and re-running this script also moves the engine to the build it was tested on.
 $targetVersion =
     if ($Version) { $Version }
@@ -135,7 +135,7 @@ Step "Installing llama-server $targetVersion ($targetFlavor) into $Destination"
 $digests = @{}
 $release = $null
 try {
-    $release = Invoke-RestMethod -UseBasicParsing -UserAgent "kumaru-get-llama-server" `
+    $release = Invoke-RestMethod -UseBasicParsing -UserAgent "ghuumi-get-llama-server" `
         -Uri "https://api.github.com/repos/ggml-org/llama.cpp/releases/tags/$targetVersion"
 }
 catch {
@@ -159,7 +159,7 @@ if ($release) {
 
 # ---- Download ---------------------------------------------------------------
 # Zips are cached here, so a reinstall needs no network. -Force downloads again.
-$staging = Join-Path ([System.IO.Path]::GetTempPath()) "kumaru-llama-$targetVersion"
+$staging = Join-Path ([System.IO.Path]::GetTempPath()) "ghuumi-llama-$targetVersion"
 New-Item -ItemType Directory -Force -Path $staging | Out-Null
 
 foreach ($asset in $assets) {
@@ -232,7 +232,7 @@ try {
         flavor       = $targetFlavor
         pinned       = ($targetVersion -eq $PinnedVersion)
         installed_at = (Get-Date).ToString("o")
-    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $newDir "kumaru-install.json") -Encoding utf8
+    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $newDir "ghuumi-install.json") -Encoding utf8
 }
 catch {
     Remove-Item -LiteralPath $newDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -242,7 +242,7 @@ catch {
 # ---- Swap ---------------------------------------------------------------------
 # Two folder renames, so the install is never half-replaced. Windows allows
 # renaming the folder of a running llama-server: that process keeps running
-# from the renamed copy, and Kumaru picks up the new build on its next start.
+# from the renamed copy, and Ghuumi picks up the new build on its next start.
 Step "Swapping the new build into place"
 $oldDir = "$Destination.old-" + (Get-Date -Format "yyyyMMdd-HHmmss")
 $hadOld = Test-Path -LiteralPath $Destination
@@ -265,8 +265,8 @@ catch {
 if ($hadOld) {
     Remove-Item -LiteralPath $oldDir -Recurse -Force -ErrorAction SilentlyContinue
     if (Test-Path -LiteralPath $oldDir) {
-        Write-Host ("The previous build is still running (a llama-server started by Kumaru?) and keeps " +
-            "working from $oldDir. Restart Kumaru to use the new build; the next run of this script " +
+        Write-Host ("The previous build is still running (a llama-server started by Ghuumi?) and keeps " +
+            "working from $oldDir. Restart Ghuumi to use the new build; the next run of this script " +
             "deletes that folder once nothing uses it.") -ForegroundColor Yellow
     }
 }
@@ -292,6 +292,6 @@ if ($targetFlavor -ne "cpu") {
 Write-Host "`nInstalled: $server" -ForegroundColor Green
 Show-PinHint $targetVersion
 if ($Destination -ne $defaultDestination) {
-    Write-Host "Kumaru looks in tools\llama.cpp and on PATH only. To use this copy, set backend.llama_server.binary to $server" -ForegroundColor Yellow
+    Write-Host "Ghuumi looks in tools\llama.cpp and on PATH only. To use this copy, set backend.llama_server.binary to $server" -ForegroundColor Yellow
 }
-Write-Host "Next:  kumaru serve -c qwen36" -ForegroundColor Green
+Write-Host "Next:  ghuumi serve -c qwen36" -ForegroundColor Green

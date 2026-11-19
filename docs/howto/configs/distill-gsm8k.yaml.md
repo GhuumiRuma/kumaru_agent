@@ -8,7 +8,7 @@
 
 ## What it does
 
-This config trains a rank-16 LoRA adapter on every linear layer of `Qwen/Qwen2.5-1.5B-Instruct`: about 18.5 million trainable parameters, 1.2% of the model. Its training rows are the teacher's correct answers, which `kumaru distill build` writes to `runs/distill/data-teacher/`. The loss covers only the answer tokens. Every 50 steps, and at the last step, the trainer measures the loss on held-out questions, and the run ends on the checkpoint where that loss was lowest. That checkpoint is saved as `runs/distill/qwen1.5b-teacher/adapter`, which `kumaru bench run gsm8k -c student --adapter ...` then scores.
+This config trains a rank-16 LoRA adapter on every linear layer of `Qwen/Qwen2.5-1.5B-Instruct`: about 18.5 million trainable parameters, 1.2% of the model. Its training rows are the teacher's correct answers, which `ghuumi distill build` writes to `runs/distill/data-teacher/`. The loss covers only the answer tokens. Every 50 steps, and at the last step, the trainer measures the loss on held-out questions, and the run ends on the checkpoint where that loss was lowest. That checkpoint is saved as `runs/distill/qwen1.5b-teacher/adapter`, which `ghuumi bench run gsm8k -c student --adapter ...` then scores.
 
 Three files, one recipe:
 
@@ -22,7 +22,7 @@ A comparison is fair only if nothing but the tested factor changed, so `test_the
 
 ## When to use this profile
 
-- After `kumaru distill build` has written `runs/distill/data-teacher/`. The whole experiment, from the teacher's answers to the final comparison, is [Part 3 of TRAINING.md](../../TRAINING.md#part-3--distillation).
+- After `ghuumi distill build` has written `runs/distill/data-teacher/`. The whole experiment, from the teacher's answers to the final comparison, is [Part 3 of TRAINING.md](../../TRAINING.md#part-3--distillation).
 - As the template for distilling another task: copy it, then change the data files, `output_dir`, `run_name`, and `data.max_seq_length` if the answers are longer.
 - Not as a first test of a changed training pipeline: [`lora-small.yaml`](lora-small.yaml.md) takes minutes.
 
@@ -35,9 +35,9 @@ A comparison is fair only if nothing but the tested factor changed, so `test_the
 | `output_dir` | string | `runs/distill/qwen1.5b-teacher` | Checkpoints, the archived `train_config.yaml`, `metrics.json`, and the final `adapter/`. | A new folder for every run (arm, seed or model), so no run mixes with another's checkpoints. |
 | `run_name` | string | `distill-gsm8k-teacher` | The run's name in logs and TensorBoard. | Unique per run. |
 | `load_in_4bit` | bool | `false` | Whether the frozen base is quantized to 4 bits (QLoRA). | Keep `false`. In bf16 the base is only ~3 GB, and the student is scored in bf16, so it trains on the same weights it is tested with. |
-| `data.train_file` | string | `runs/distill/data-teacher/train.jsonl` | The training rows: one teacher answer each, as a user/assistant pair with no system message, like the requests `kumaru bench run` sends. | Written by `kumaru distill build`. Relative paths are read from the folder you run `kumaru train` in: the Kumaru folder. |
+| `data.train_file` | string | `runs/distill/data-teacher/train.jsonl` | The training rows: one teacher answer each, as a user/assistant pair with no system message, like the requests `ghuumi bench run` sends. | Written by `ghuumi distill build`. Relative paths are read from the folder you run `ghuumi train` in: the Ghuumi folder. |
 | `data.eval_file` | string | `runs/distill/data-teacher/val.jsonl` | The validation rows. | The held-out *questions*: none of them has any answer in `train.jsonl`, so the validation loss measures generalization, not recall. While it is set, `data.eval_split` is unused. |
-| `data.max_seq_length` | int | `1536` | The longest row kept, in tokens, chat template included. Longer rows are dropped, not cut. | A row is the question with its instruction (up to ~280 tokens), the template and an answer of at most 1,024 tokens (`kumaru distill build --max-tokens`): ~1,330 at most. Lower values save memory but drop the longest answers, which belong to the hardest questions. |
+| `data.max_seq_length` | int | `1536` | The longest row kept, in tokens, chat template included. Longer rows are dropped, not cut. | A row is the question with its instruction (up to ~280 tokens), the template and an answer of at most 1,024 tokens (`ghuumi distill build --max-tokens`): ~1,330 at most. Lower values save memory but drop the longest answers, which belong to the hardest questions. |
 | `data.train_on_completions_only` | bool | `true` | The loss covers only the answer tokens. | Keep: the student must learn to produce the answers, not to predict the questions. |
 | `lora.r` | int | `16` | The adapter's rank: its capacity. | 16 on all seven projections is ~18.5M parameters, ample for ~7,000 answers. Consider 32 with several answers per question. |
 | `lora.alpha` | int | `32` | The update's scale, `alpha / r` = 2. | Keep `2 × r`. |
@@ -55,14 +55,14 @@ A comparison is fair only if nothing but the tested factor changed, so `test_the
 | `optim.gradient_checkpointing` | bool | `true` | Recompute each layer's activations during the backward pass instead of storing them. | Keep. About 30% slower, but storing them takes roughly 100 KB per token per layer: ~4 GB for the longest row (estimated). |
 | `optim.optimizer` | string | `adamw_torch` | PyTorch's AdamW. | Keep. Needs no bitsandbytes, and its state for 18.5M parameters is only ~150 MB. |
 | `optim.bf16` | bool | `true` | bfloat16 weights and compute. | Keep on an RTX 30-series or newer. |
-| `optim.seed` | int | `42` | LoRA initialization, row order and dropout. | Change it, with `output_dir` and `run_name`, for each repeat: three seeds per arm show how much of a difference is luck. The held-out questions do not move; `kumaru distill build --seed` chose them. |
+| `optim.seed` | int | `42` | LoRA initialization, row order and dropout. | Change it, with `output_dir` and `run_name`, for each repeat: three seeds per arm show how much of a difference is luck. The held-out questions do not move; `ghuumi distill build --seed` chose them. |
 | `logging_steps` | int | `10` | Training loss and learning rate are logged every 10 steps. | Keep. |
 | `eval_steps` | int | `50` | The validation loss is measured every 50 steps, and at the last step. | About 9 evaluations in ~420 steps. |
 | `save_steps` | int | `50` | A checkpoint every 50 steps, and at the last step. | Keep equal to `eval_steps`; a test checks. The run ends on the checkpoint with the lowest validation loss (`load_best_model_at_end`), and the trainer can only return to an evaluation it saved a checkpoint for. |
 | `save_total_limit` | int | `3` | Checkpoints kept on disk. | The three newest, and the best one in any case. Each holds the adapter and its optimizer state, about 0.2 GB. |
 | `report_to` | list[string] | `[]` | Where metrics go besides the console. | `["tensorboard"]` for curves, then `tensorboard --logdir runs/`. |
 
-Fields not listed keep their defaults ([`config.md`](../src/kumaru/train/config.md)).
+Fields not listed keep their defaults ([`config.md`](../src/ghuumi/train/config.md)).
 
 ## Cost
 
@@ -87,24 +87,24 @@ The loss is the surprise. At every position the model scores all 151,936 tokens 
 
 ## How to use it
 
-Prerequisites, in the Kumaru folder:
+Prerequisites, in the Ghuumi folder:
 
 ```powershell
 .\scripts\setup.ps1 -Gpu    # elsewhere: pip install -e ".[train]"
-kumaru distill build runs\distill\teacher-qwen36 -o runs\distill\data-teacher
+ghuumi distill build runs\distill\teacher-qwen36 -o runs\distill\data-teacher
 ```
 
 Validate, train, score:
 
 ```powershell
-kumaru train configs\train\distill-gsm8k.yaml --dry-run
-kumaru train configs\train\distill-gsm8k.yaml
-kumaru bench run gsm8k -c student --full --max-tokens 1024 --adapter runs\distill\qwen1.5b-teacher\adapter --label student-teacher -o runs\distill\eval-teacher
+ghuumi train configs\train\distill-gsm8k.yaml --dry-run
+ghuumi train configs\train\distill-gsm8k.yaml
+ghuumi bench run gsm8k -c student --full --max-tokens 1024 --adapter runs\distill\qwen1.5b-teacher\adapter --label student-teacher -o runs\distill\eval-teacher
 ```
 
 - **The dry run** loads the tokenizer and the data, but not the model. It prints the plan (training and validation rows, effective batch 32, ~420 optimizer steps), says how many rows were too long, and writes one encoded row to `runs\distill\qwen1.5b-teacher\example_preview.txt`. Its `SUPERVISED TOKENS` section must hold the answer and nothing of the question.
 - **Which checkpoint was kept:** `trainer_state.json`, in the last `checkpoint-*` folder, records `best_model_checkpoint` and `best_metric` (its validation loss). `metrics.json` records the training time, the peak GPU memory (`peak_gpu_memory_gb`) and the last 30 log entries.
-- **The validation loss is not the score.** It picks the checkpoint; the score is `kumaru bench run gsm8k`, on test questions no training row came from.
+- **The validation loss is not the score.** It picks the checkpoint; the score is `ghuumi bench run gsm8k`, on test questions no training row came from.
 
 To repeat an arm with another seed, copy the file, then change `optim.seed`, `output_dir` and `run_name`; make the same copy of the gold arm.
 
@@ -115,26 +115,26 @@ Change all three files together; the arm test fails otherwise.
 1. **Out of memory, or steps far slower than ~17 seconds:** this recipe already takes one row per pass. Free the GPU first: close any game, OBS or anything else that holds GPU memory. Next, lower `data.max_seq_length` in all three recipes; that drops the longest answers, often those to the hardest questions, and the dry run says how many. On Windows, setting NVIDIA Control Panel's *CUDA - Sysmem Fallback Policy* to *Prefer No Sysmem Fallback* should turn the slowdown into a refused allocation, which PyTorch answers by emptying its cache and retrying; this was not tried here.
 2. **Validation loss still falling at the last evaluation:** `epochs: 3`.
 3. **Validation loss lowest early, rising after:** the run already ends on the best checkpoint. For the next run, lower `learning_rate` to `5.0e-5`, or train 1 epoch.
-4. **Two teacher answers per question** (`kumaru distill build` given two runs): about twice the rows, steps and time. `lora.r: 32` gives the adapter room for them.
+4. **Two teacher answers per question** (`ghuumi distill build` given two runs): about twice the rows, steps and time. `lora.r: 32` gives the adapter room for them.
 5. **Another student:** change `base_model` here and in the gold arm, and `backend.model` in `configs/student.yaml`. Tests fail if they disagree.
 
 ## Failure modes
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Training data not found: runs\distill\data-teacher\train.jsonl` | The dataset is not built, or `kumaru train` ran in another folder. | `kumaru distill build ...` (above); run from the Kumaru folder. |
-| `dropped N/M example(s) (x%) longer than 1536 tokens` | Answers longer than `kumaru distill build --max-tokens` allowed, or a much longer prompt. | A few are harmless. Many: rebuild with a lower `--max-tokens`, or raise `max_seq_length` (more memory). |
+| `Training data not found: runs\distill\data-teacher\train.jsonl` | The dataset is not built, or `ghuumi train` ran in another folder. | `ghuumi distill build ...` (above); run from the Ghuumi folder. |
+| `dropped N/M example(s) (x%) longer than 1536 tokens` | Answers longer than `ghuumi distill build --max-tokens` allowed, or a much longer prompt. | A few are harmless. Many: rebuild with a lower `--max-tokens`, or raise `max_seq_length` (more memory). |
 | CUDA out of memory, or steps far slower than ~17 seconds | What a game or OBS holds, on top of PyTorch's cache. On Windows, running short slows training instead of failing: *Shared GPU memory* rises in Task Manager. | Tuning, step 1. |
 | `test_the_arms_and_the_pilot_differ_only_where_they_must` fails | One file was edited alone, or the pilot's batch split no longer makes 32 rows. | Make the same change in all three. The pilot may split the batch differently, but not change its size. |
-| Size-mismatch error when scoring the adapter | It is scored on another base model (for example a 0.5B adapter on the 1.5B student). | Pass the matching `-m` to `kumaru bench run`. |
-| The two arms score within a few points of each other | Possibly no real difference: at 1,319 questions, about 3 points is the smallest reliably detectable. | Read `kumaru bench compare`'s p-value; train three seeds per arm before concluding. |
+| Size-mismatch error when scoring the adapter | It is scored on another base model (for example a 0.5B adapter on the 1.5B student). | Pass the matching `-m` to `ghuumi bench run`. |
+| The two arms score within a few points of each other | Possibly no real difference: at 1,319 questions, about 3 points is the smallest reliably detectable. | Read `ghuumi bench compare`'s p-value; train three seeds per arm before concluding. |
 
 ## Related files
 
 - `configs/train/distill-gsm8k-gold.yaml`, `configs/train/distill-gsm8k-0.5b.yaml` — the control arm and the pilot ([`distill-gsm8k-gold.yaml.md`](distill-gsm8k-gold.yaml.md), [`distill-gsm8k-0.5b.yaml.md`](distill-gsm8k-0.5b.yaml.md)).
 - `configs/student.yaml` — scores the adapters ([`student.yaml.md`](student.yaml.md)).
-- `src/kumaru/train/distill.py` — builds the datasets ([`distill.md`](../src/kumaru/train/distill.md)).
-- `src/kumaru/train/finetune_lora.py` — the trainer, and how its settings reach transformers ([`finetune_lora.md`](../src/kumaru/train/finetune_lora.md)).
-- `src/kumaru/train/config.py` — the schema of this file ([`config.md`](../src/kumaru/train/config.md)).
+- `src/ghuumi/train/distill.py` — builds the datasets ([`distill.md`](../src/ghuumi/train/distill.md)).
+- `src/ghuumi/train/finetune_lora.py` — the trainer, and how its settings reach transformers ([`finetune_lora.md`](../src/ghuumi/train/finetune_lora.md)).
+- `src/ghuumi/train/config.py` — the schema of this file ([`config.md`](../src/ghuumi/train/config.md)).
 - `tests/test_distill.py` — the arm test; `tests/test_finetune_lora.py` — every setting reaches the trainer, warmup included.
 - [`docs/TRAINING.md`](../../TRAINING.md#part-3--distillation) — the experiment, step by step.

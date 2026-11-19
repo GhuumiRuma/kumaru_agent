@@ -1,7 +1,7 @@
-/* Kumaru Education page: what the model knows, per area.
+/* Ghuumi Education page: what the model knows, per area.
  *
- * Reads GET /v1/education (kumaru.server.education): for each benchmark and
- * setup (run label + model), the newest `kumaru bench` measurement, overall
+ * Reads GET /v1/education (ghuumi.server.education): for each benchmark and
+ * setup (run label + model), the newest `ghuumi bench` measurement, overall
  * and per area. A measurement still running refreshes every 30 seconds.
  *
  * Area names, labels and paths come from run files on disk: everything is
@@ -10,8 +10,8 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const SETUP_KEY = "kumaru.education.setup";
-const COMPARE_KEY = "kumaru.education.compare";
+const SETUP_KEY = "ghuumi.education.setup";
+const COMPARE_KEY = "ghuumi.education.compare";
 // An unfinished measurement updated this recently is still running.
 const LIVE_MS = 10 * 60 * 1000;
 const FAST_POLL_MS = 30 * 1000;
@@ -293,7 +293,7 @@ async function refresh() {
   } catch (error) {
     state.failures += 1;
     const status = $("status");
-    status.replaceChildren(el("span", "err", `Can't read measurements from the Kumaru server (${error.message}). Retrying.`));
+    status.replaceChildren(el("span", "err", `Can't read measurements from the Ghuumi server (${error.message}). Retrying.`));
   }
   if (document.visibilityState === "visible") {
     state.timer = setTimeout(refresh, live || state.failures ? FAST_POLL_MS : SLOW_POLL_MS);

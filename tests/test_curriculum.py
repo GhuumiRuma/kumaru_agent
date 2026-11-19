@@ -9,14 +9,14 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.models import Source
-from kumaru.academic.web import FetchError
-from kumaru.cli import app
-from kumaru.core.config import REPO_ROOT
-from kumaru.core.registry import BENCHMARK_SUITES, BENCHMARKS
-from kumaru.eval.benchmarks import runner
-from kumaru.train.curriculum import Phase, collect, load_phase, searches_file
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.models import Source
+from ghuumi.academic.web import FetchError
+from ghuumi.cli import app
+from ghuumi.core.config import REPO_ROOT
+from ghuumi.core.registry import BENCHMARK_SUITES, BENCHMARKS
+from ghuumi.eval.benchmarks import runner
+from ghuumi.train.curriculum import Phase, collect, load_phase, searches_file
 
 PHASES = sorted((REPO_ROOT / "configs" / "curriculum").glob("*.yaml"))
 PHASE = {
@@ -89,7 +89,7 @@ def test_run_measures_in_one_folder_that_a_repeat_resumes(tmp_path: Path, monkey
     monkeypatch.setattr(runner, "git_commit", lambda: None)  # no subprocesses in tests
     monkeypatch.setattr(runner, "environment", lambda: {"python": "test"})
     golden = tmp_path / "mini.jsonl"
-    row = {"id": "say", "prompt": "Say kumaru.", "grader": "contains", "answer": "kumaru"}
+    row = {"id": "say", "prompt": "Say ghuumi.", "grader": "contains", "answer": "ghuumi"}
     golden.write_text(json.dumps(row) + "\n", encoding="utf-8")
     profile = tmp_path / "echo.yaml"
     profile.write_text("backend:\n  name: echo\n  model: echo\n  extra:\n    delay_s: 0\n", encoding="utf-8")

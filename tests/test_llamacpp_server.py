@@ -12,8 +12,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-import kumaru.backends.llamacpp_server as llama_server
-from kumaru.backends.llamacpp_server import (
+import ghuumi.backends.llamacpp_server as llama_server
+from ghuumi.backends.llamacpp_server import (
     LlamaServerBackend,
     build_server_args,
     dial_address,
@@ -26,9 +26,9 @@ from kumaru.backends.llamacpp_server import (
     shards_complete,
     url_host,
 )
-from kumaru.core.config import BackendConfig, LlamaServerOptions
-from kumaru.core.errors import BackendError
-from kumaru.core.types import GenerationParams, Message
+from ghuumi.core.config import BackendConfig, LlamaServerOptions
+from ghuumi.core.errors import BackendError
+from ghuumi.core.types import GenerationParams, Message
 
 SPEC = "unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ4_XS"
 
@@ -48,7 +48,7 @@ def server_config(**overrides) -> BackendConfig:
         ("org/repo:", ("org/repo", None)),
         ("models/qwen.gguf", None),  # a relative file path, not a repo
         ("model.GGUF", None),
-        ("D:\\kumaru\\models\\qwen", None),
+        ("D:\\ghuumi\\models\\qwen", None),
         ("/srv/models/qwen", None),
         ("org/sub/repo:Q4_0", None),
         ("repo-only:Q4_0", None),

@@ -8,7 +8,7 @@
 
 ## What it does
 
-Creates a virtual environment in the repo root, installs Kumaru in editable mode together with its test tools (the `dev` extra: pytest, ruff, mypy, numpy), and — on request — installs PyTorch with the correct CUDA wheel plus the training, quantization, and GGUF extras. It finishes by running `kumaru info` so you see immediately whether the GPU was detected. Every install step checks pip's exit code, so a failed step stops the script with `<step> failed (exit code N)` instead of printing `Setup complete.`. With `-Gpu` it also replaces a CPU-only PyTorch it finds in `.venv`, and stops with an error if PyTorch still cannot use the GPU.
+Creates a virtual environment in the repo root, installs Ghuumi in editable mode together with its test tools (the `dev` extra: pytest, ruff, mypy, numpy), and — on request — installs PyTorch with the correct CUDA wheel plus the training, quantization, and GGUF extras. It finishes by running `ghuumi info` so you see immediately whether the GPU was detected. Every install step checks pip's exit code, so a failed step stops the script with `<step> failed (exit code N)` instead of printing `Setup complete.`. With `-Gpu` it also replaces a CPU-only PyTorch it finds in `.venv`, and stops with an error if PyTorch still cannot use the GPU.
 
 ## Why it exists
 
@@ -69,7 +69,7 @@ To check again later:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-kumaru info
+ghuumi info
 ```
 
 You want a `cuda:0` row naming your GPU with its VRAM and `bf16=yes`. If it says `unavailable (CPU only)` while you have an NVIDIA card, a CPU-only torch got installed, for example by a plain `pip install -e ".[train]"`. Run `.\scripts\setup.ps1 -Gpu` again: it replaces that build with the CUDA one.
@@ -80,15 +80,15 @@ You want a `cuda:0` row naming your GPU with its VRAM and `bf16=yes`. If it says
 |---|---|---|
 | `python : The term 'python' is not recognized` | Python not on PATH | Install Python 3.10+ and tick "Add to PATH" |
 | `running scripts is disabled on this system` | PowerShell execution policy | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
-| `[WinError 32] ... kumaru.exe ... used by another process` | A `kumaru serve` is running | Stop it, then re-run |
-| `kumaru info` shows `cuda: unavailable (CPU only)` after an install without `-Gpu` | torch came from PyPI, whose Windows wheel is CPU-only (a plain `pip install` of `torch`, `train` or `all`) | Run `.\scripts\setup.ps1 -Gpu`; it replaces the CPU-only build |
+| `[WinError 32] ... ghuumi.exe ... used by another process` | A `ghuumi serve` is running | Stop it, then re-run |
+| `ghuumi info` shows `cuda: unavailable (CPU only)` after an install without `-Gpu` | torch came from PyPI, whose Windows wheel is CPU-only (a plain `pip install` of `torch`, `train` or `all`) | Run `.\scripts\setup.ps1 -Gpu`; it replaces the CPU-only build |
 | `Installing PyTorch from https://download.pytorch.org/whl/cu126 failed (exit code N)` | Network error, or no torch wheel on that index matches your Python version | Read pip's message above it; check `-CudaVersion` |
-| `Installing Kumaru failed`, `Installing the training stack failed`, or `Installing llama-cpp-python failed` (each with `(exit code N)`) | pip could not install a package: a network error, no wheel for your Python version, or (llama-cpp-python) no prebuilt wheel and no C/C++ compiler | Read pip's error above the message, fix it, and re-run; the script is safe to re-run. For llama-cpp-python, drop `-Gguf` and use the `llamacpp_server` backend, which needs no Python extra |
+| `Installing Ghuumi failed`, `Installing the training stack failed`, or `Installing llama-cpp-python failed` (each with `(exit code N)`) | pip could not install a package: a network error, no wheel for your Python version, or (llama-cpp-python) no prebuilt wheel and no C/C++ compiler | Read pip's error above the message, fix it, and re-run; the script is safe to re-run. For llama-cpp-python, drop `-Gguf` and use the `llamacpp_server` backend, which needs no Python extra |
 | `PyTorch (CUDA 12.6) sees no GPU.` | No NVIDIA GPU, or a driver older than the build (`nvidia-smi` shows a lower `CUDA Version`) | Update the driver, or run `.\.venv\Scripts\python.exe -m pip uninstall -y torch` and re-run with an older `-CudaVersion` (an existing CUDA build is kept otherwise) |
 | `PyTorch is still a CPU-only build after installing from ...` | The `.[train]` step swapped the CUDA build for a CPU-only one, or `-CudaVersion` names a CPU-only index | Check `-CudaVersion` against the table above, then re-run with `-Gpu` and read pip's output |
 | `PyTorch does not import.` | A broken or half-installed torch, or a missing system DLL | Run the printed command to see the error. A broken install is fixed by `.\.venv\Scripts\python.exe -m pip install --force-reinstall --no-deps "torch>=2.3" --index-url https://download.pytorch.org/whl/cu126` |
 | `Installing bitsandbytes failed (exit code N)` | No prebuilt wheel for your platform | Skip `-Quant`; set `load_in_4bit: false` and use bf16 |
-| `Verifying the installation (kumaru info) failed (exit code N)` | Everything installed, but importing Kumaru or one of its optional packages raised an error | Run `.\.venv\Scripts\python.exe -m kumaru.cli info` to see the traceback |
+| `Verifying the installation (ghuumi info) failed (exit code N)` | Everything installed, but importing Ghuumi or one of its optional packages raised an error | Run `.\.venv\Scripts\python.exe -m ghuumi.cli info` to see the traceback |
 | Very slow download | PyTorch CUDA wheels are ~2.5 GB | Expected; it happens once |
 
 ## Related files
@@ -96,4 +96,4 @@ You want a `cuda:0` row naming your GPU with its VRAM and `bf16=yes`. If it says
 - `pyproject.toml` — defines the `torch`, `train`, `quant`, `gguf`, and `dev` extras this script installs
 - `scripts/verify.ps1` — run this next to confirm every layer works
 - `docs/QUICKSTART.md` — the same steps, done manually, with more explanation
-- `src/kumaru/cli.py` — the `info` command used for verification
+- `src/ghuumi/cli.py` — the `info` command used for verification

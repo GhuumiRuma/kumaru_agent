@@ -1,14 +1,14 @@
-# Kumaru default configuration.
+# Ghuumi default configuration.
 #
-# This file documents every knob. Kumaru reads it only when you pass
+# This file documents every knob. Ghuumi reads it only when you pass
 # `-c default`; with no -c it uses the field defaults in
-# src/kumaru/core/config.py, which hold the same values, so either file answers
+# src/ghuumi/core/config.py, which hold the same values, so either file answers
 # "what is the default?".
 #
 # Precedence, lowest to highest:
-#   field defaults  <  this YAML  <  KUMARU_* env vars  <  CLI flags
+#   field defaults  <  this YAML  <  GHUUMI_* env vars  <  CLI flags
 #
-# Check what actually won with:  kumaru config -c default
+# Check what actually won with:  ghuumi config -c default
 
 backend:
   # Which engine loads the model.
@@ -35,7 +35,7 @@ backend:
   # backend also clamps this to whatever the checkpoint actually supports.
   max_context_length: 8192
 
-  # Path to a LoRA adapter produced by `kumaru train`. This is how a fine-tune
+  # Path to a LoRA adapter produced by `ghuumi train`. This is how a fine-tune
   # gets deployed: a few hundred MB layered over the untouched base weights.
   adapter_path: null
 
@@ -66,8 +66,8 @@ backend:
   # -- llamacpp_server only --
   # Where "org/repo:QUANT" model specs are looked up, and downloaded to if
   # missing. Point it at your biggest fast disk:
-  #   setx KUMARU_BACKEND__MODELS_DIR D:\kumaru\models
-  models_dir: ~/.cache/kumaru/models
+  #   setx GHUUMI_BACKEND__MODELS_DIR D:\ghuumi\models
+  models_dir: ~/.cache/ghuumi/models
   llama_server:
     binary: null              # null = tools\llama.cpp\ (get-llama-server.ps1), then PATH
     host: 127.0.0.1
@@ -119,7 +119,7 @@ thinking_mode:
 
 agent:
   system_prompt: >-
-    You are Kumaru, a precise and helpful assistant. Answer directly and
+    You are Ghuumi, a precise and helpful assistant. Answer directly and
     concisely. Lead with the answer, then justify it. If you are uncertain, say
     so plainly and state what would resolve the uncertainty. Never invent
     citations, APIs, file paths, or numbers.
@@ -134,23 +134,23 @@ agent:
   # none            never trim; raise when it does not fit
   memory_policy: sliding_window
 
-  # Tools the model may call; see src/kumaru/agent/tools.py. `kumaru chat
+  # Tools the model may call; see src/ghuumi/agent/tools.py. `ghuumi chat
   # --workspace DIR` adds list_files, read_file, write_file, edit_file and
-  # run_command. kumaru chat asks you before every change and command; the
+  # run_command. ghuumi chat asks you before every change and command; the
   # server, web UI, eval and bench cannot ask, so they never offer those tools.
   enabled_tools: []
   max_tool_iterations: 10     # tool rounds per message; then it stops and asks
   workspace:
-    root: null                # project folder; kumaru chat --workspace DIR sets it
+    root: null                # project folder; ghuumi chat --workspace DIR sets it
     allowed_commands: [python, node, npm, npx, dotnet]  # bare names; shells are refused
     command_timeout_s: 300    # seconds per command (1-3600); the model may ask for less
     max_output_chars: 16000   # tool output the model reads, per call
     max_file_bytes: 262144    # largest file it reads or writes (256 KB)
     max_list_entries: 500     # entries per list_files call
   expertise: []               # coding | playwright | windows | apis; see coder.yaml
-  knowledge_files: []         # absolute paths to JSON packs created by kumaru learn
+  knowledge_files: []         # absolute paths to JSON packs created by ghuumi learn
   max_knowledge_chars: 6000   # total reference characters added to the prompt
-  knowledge_indexes: []       # absolute paths to documentation indexes: kumaru learn --source FOLDER
+  knowledge_indexes: []       # absolute paths to documentation indexes: ghuumi learn --source FOLDER
   max_retrieved_chars: 6000   # characters of matching passages added to each question; 0 = off
 
 server:
@@ -170,17 +170,17 @@ telemetry:
 
 academic:
   enabled: false             # opt-in /v1/academic API; standalone CLI always available
-  database: ~/.local/share/kumaru/academic.sqlite
-  brave_api_key: null        # optional broad-web search; prefer KUMARU_ACADEMIC__BRAVE_API_KEY
-  openalex_api_key: null     # optional; your own OpenAlex budget; prefer KUMARU_ACADEMIC__OPENALEX_API_KEY
+  database: ~/.local/share/ghuumi/academic.sqlite
+  brave_api_key: null        # optional broad-web search; prefer GHUUMI_ACADEMIC__BRAVE_API_KEY
+  openalex_api_key: null     # optional; your own OpenAlex budget; prefer GHUUMI_ACADEMIC__OPENALEX_API_KEY
   contact_email: null        # your own address, required only by Unpaywall lookups
   monitor_interval_s: 0      # 0 = manual only; positive = periodic checks while the server runs
   monitor_batch_size: 10     # never/least-recently checked DOI works per tick (1-20)
 
 education:
-  runs_dirs: [runs/bench]    # benchmark runs the /education page reads; relative = the Kumaru folder.
-                             # The first is also where `kumaru curriculum run` puts a phase's run.
+  runs_dirs: [runs/bench]    # benchmark runs the /education page reads; relative = the Ghuumi folder.
+                             # The first is also where `ghuumi curriculum run` puts a phase's run.
 
 gaming:
-  below_free_gb: null        # `kumaru app` uses the settings below by itself when less GiB is free
+  below_free_gb: null        # `ghuumi app` uses the settings below by itself when less GiB is free
   backend: {}                # merged over backend with --gaming (serve, app); see configs/qwen36.yaml

@@ -38,7 +38,7 @@ function connectionHint() {
 
 export async function openConnectionDialog(trigger) {
   const connected = await openDialog({
-    title: "Connect to Kumaru", trigger, size: "sm", submitLabel: "Connect",
+    title: "Connect to Ghuumi", trigger, size: "sm", submitLabel: "Connect",
     description: "Needed only when the server has an API key configured. The key stays in this page's memory: it is not saved to browser storage, cookies or the address bar, and reloading the page forgets it.",
     build: () => textField({
       name: "key", label: "API key", type: "password", required: state.connection === "key",

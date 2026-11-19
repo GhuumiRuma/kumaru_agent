@@ -1,18 +1,18 @@
 # Free the graphics card, keep the PC awake, and run one long job -- a
 # training run, a benchmark -- while you sleep.
 #
-#   .\scripts\overnight.ps1 "kumaru train configs\train\lora-qwen.yaml"
-#   .\scripts\overnight.ps1 -Preview "kumaru train configs\train\lora-qwen.yaml"
-#   .\scripts\overnight.ps1 -Keep Discord "kumaru bench run gsm8k -c qwen36 --full"
-#   .\scripts\overnight.ps1 -AllApps "kumaru train configs\train\lora-qwen.yaml"
+#   .\scripts\overnight.ps1 "ghuumi train configs\train\lora-qwen.yaml"
+#   .\scripts\overnight.ps1 -Preview "ghuumi train configs\train\lora-qwen.yaml"
+#   .\scripts\overnight.ps1 -Keep Discord "ghuumi bench run gsm8k -c qwen36 --full"
+#   .\scripts\overnight.ps1 -AllApps "ghuumi train configs\train\lora-qwen.yaml"
 #   .\scripts\overnight.ps1 -Preview          # only list what it would close
 #
-# Put the job in quotes, as you would type it in the Kumaru folder; it runs
+# Put the job in quotes, as you would type it in the Ghuumi folder; it runs
 # from there. Start it from Windows Terminal: closing the window it runs in
 # stops the job.
 #
 # In order, it:
-#   1. Checks the job can start. `kumaru train` gets a --dry-run first; if that
+#   1. Checks the job can start. `ghuumi train` gets a --dry-run first; if that
 #      fails, nothing is closed.
 #   2. Lists the programs holding graphics memory (Task Manager's "Dedicated
 #      GPU memory"), with -AllApps also every other program with a window, and
@@ -31,7 +31,7 @@
 
 [CmdletBinding()]
 param(
-    # The job, in quotes: "kumaru train configs\train\lora-qwen.yaml".
+    # The job, in quotes: "ghuumi train configs\train\lora-qwen.yaml".
     [Parameter(Position = 0)]
     [string]$Run,
     # Check the job and list what would be closed, then stop. Closes nothing.
@@ -62,13 +62,13 @@ $HelperNames = @("msedgewebview2", "steamwebhelper", "EpicWebHelper", "CefSharp.
 # Driver and security programs installed outside C:\Windows.
 $ProtectedNames = @("nvcontainer", "NVDisplay.Container", "AMDRSServ", "amdfendrsr", "atieclxx", "atiesrxx", "MsMpEng", "NisSrv", "SecurityHealthSystray")
 
-if (-not ("KumaruOvernight.Native" -as [type])) {
+if (-not ("GhuumiOvernight.Native" -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace KumaruOvernight {
+namespace GhuumiOvernight {
     public static class Native {
         const uint ES_CONTINUOUS = 0x80000000;
         const uint ES_SYSTEM_REQUIRED = 0x00000001;
@@ -351,7 +351,7 @@ function Get-StillRunning($context, $app) {
 function Close-Programs($context, $apps, [int]$graceSeconds) {
     $waiting = @()
     foreach ($app in $apps) {
-        if ([KumaruOvernight.Native]::CloseWindows([int[]]$app.Ids) -gt 0) { $waiting += $app }
+        if ([GhuumiOvernight.Native]::CloseWindows([int[]]$app.Ids) -gt 0) { $waiting += $app }
     }
     $deadline = (Get-Date).AddSeconds($graceSeconds)
     while ($waiting.Count -gt 0 -and (Get-Date) -lt $deadline) {
@@ -393,8 +393,8 @@ function Resolve-Job([string]$line) {
         else { $program = $line.Substring(0, $space); $arguments = $line.Substring($space + 1).Trim() }
     }
     $exe = $null
-    if ($program -eq "kumaru") {
-        $venv = Join-Path $Root ".venv\Scripts\kumaru.exe"
+    if ($program -eq "ghuumi") {
+        $venv = Join-Path $Root ".venv\Scripts\ghuumi.exe"
         if (Test-Path -LiteralPath $venv) { $exe = $venv }
     }
     if (-not $exe) {
@@ -403,13 +403,13 @@ function Resolve-Job([string]$line) {
         finally { Pop-Location }
         if ($command) { $exe = $command.Path }
     }
-    if (-not $exe) { throw "Can't find the program '$program'. For kumaru, run .\scripts\setup.ps1 first." }
-    $isKumaru = (Split-Path $exe -Leaf) -match '^kumaru(\.exe)?$'
+    if (-not $exe) { throw "Can't find the program '$program'. For ghuumi, run .\scripts\setup.ps1 first." }
+    $isGhuumi = (Split-Path $exe -Leaf) -match '^ghuumi(\.exe)?$'
     [pscustomobject]@{
         Line       = $line
         Exe        = $exe
         Arguments  = $arguments
-        IsTraining = $isKumaru -and $arguments -match '^train(\s|$)' -and $arguments -notmatch '(^|\s)--dry-run(\s|$)'
+        IsTraining = $isGhuumi -and $arguments -match '^train(\s|$)' -and $arguments -notmatch '(^|\s)--dry-run(\s|$)'
     }
 }
 
@@ -429,7 +429,7 @@ function Start-Program([string]$exe, [string]$arguments, [string]$stdout, [strin
 }
 
 function Invoke-Preflight($job) {
-    $folder = Join-Path ([IO.Path]::GetTempPath()) ("kumaru-overnight-" + [guid]::NewGuid().ToString("N"))
+    $folder = Join-Path ([IO.Path]::GetTempPath()) ("ghuumi-overnight-" + [guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $folder | Out-Null
     try {
         $stdout = Join-Path $folder "output.txt"
@@ -548,7 +548,7 @@ function Invoke-Overnight {
     if ($Rest -or (-not $Run -and -not $Preview)) {
         if ($Rest) { Write-Host "Put the whole job in quotes, for example:" -ForegroundColor Yellow }
         else { Write-Host "Say what to run, in quotes, for example:" -ForegroundColor Yellow }
-        Write-Host '   .\scripts\overnight.ps1 "kumaru train configs\train\lora-qwen.yaml"'
+        Write-Host '   .\scripts\overnight.ps1 "ghuumi train configs\train\lora-qwen.yaml"'
         exit 2
     }
 
@@ -623,10 +623,10 @@ function Invoke-Overnight {
     Write-Host "   Logs: $folder"
     $unbuffered = $env:PYTHONUNBUFFERED
     $env:PYTHONUNBUFFERED = "1"   # so log.txt fills as it goes
-    [void][KumaruOvernight.Native]::KeepAwake()
+    [void][GhuumiOvernight.Native]::KeepAwake()
     try { $result = Invoke-Job $job $folder $adapter }
     finally {
-        [void][KumaruOvernight.Native]::AllowSleep()
+        [void][GhuumiOvernight.Native]::AllowSleep()
         $env:PYTHONUNBUFFERED = $unbuffered
     }
     Write-Summary $job $result $closed $folder

@@ -2,8 +2,8 @@
 
 import pytest
 
-from kumaru.core.errors import RegistryError
-from kumaru.core.registry import Registry
+from ghuumi.core.errors import RegistryError
+from ghuumi.core.registry import Registry
 
 
 class Sample:
@@ -42,7 +42,7 @@ class TestRegistry:
 
     def test_register_lazy_resolves_real_dotted_target(self) -> None:
         registry = Registry("backend")
-        registry.register_lazy("echo", "kumaru.backends.echo:EchoBackend", aliases=("e",))
+        registry.register_lazy("echo", "ghuumi.backends.echo:EchoBackend", aliases=("e",))
         cls = registry.get("e")
         assert cls.__name__ == "EchoBackend"
         assert registry.names() == ["echo"]

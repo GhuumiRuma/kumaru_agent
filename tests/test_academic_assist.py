@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from kumaru.academic.assist import (
+from ghuumi.academic.assist import (
     LinkScorer,
     near_duplicate,
     rank_candidates,
@@ -14,9 +14,9 @@ from kumaru.academic.assist import (
     suggest_queries,
     terms,
 )
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.models import Review, Source
-from kumaru.cli import app as cli
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.models import Review, Source
+from ghuumi.cli import app as cli
 
 WORDS = [f"word{i}" for i in range(60)]
 # Prose with realistic repetition: word i appears (i % 7) + 1 times.

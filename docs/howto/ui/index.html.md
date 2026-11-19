@@ -19,7 +19,7 @@ The dashboard is a separate static shell and does not replace chat.
 The sidebar footer also links **Education: what the model knows ↗** (`#education-link`)
 to `/education`, the per-area benchmark bars ([page](education.html.md)). It is always shown.
 
-`ui\index.html` is the whole DOM of the UI. `src\kumaru\server\app.py` mounts the `ui\` folder at `/static` and returns this file for `GET /` (lines 226–231). Both happen only when `server.serve_ui` is true (the default, `src\kumaru\core\config.py:178`) and `ui\` exists. The page:
+`ui\index.html` is the whole DOM of the UI. `src\ghuumi\server\app.py` mounts the `ui\` folder at `/static` and returns this file for `GET /` (lines 226–231). Both happen only when `server.serve_ui` is true (the default, `src\ghuumi\core\config.py:178`) and `ui\` exists. The page:
 
 - loads `/static/styles.css` in `<head>` (line 7) and `/static/app.js` as a classic script at the end of `<body>` (line 140);
 - uses an inline SVG data-URI favicon (line 8), so the icon costs no request;
@@ -96,7 +96,7 @@ Three rules follow:
   - One stop too many on `#max-tokens` makes `MAX_TOKEN_STEPS[8]` undefined. With tuned settings unticked, `syncControls()` then throws at `maxTok.toLocaleString()` (`app.js:474`) on every input and every poll: the label freezes, the status flips to "server unreachable", and the request silently omits `max_tokens`.
   - One stop too many on `#thinking-budget` fails silently: `undefined == null`, so it shows and behaves as "unlimited".
 - **`value` is an index too.** To change a default, change `value` to the index of the stop you want; never type a token count.
-- **The plain ranges are narrower than the API.** The server accepts temperature up to 2.0 and top-p down to 0.0 (`src\kumaru\server\schemas.py:60-61`). A profile value outside the slider's range still applies while tuned settings are ticked (nothing is sent, and the label shows the profile's value). But the knob is clamped, so unticking sends the clamped value.
+- **The plain ranges are narrower than the API.** The server accepts temperature up to 2.0 and top-p down to 0.0 (`src\ghuumi\server\schemas.py:60-61`). A profile value outside the slider's range still applies while tuned settings are ticked (nothing is sent, and the label shows the profile's value). But the knob is clamped, so unticking sends the clamped value.
 
 ### Copy that makes claims
 
@@ -116,22 +116,22 @@ Three rules follow:
 |---|---|---|---|
 | 1–2 | `<!DOCTYPE html>`, `<html lang="en">` | Standards mode, which is what makes browsers refuse a mistyped stylesheet. `lang` sets the screen-reader language. | — |
 | 4–5 | `charset`, `viewport` (`width=device-width, initial-scale=1`) | Without the viewport tag, phones lay the page out about 980 px wide and the ≤ 860 px rule in `styles.css` never fires. | — |
-| 6 | `<title>Kumaru</title>` | Tab title | never changed |
+| 6 | `<title>Ghuumi</title>` | Tab title | never changed |
 | 7 | `<link rel="stylesheet" href="/static/styles.css">` | Render-blocking in `<head>`, so there is no flash of unstyled content | — |
 | 8 | Data-URI SVG favicon `◈` | No request | — |
 | 11 | `#app` | The two-column grid | — |
 | 14 | `aside#sidebar` | Status and controls; hidden at ≤ 860 px | — |
-| 15–21 | `header.brand`: `.mark`, `h1`, `#version` ("local agent") | Brand and version | `refreshInfo()` writes `v` + `info.version` (516). Today that is `v0.2.0` (`__version__`, `src\kumaru\__init__.py:16`). |
+| 15–21 | `header.brand`: `.mark`, `h1`, `#version` ("local agent") | Brand and version | `refreshInfo()` writes `v` + `info.version` (516). Today that is `v0.2.0` (`__version__`, `src\ghuumi\__init__.py:16`). |
 | 23–28 | **Status**: `#status-dot` (`dot loading`), `#status-text` ("connecting…") | Server and model state | `refreshInfo()` sets `dot ok` "ready", `dot loading` "loading model…" or `dot err` "load failed" (494–506), and `dot err` "server unreachable" when the poll fails (536–538). |
 | 29–35 | `dl.kv#model-facts`: `#fact-model`, `#fact-backend`, `#fact-device`, `#fact-dtype`, `#fact-context` | What is actually loaded | `refreshInfo()` (510–515) prefers the live `info.agent.backend`, then `info.config.backend`, else "—". Context comes only from the live backend. `#fact-model` also gets a `title`, because `.kv dd` truncates with an ellipsis. |
-| 38–46 | **Last response**: `#stat-ttft`, `#stat-think`, `#stat-tps`, `#stat-tokens` | Stats of the latest finished reply | `updateStats()` (422–427), from the final frame's `kumaru` object: `N ms`; `formatSeconds()` or `off`; `N tok/s`; `prompt → completion` |
+| 38–46 | **Last response**: `#stat-ttft`, `#stat-think`, `#stat-tps`, `#stat-tokens` | Stats of the latest finished reply | `updateStats()` (422–427), from the final frame's `ghuumi` object: `N ms`; `formatSeconds()` or `off`; `N tok/s`; `prompt → completion` |
 | 48–51 | **Thinking** explainer | Says where Think is and what it costs | — |
 | 52–56 | `label.slider#budget-row`: `#val-budget`, `#thinking-budget`, hint | Cap on thinking tokens | `syncControls()` writes the label (476–477), and disables the slider and adds `.is-disabled` to the row while Think is off (478–479). `requestSettings()` sends `thinking_budget` (403–405). |
 | 61–66 | `label.check`: `#auto-sampling` (checked), plus a muted explainer | Lets the profile decide sampling | While ticked, `syncControls()` disables the three sliders, adds `.is-disabled` and parks them on the profile's values (455–468), and `requestSettings()` omits `temperature`, `top_p` and `max_tokens` (407–411). |
 | 67–71 | `#temperature`, `#val-temp` | Sampling temperature | sent as `temperature` while unticked |
 | 72–76 | `#max-tokens`, `#val-max` | Reply cap, thinking included | `MAX_TOKEN_STEPS[value]`, sent as `max_tokens` while unticked |
 | 77–81 | `#top-p`, `#val-topp` | Nucleus sampling | sent as `top_p` while unticked |
-| 84–87 | `#system-prompt` | Extra instructions for this tab | When non-empty, `send()` puts it first as a `system` message (223–224). The server appends it to its own prompt (`ensure_system_message`, `src\kumaru\agent\prompt.py:64`), so it cannot remove server-side rules. Not persisted. |
+| 84–87 | `#system-prompt` | Extra instructions for this tab | When non-empty, `send()` puts it first as a `system` message (223–224). The server appends it to its own prompt (`ensure_system_message`, `src\ghuumi\agent\prompt.py:64`), so it cannot remove server-side rules. Not persisted. |
 | 89–95 | **Model**: `#swap-model`, `#swap-backend`, `#swap-btn`, note | Hot-swap model or backend | On the first poll, `refreshInfo()` fills the select from `available_backends`, preselects the current backend and prefills the model box with `config.backend.model` (518–527). The button posts `{name, model}` to `/v1/backend` and alerts on failure (575–596). |
 | 97–100 | `footer.side-footer`: `#clear-btn`, `/docs` link | Reset; API reference | `#clear-btn` empties `state.messages`, saves and re-renders (559–563). It does not abort a running stream. The link opens FastAPI's Swagger UI in a new tab. |
 | 104 | `main#main` | The conversation column | — |
@@ -161,7 +161,7 @@ There are four touch points, plus the server:
 2. **`requestSettings()`**: what to send, and in which state.
 3. **`syncControls()`**: the label, the disabled state, and parking on the profile value.
 4. **`init()`**: add the id to the `input` listener list (`app.js:565`).
-5. **The server schema** (`src\kumaru\server\schemas.py`). It uses `extra="ignore"`, so an unknown field returns 200 and changes nothing.
+5. **The server schema** (`src\ghuumi\server\schemas.py`). It uses `extra="ignore"`, so an unknown field returns 200 and changes nothing.
 
 `docs\howto\ui\app.js.md` ("Add a request parameter (worked example: `top_k`)") walks through the full example, including a test that proves the value reaches the backend.
 
@@ -171,7 +171,7 @@ Edit the array in `app.js` (`MAX_TOKEN_STEPS` at line 30, `BUDGET_STEPS` at 33) 
 
 ### Add a backend to the Model list
 
-Do not add `<option>`s. `refreshInfo()` fills `#swap-backend` from `available_backends`, which is `BACKENDS.names()` (`src\kumaru\server\routes_chat.py:233`): today `echo`, `llamacpp`, `llamacpp_server`, `openai_compat` and `transformers`. Registry aliases are not listed. The list is filled only while the select is empty, so register the backend server-side, restart the server, and reload the page.
+Do not add `<option>`s. `refreshInfo()` fills `#swap-backend` from `available_backends`, which is `BACKENDS.names()` (`src\ghuumi\server\routes_chat.py:233`): today `echo`, `llamacpp`, `llamacpp_server`, `openai_compat` and `transformers`. Registry aliases are not listed. The list is filled only while the select is empty, so register the backend server-side, restart the server, and reload the page.
 
 ### Fix the accessible names
 
@@ -181,7 +181,7 @@ Today, `#swap-backend` has no name at all. `#system-prompt`, `#swap-model` and `
 <textarea id="system-prompt" rows="4" aria-label="System prompt" placeholder="Optional. Added on top of the server's prompt."></textarea>
 <input type="text" id="swap-model" aria-label="Model" placeholder="Qwen/Qwen2.5-7B-Instruct" />
 <select id="swap-backend" aria-label="Backend"></select>
-<textarea id="input" rows="1" aria-label="Message" placeholder="Message Kumaru…  (Enter to send, Shift+Enter for newline)"></textarea>
+<textarea id="input" rows="1" aria-label="Message" placeholder="Message Ghuumi…  (Enter to send, Shift+Enter for newline)"></textarea>
 <button id="send-btn" title="Send" aria-label="Send">…</button>
 <button id="stop-btn" class="hidden" title="Stop" aria-label="Stop">…</button>
 ```
@@ -201,7 +201,7 @@ Six URLs are absolute:
 - in this file: `/static/styles.css` (7), `/docs` (99), `/static/app.js` (140);
 - in `app.js`: `/v1/chat/completions` (292), `/v1/info` (488), `/v1/backend` (580).
 
-Behind a reverse proxy at a sub-path, they escape the prefix. Make all six relative (`static/app.js`, `v1/info`, …) and open the UI with a trailing slash (`/kumaru/`, not `/kumaru`), so they resolve under the prefix. The Swagger page also loads `/openapi.json` by absolute path. FastAPI's `root_path` handles that, and `create_app()` does not set it (`app.py:191-196`).
+Behind a reverse proxy at a sub-path, they escape the prefix. Make all six relative (`static/app.js`, `v1/info`, …) and open the UI with a trailing slash (`/ghuumi/`, not `/ghuumi`), so they resolve under the prefix. The Swagger page also loads `/openapi.json` by absolute path. FastAPI's `root_path` handles that, and `create_app()` does not set it (`app.py:191-196`).
 
 ### Change or remove the API docs link
 
@@ -215,8 +215,8 @@ Edit both copies (lines 108 and 135 here, `app.js:141` and `501`). To make the c
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Unstyled page. Chromium's console says "Refused to apply style from '…/static/styles.css' because its MIME type ('text/plain') is not a supported stylesheet MIME type, and strict MIME checking is enabled." | Python's `mimetypes` reads the Windows registry, where some installers map `.css` and `.js` to `text/plain`. Line 1 puts the page in standards mode, where browsers refuse such a stylesheet. | Fixed in v0.2: `app.py:46-47` pins `text/css` and `text/javascript`, and `test_ui_assets_are_served_with_browser_safe_types` guards it. With `kumaru serve -c test --port 8790` running, `(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8790/static/styles.css).Headers['Content-Type']` must print `text/css; charset=utf-8`. |
-| Stuck at "connecting…" with a pulsing amber dot; chips are dead; Send does nothing | `app.js` never ran, or `init()` threw before `refreshInfo()`. Causes: a 404 on `/static/app.js`, a syntax error, corrupt `localStorage["kumaru.messages"]` (`app.js:36` throws), `async` added to line 140, or a renamed id (see "Which function reads which id") | Read the DevTools console. Restore the id or the tag. For corrupt storage, run `localStorage.removeItem("kumaru.messages")`. |
+| Unstyled page. Chromium's console says "Refused to apply style from '…/static/styles.css' because its MIME type ('text/plain') is not a supported stylesheet MIME type, and strict MIME checking is enabled." | Python's `mimetypes` reads the Windows registry, where some installers map `.css` and `.js` to `text/plain`. Line 1 puts the page in standards mode, where browsers refuse such a stylesheet. | Fixed in v0.2: `app.py:46-47` pins `text/css` and `text/javascript`, and `test_ui_assets_are_served_with_browser_safe_types` guards it. With `ghuumi serve -c test --port 8790` running, `(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8790/static/styles.css).Headers['Content-Type']` must print `text/css; charset=utf-8`. |
+| Stuck at "connecting…" with a pulsing amber dot; chips are dead; Send does nothing | `app.js` never ran, or `init()` threw before `refreshInfo()`. Causes: a 404 on `/static/app.js`, a syntax error, corrupt `localStorage["ghuumi.messages"]` (`app.js:36` throws), `async` added to line 140, or a renamed id (see "Which function reads which id") | Read the DevTools console. Restore the id or the tag. For corrupt storage, run `localStorage.removeItem("ghuumi.messages")`. |
 | Red dot and "server unreachable" while the API answers | An id read only by `refreshInfo()` is gone, or an index slider's `max` runs past its array while tuned settings are unticked | The console shows the `TypeError`. Restore the id, or fix `max`. |
 | You edited the chips here and nothing changed | `renderAll()` replaces the static empty state at init | Edit `app.js:143-145`. |
 | Clicking some other button sends its label as a message | It has class `chip`, and `wireChips()` wires every `.chip` in the document | Use another class name. |
@@ -239,8 +239,8 @@ Edit both copies (lines 108 and 135 here, `app.js:141` and `501`). To make the c
 
 - `ui\app.js` — reads 33 of this file's 38 ids and owns all dynamic content; see `docs\howto\ui\app.js.md`
 - `ui\styles.css` — styles `#app`, `#sidebar`, `#main`, `#messages`, `#composer`, `#input`, `#send-btn`, `#stop-btn` and the classes used here; see `docs\howto\ui\styles.css.md`
-- `src\kumaru\server\app.py` — serves this file at `/` and `ui\` at `/static` (226–231); pins the MIME types (43–47)
-- `src\kumaru\server\routes_chat.py` — `/v1/info` (224–245), `/v1/chat/completions`, `/v1/backend` (248–259)
-- `src\kumaru\core\config.py` — `REPO_ROOT` (34) and `server.serve_ui` (178)
+- `src\ghuumi\server\app.py` — serves this file at `/` and `ui\` at `/static` (226–231); pins the MIME types (43–47)
+- `src\ghuumi\server\routes_chat.py` — `/v1/info` (224–245), `/v1/chat/completions`, `/v1/backend` (248–259)
+- `src\ghuumi\core\config.py` — `REPO_ROOT` (34) and `server.serve_ui` (178)
 - `configs\default.yaml` — the `generation` values that the slider defaults mirror
 - `tests\test_server.py` — `test_ui_assets_are_served_with_browser_safe_types` (183), the only automated check on the UI files

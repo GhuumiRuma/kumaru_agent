@@ -1,7 +1,7 @@
 # Phase 1: computer science fundamentals, up to graduate level, before any
 # programming language. Run (and re-run) it with:
 #
-#   kumaru curriculum run configs/curriculum/cs-foundations.yaml -c qwen36
+#   ghuumi curriculum run configs/curriculum/cs-foundations.yaml -c qwen36
 #
 # A repeat only does what is missing, so it costs no model tokens once done.
 # See docs/howto/configs/cs-foundations.yaml.md.

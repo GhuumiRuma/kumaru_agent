@@ -1,9 +1,9 @@
 # Profile: Qwen3.6-35B-A3B on one 24 GB GPU, served by llama.cpp.
-# Kumaru's "smart" profile, and the default recommendation for an RTX 3090/4090.
+# Ghuumi's "smart" profile, and the default recommendation for an RTX 3090/4090.
 #
 #   .\scripts\get-llama-server.ps1        # once: installs tools/llama.cpp/
-#   kumaru serve -c qwen36                # UI at http://127.0.0.1:8080
-#   kumaru chat  -c qwen36 --think -q "How many primes are below 100?"
+#   ghuumi serve -c qwen36                # UI at http://127.0.0.1:8080
+#   ghuumi chat  -c qwen36 --think -q "How many primes are below 100?"
 #
 # Why this model
 # --------------
@@ -31,12 +31,12 @@
 # 16 GB, 30 for 12 GB) and/or lower the context.
 # Never let VRAM overflow: Windows silently spills into shared system memory
 # and speed collapses (measured: ~110 -> 7 tok/s). Sharing the card with a game
-# is the `gaming` section at the end: `kumaru serve -c qwen36 --gaming`.
+# is the `gaming` section at the end: `ghuumi serve -c qwen36 --gaming`.
 
 backend:
   name: llamacpp_server
   # "org/repo:QUANT": found under backend.models_dir, downloaded if missing.
-  # Point models_dir at a big disk: setx KUMARU_BACKEND__MODELS_DIR D:\kumaru\models
+  # Point models_dir at a big disk: setx GHUUMI_BACKEND__MODELS_DIR D:\ghuumi\models
   model: unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ4_XS
   # Qwen advises >= 128k so long reasoning traces are never cut off.
   max_context_length: 131072
@@ -82,7 +82,7 @@ telemetry:
 
 # Room for a game (`--gaming`). Measured on a 3090 next to World of Warcraft
 # (4.2 GiB): 11.9 GiB VRAM, 15-27 tok/s (less while the game is busy), no spill.
-# `kumaru app` switches to it by itself when less than 21 GiB is free as it
+# `ghuumi app` switches to it by itself when less than 21 GiB is free as it
 # starts: llama-server alone needs up to ~19.7 GiB, and llama.cpp's own fitting
 # (n_gpu_layers -1) was measured to fill the card beside a running game.
 gaming:

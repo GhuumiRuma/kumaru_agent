@@ -1,6 +1,6 @@
 <div align="center">
 
-# ◈ Kumaru
+# ◈ Ghuumi
 
 **A local-first LLM agent that scales with your hardware.**
 
@@ -12,14 +12,14 @@ Chat today on one GPU. Fine-tune tonight. Serve a cluster later — without rewr
 
 ## What this is
 
-Kumaru is a complete, running LLM system you own end to end:
+Ghuumi is a complete, running LLM system you own end to end:
 
 - **Chat** — a web UI and an OpenAI-compatible API, streaming, running entirely on your machine. On a 24 GB GPU the default model is Qwen3.6-35B-A3B, with an optional **Think** mode for hard problems.
 - **Train** — LoRA/QLoRA fine-tuning on a single consumer GPU, plus a from-scratch transformer trainer that scales to multi-GPU.
-- **Measure** — public benchmarks (`kumaru bench`) with confidence intervals and significance tests, plus a fast eval harness, so "is it better?" has a number attached.
+- **Measure** — public benchmarks (`ghuumi bench`) with confidence intervals and significance tests, plus a fast eval harness, so "is it better?" has a number attached.
 - **Extend** — a plugin registry for backends, tools and benchmarks; new capabilities are additive, never surgical.
 - **Code and learn** — opt-in `coder` guidance for cross-platform development, Playwright,
-  Windows CLI and APIs; `kumaru learn` imports reviewed local references, or indexes whole
+  Windows CLI and APIs; `ghuumi learn` imports reviewed local references, or indexes whole
   documentation folders such as the Godot, Rust or React docs so that each answer draws on
   the relevant pages, for new languages and platforms without changing model weights.
 
@@ -37,7 +37,7 @@ It does not train a frontier model from scratch. That costs millions of GPU-hour
 .\scripts\setup.ps1           # creates .venv, installs the package and its test tools
 .\.venv\Scripts\Activate.ps1
 
-kumaru serve -c test          # no model, no download — proves the install works
+ghuumi serve -c test          # no model, no download — proves the install works
 ```
 
 Open **http://127.0.0.1:8080**. You should get a streaming reply immediately.
@@ -46,14 +46,14 @@ Now the real thing, on an NVIDIA GPU with 24 GB:
 
 ```powershell
 .\scripts\get-llama-server.ps1    # llama.cpp's inference server, once; no PyTorch needed
-kumaru serve -c qwen36            # Qwen3.6-35B-A3B; downloads 17.7 GB on first run
+ghuumi serve -c qwen36            # Qwen3.6-35B-A3B; downloads 17.7 GB on first run
 ```
 
 For fine-tuning, or a smaller GPU, add PyTorch:
 
 ```powershell
 .\scripts\setup.ps1 -Gpu -Quant   # PyTorch CUDA + training stack
-kumaru serve -c local-gpu         # downloads Qwen2.5-7B on first run (~15 GB)
+ghuumi serve -c local-gpu         # downloads Qwen2.5-7B on first run (~15 GB)
 ```
 
 Check everything works, layer by layer:
@@ -71,18 +71,18 @@ Full walkthrough with troubleshooting: [`docs/QUICKSTART.md`](docs/QUICKSTART.md
 
 | Command | What it does |
 |---|---|
-| `kumaru serve` | Web UI + OpenAI-compatible API |
-| `kumaru app` | Kumaru as a desktop app: the chat in its own window, the model stopped when you close it. `kumaru app -c qwen36 --install` adds **Kumaru** and **Kumaru (gaming)** icons to the desktop and Start menu ([how](docs/howto/src/kumaru/desktop.md)) |
-| `kumaru chat` | Terminal REPL, no server in between. `--workspace DIR` lets it create and edit files and run builds and tests in that folder, with your yes for each change and command |
-| `kumaru info` | Versions, GPU, which optional components are installed |
-| `kumaru config` | Print the fully merged configuration — run this when something ignores your settings |
-| `kumaru train` | LoRA fine-tune or from-scratch pretrain |
-| `kumaru eval` | Latency, throughput, and quality regression checks |
-| `kumaru bench` | Public benchmarks with error bars; compares two runs with significance tests. The web UI's `/education` page shows the newest results per area |
-| `kumaru curriculum` | Study one area at a time: `run` collects open-access references for a phase's topics and measures it with its benchmarks; repeating it only does what is missing ([phase 1](docs/howto/configs/cs-foundations.yaml.md)) |
-| `kumaru distill` | Turns a large model's graded answers into training data for a small, fast one ([how](docs/TRAINING.md#part-3--distillation)) |
-| `kumaru learn` | Create a versioned local reference pack, or index a documentation folder, for a language or platform |
-| `kumaru academic` | Discover sources, find legal open-access copies and their licenses, review claim-level evidence and editorial updates, and collect permitted human-authored text; opt-in `/academic` review dashboard ([guide](docs/ACADEMIC.md)) |
+| `ghuumi serve` | Web UI + OpenAI-compatible API |
+| `ghuumi app` | Ghuumi as a desktop app: the chat in its own window, the model stopped when you close it. `ghuumi app -c qwen36 --install` adds **Ghuumi** and **Ghuumi (gaming)** icons to the desktop and Start menu ([how](docs/howto/src/ghuumi/desktop.md)) |
+| `ghuumi chat` | Terminal REPL, no server in between. `--workspace DIR` lets it create and edit files and run builds and tests in that folder, with your yes for each change and command |
+| `ghuumi info` | Versions, GPU, which optional components are installed |
+| `ghuumi config` | Print the fully merged configuration — run this when something ignores your settings |
+| `ghuumi train` | LoRA fine-tune or from-scratch pretrain |
+| `ghuumi eval` | Latency, throughput, and quality regression checks |
+| `ghuumi bench` | Public benchmarks with error bars; compares two runs with significance tests. The web UI's `/education` page shows the newest results per area |
+| `ghuumi curriculum` | Study one area at a time: `run` collects open-access references for a phase's topics and measures it with its benchmarks; repeating it only does what is missing ([phase 1](docs/howto/configs/cs-foundations.yaml.md)) |
+| `ghuumi distill` | Turns a large model's graded answers into training data for a small, fast one ([how](docs/TRAINING.md#part-3--distillation)) |
+| `ghuumi learn` | Create a versioned local reference pack, or index a documentation folder, for a language or platform |
+| `ghuumi academic` | Discover sources, find legal open-access copies and their licenses, review claim-level evidence and editorial updates, and collect permitted human-authored text; opt-in `/academic` review dashboard ([guide](docs/ACADEMIC.md)) |
 
 ---
 
@@ -90,20 +90,20 @@ Full walkthrough with troubleshooting: [`docs/QUICKSTART.md`](docs/QUICKSTART.md
 
 | Your machine | Profile | Command |
 |---|---|---|
-| 24 GB GPU (3090/4090) | `qwen36` (**recommended**) | `kumaru serve -c qwen36` |
-| 24 GB GPU, fine-tuning | `local-gpu` | `kumaru serve -c local-gpu` |
-| 8–12 GB GPU | `low-vram` | `kumaru serve -c low-vram` |
-| No GPU | `cpu-only` | `kumaru serve -c cpu-only` |
-| Many users / a real server | `vllm` | `kumaru serve -c vllm` |
-| Just testing the code | `test` | `kumaru serve -c test` |
+| 24 GB GPU (3090/4090) | `qwen36` (**recommended**) | `ghuumi serve -c qwen36` |
+| 24 GB GPU, fine-tuning | `local-gpu` | `ghuumi serve -c local-gpu` |
+| 8–12 GB GPU | `low-vram` | `ghuumi serve -c low-vram` |
+| No GPU | `cpu-only` | `ghuumi serve -c cpu-only` |
+| Many users / a real server | `vllm` | `ghuumi serve -c vllm` |
+| Just testing the code | `test` | `ghuumi serve -c test` |
 
 Every profile is a commented YAML file in [`configs/`](configs/). They are meant to be read.
 
 ### Coding assistant and on-demand learning
 
 ```powershell
-kumaru chat -c coder
-kumaru serve -c coder           # the same guidance in the API and web UI
+ghuumi chat -c coder
+ghuumi serve -c coder           # the same guidance in the API and web UI
 ```
 
 The `coder` profile uses the default Qwen2.5-7B transformers backend. It needs the
@@ -111,8 +111,8 @@ PyTorch extra and appropriate hardware. With another hardware profile (for examp
 `qwen36`), enable the same guidance without replacing its backend:
 
 ```powershell
-$env:KUMARU_AGENT__EXPERTISE = '[coding, playwright, windows, apis]'
-kumaru serve -c qwen36
+$env:GHUUMI_AGENT__EXPERTISE = '[coding, playwright, windows, apis]'
+ghuumi serve -c qwen36
 ```
 
 Guidance covers idiomatic code, testing, Playwright locators/fixtures/traces,
@@ -125,7 +125,7 @@ chat. It needs a backend that calls tools, such as `qwen36`; the transformers
 profiles, `coder` included, cannot:
 
 ```powershell
-kumaru chat -c qwen36 --workspace C:\projects\my-app
+ghuumi chat -c qwen36 --workspace C:\projects\my-app
 ```
 
 It can then list, read, create and edit files in that folder, and run `python`,
@@ -133,15 +133,15 @@ It can then list, read, create and edit files in that folder, and run `python`,
 diff and each command line first, and does it only if you answer `y`. Paths outside
 the folder are refused, but approved commands run with your permissions, so read them.
 The server and web UI never offer these tools, because they cannot ask
-([details](docs/howto/src/kumaru/cli.md#let-it-work-in-a-project-folder-kumaru-chat---workspace)).
+([details](docs/howto/src/ghuumi/cli.md#let-it-work-in-a-project-folder-ghuumi-chat---workspace)).
 
 To add a new language or platform, save reviewed, version-specific documentation,
 examples and test results in a UTF-8 text file, then import it:
 
 ```powershell
-kumaru learn Rust --version 2024 --source C:\references\rust.txt --output C:\references\rust.json
-$env:KUMARU_AGENT__KNOWLEDGE_FILES = '["C:/references/rust.json"]'
-kumaru chat -c coder
+ghuumi learn Rust --version 2024 --source C:\references\rust.txt --output C:\references\rust.json
+$env:GHUUMI_AGENT__KNOWLEDGE_FILES = '["C:/references/rust.json"]'
+ghuumi chat -c coder
 ```
 
 The output directory must already exist; existing files are never overwritten.
@@ -162,13 +162,13 @@ rather than being sent to the model; reduce references or increase the
 context/history budget.
 
 For a whole documentation set, such as the Godot, Rust or React docs, pass its folder
-instead. Kumaru indexes the Markdown, MDX, reStructuredText, HTML and plain-text files
+instead. Ghuumi indexes the Markdown, MDX, reStructuredText, HTML and plain-text files
 in it, and each question then gets only the passages that match it:
 
 ```powershell
-kumaru learn Godot --version 4.3 --source C:\docs\godot-docs -o C:\references\godot-4.3.sqlite
-$env:KUMARU_AGENT__KNOWLEDGE_INDEXES = '["C:/references/godot-4.3.sqlite"]'
-kumaru chat -c coder
+ghuumi learn Godot --version 4.3 --source C:\docs\godot-docs -o C:\references\godot-4.3.sqlite
+$env:GHUUMI_AGENT__KNOWLEDGE_INDEXES = '["C:/references/godot-4.3.sqlite"]'
+ghuumi chat -c coder
 ```
 
 Passages are found by keyword search (BM25, in SQLite), cited by topic, version, file
@@ -177,15 +177,15 @@ and section, labeled as untrusted data, and added to the question within
 downloaded or run, and no embedding model or GPU is needed. Keyword search finds the
 API names and terms a question uses, but not paraphrases. Like packs, indexes are never
 overwritten and are opened at startup, so restart after changing the list.
-[The how-to](docs/howto/src/kumaru/agent/doc_index.md) covers where to get each
+[The how-to](docs/howto/src/ghuumi/agent/doc_index.md) covers where to get each
 documentation set, limits, and how to check which passages a question gets.
 
 For actual on-demand weight training, use the existing [LoRA workflow](docs/TRAINING.md):
 curate verified conversation examples, hold out independent coding tasks, validate
-with `kumaru train <recipe.yaml> --dry-run`, train explicitly, compare held-out
+with `ghuumi train <recipe.yaml> --dry-run`, train explicitly, compare held-out
 results, and load the adapter with `--adapter` on the matching transformers base
 model. Do not train on unchecked model-generated answers or deploy an adapter
-without measuring regressions. `kumaru learn` does not perform fine-tuning.
+without measuring regressions. `ghuumi learn` does not perform fine-tuning.
 
 Windows guidance includes Windows 7 onward, but runtime support is separate:
 modern Python and Playwright do not support all post-Vista releases. Check the
@@ -199,7 +199,7 @@ specific OS/tool versions; use a supported development host for legacy targets.
 flowchart TD
     UI["Web UI<br/><i>ui/</i>"] -->|HTTP + SSE| SRV
     SDK["openai SDK · LangChain<br/>curl · anything"] -->|/v1/chat/completions| SRV
-    CLI["kumaru chat"] --> AG
+    CLI["ghuumi chat"] --> AG
 
     SRV["<b>Server</b><br/><i>server/</i><br/>routing · streaming · admission control"] --> AG
     AG["<b>Agent</b><br/><i>agent/</i><br/>prompt · memory budget · tools"] --> BE
@@ -242,7 +242,7 @@ Start here, in this order:
 ## Layout
 
 ```
-src/kumaru/
+src/ghuumi/
   core/        config, types, errors, logging, plugin registry
   backends/    inference engines behind one interface
   agent/       prompt assembly, memory budgeting, documentation retrieval,

@@ -1,4 +1,4 @@
-"""The Education page's data: `kumaru bench` run folders read per area, live while running."""
+"""The Education page's data: `ghuumi bench` run folders read per area, live while running."""
 
 import json
 from pathlib import Path
@@ -6,16 +6,16 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from kumaru.core.config import REPO_ROOT, EducationConfig, KumaruConfig
-from kumaru.eval.benchmarks.stats import wilson_interval as bench_wilson
-from kumaru.server import education
-from kumaru.server.app import create_app
+from ghuumi.core.config import REPO_ROOT, EducationConfig, GhuumiConfig
+from ghuumi.eval.benchmarks.stats import wilson_interval as bench_wilson
+from ghuumi.server import education
+from ghuumi.server.app import create_app
 
 
 def write_bench(
     root: Path, run: str, benchmark: str, *, items: list | None = None, run_json: dict | None = None, **summary: object
 ) -> Path:
-    """One benchmark of one run, as `kumaru bench run` lays it out."""
+    """One benchmark of one run, as `ghuumi bench run` lays it out."""
     folder = root / run / benchmark
     folder.mkdir(parents=True)
     fields = {"benchmark": benchmark, "label": "qwen36-nothink", "model": "qwen36", **summary}
@@ -98,11 +98,11 @@ def test_unreadable_runs_and_missing_folders_are_reported_not_fatal(tmp_path: Pa
     assert len(result.skipped) == 1 and "broken" in result.skipped[0]
 
 
-def test_a_relative_folder_starts_at_the_kumaru_folder() -> None:
+def test_a_relative_folder_starts_at_the_ghuumi_folder() -> None:
     assert education.resolve_dirs(["runs/bench"]) == [REPO_ROOT / "runs" / "bench"]
 
 
-def test_the_endpoint_and_page_are_served(echo_config: KumaruConfig, tmp_path: Path) -> None:
+def test_the_endpoint_and_page_are_served(echo_config: GhuumiConfig, tmp_path: Path) -> None:
     write_bench(tmp_path, "run1", "supergpqa_cs", complete=True, n=2, n_correct=1,
                 by_group={"Databases": {"n": 2, "accuracy": 0.5}})  # fmt: skip
     config = echo_config.model_copy(update={"education": EducationConfig(runs_dirs=[str(tmp_path)])})

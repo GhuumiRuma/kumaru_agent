@@ -6,13 +6,13 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from kumaru.academic import web as web_module
-from kumaru.academic.catalog import Catalog
-from kumaru.academic.models import Evidence, Review, Source, Topic
-from kumaru.academic.site import MANIFEST, Scope, collect_site, relative_path
-from kumaru.academic.web import Page, PublicWeb, TransientFetchError
-from kumaru.cli import app as cli
-from kumaru.core.errors import ConfigError, RequestError
+from ghuumi.academic import web as web_module
+from ghuumi.academic.catalog import Catalog
+from ghuumi.academic.models import Evidence, Review, Source, Topic
+from ghuumi.academic.site import MANIFEST, Scope, collect_site, relative_path
+from ghuumi.academic.web import Page, PublicWeb, TransientFetchError
+from ghuumi.cli import app as cli
+from ghuumi.core.errors import ConfigError, RequestError
 
 ROOT = "https://docs.example.org/lib/"
 
