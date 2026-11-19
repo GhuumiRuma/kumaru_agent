@@ -133,6 +133,21 @@ the folder are refused, but approved commands run with your permissions, so read
 The server and web UI never offer these tools, because they cannot ask
 ([details](docs/howto/src/ghuumi/cli.md#let-it-work-in-a-project-folder-ghuumi-chat---workspace)).
 
+**Build any kind of app.** With a project folder the agent also has `scaffold_app`
+(static web, Python CLI or API, Node CLI or web, or a blank start for anything else),
+then builds features with the file tools and checks them with the tests
+([details](docs/howto/src/ghuumi/agent/apps.md)).
+
+**Connect MCP servers.** `ghuumi chat --mcp-file mcp.json` reads the usual
+`{"mcpServers": {...}}` file (stdio commands or HTTP urls; or set `agent.mcp_servers`).
+Each server's tools join the agent's, and every call asks you first unless you list the
+tool in `autoApprove` ([details](docs/howto/src/ghuumi/agent/mcp.md)).
+
+**Developer mode.** `ghuumi chat --dev` makes Ghuumi's own source the project folder so
+the agent can change and test itself. It starts a `ghuumi-dev/<time>` git branch, asks
+before every edit and command, and leaves the changes uncommitted for you to review;
+they take effect when you restart.
+
 To add a new language or platform, save reviewed, version-specific documentation,
 examples and test results in a UTF-8 text file, then import it:
 
@@ -254,7 +269,7 @@ data/          sample training data and the golden benchmark questions
 scripts/       setup.ps1 (install), verify.ps1 (layered self-check),
                get-llama-server.ps1 (inference engine), check_graders.py (grader proof)
 docs/howto/    a page for every source file
-tests/         pytest suite (1414 tests), runs with no GPU in under a minute
+tests/         pytest suite (1430 tests), runs with no GPU in under a minute
 ```
 
 ## Requirements
