@@ -134,12 +134,15 @@ How thinking behaves:
 
 ### Share the GPU with a game, or use a smaller card
 
-Windows (WDDM) does not fail an allocation when VRAM is full. It spills into shared system memory, and speed collapses. Measured: ~110 tok/s fell to 7 tok/s with the 131k window while a game was running. This recipe was measured next to World of Warcraft (4.2 GiB): 11.9 GiB VRAM, ~27 tok/s, no spill:
+Windows (WDDM) does not fail an allocation when VRAM is full. It spills into shared system memory, and speed collapses. Measured: ~110 tok/s fell to 7 tok/s with the 131k window while a game was running. llama.cpp's own fitting (`n_gpu_layers: -1`) does not prevent it: on 2026-11-18, beside a running World of Warcraft, it filled the card to 23.9 of 24 GiB and llama-server stalled while warming up.
+
+The profile's `gaming` section holds the recipe measured next to World of Warcraft (4.2 GiB): `n_cpu_moe: 18` and a 65,536-token context. It uses 11.9 GiB VRAM and gives 15-27 tok/s (less while the game is busy), with no spill:
 
 ```powershell
-$env:GHUUMI_BACKEND__LLAMA_SERVER__N_CPU_MOE = '18'
-ghuumi serve -c qwen36 --context 65536
+ghuumi serve -c qwen36 --gaming     # or the "Ghuumi (gaming)" desktop shortcut
 ```
+
+`ghuumi app` and its "Ghuumi" shortcut switch to these settings by themselves when less than `gaming.below_free_gb` (21 GiB) is free as they start ([desktop app](../src/ghuumi/desktop.md)). Flags still win: `--gaming --context 32768` keeps 32,768.
 
 For smaller cards, the profile's own starting points (not measured) are `n_cpu_moe: 20` for 16 GB and `30` for 12 GB, combined with a smaller `--context`. To make a setting permanent, copy the profile (e.g. to `configs\qwen36-shared.yaml`), add `n_cpu_moe: 18` under `backend.llama_server`, and run `ghuumi serve -c qwen36-shared`.
 

@@ -9,7 +9,7 @@ import pytest
 from ghuumi.core.errors import ConfigError
 from ghuumi.core.registry import BENCHMARKS
 from ghuumi.core.types import Role
-from ghuumi.eval.benchmarks import codeexec, gsm8k
+from ghuumi.eval.benchmarks import codeexec, gsm8k, supergpqa
 from ghuumi.eval.benchmarks.base import BenchItem, select_items
 from ghuumi.eval.benchmarks.codeexec import Outcome
 from ghuumi.eval.benchmarks.golden import DEFAULT_PATH, GRADERS, GoldenSet, grade_answer
@@ -276,6 +276,68 @@ class TestGsm8kAndMmluPro:
         assert MMLUPro().grade(item, "The answer is (C)").correct
         grade = MMLUPro().grade(item, "The answer is (E)")
         assert (grade.correct, grade.extracted) == (False, None)
+
+
+def supergpqa_row(uuid: str, discipline: str, field: str, subfield: str, options: list[str], answer: str) -> dict:
+    return {
+        "uuid": uuid, "question": f"Question {uuid}?", "options": options, "answer": options["ABCDEFGHIJ".index(answer)],
+        "answer_letter": answer, "discipline": discipline, "field": field, "subfield": subfield,
+        "difficulty": "middle", "is_calculation": False,
+    }  # fmt: skip
+
+
+SUPERGPQA_ROWS = [
+    supergpqa_row("os", "Engineering", "Computer Science and Technology", "Operating Systems",
+                  ["FIFO", "SJF", "Round robin", "Lottery"], "C"),
+    supergpqa_row("alg", "Science", "Mathematics", "Algebra", [f"x = {i}" for i in range(10)], "J"),
+    supergpqa_row("beam", "Engineering", "Mechanics", "Solid Mechanics", ["1 kN", "2 kN"], "A"),
+    supergpqa_row("star", "Science", "Astronomy", "Astrophysics", ["red", "blue", "white"], "B"),
+    supergpqa_row("drug", "Medicine", "Pharmacy", "Pharmacology", ["a", "b"], "B"),
+]  # fmt: skip
+
+
+class TestSuperGPQA:
+    @pytest.fixture
+    def asked(self, monkeypatch: pytest.MonkeyPatch) -> list:
+        calls = []
+
+        def rows(path: str, name: str | None, split: str, revision: str | None = None) -> list[dict]:
+            calls.append((path, name, split, revision))
+            return SUPERGPQA_ROWS
+
+        monkeypatch.setattr(supergpqa, "load_hf_rows", rows)
+        return calls
+
+    def test_slices_choose_their_questions_and_group_them_by_area(self, asked: list) -> None:
+        cs = BENCHMARKS.get("supergpqa_cs")().load()
+        stem = BENCHMARKS.get("supergpqa-stem")().load()
+
+        assert [(i.id, i.group) for i in cs] == [("supergpqa_cs/os", "Operating Systems")]
+        # Core fields stand alone; the rest of Science and Engineering is pooled; Medicine is not STEM here.
+        assert [(i.id, i.group) for i in stem] == [
+            ("supergpqa_stem/alg", "Mathematics"),
+            ("supergpqa_stem/beam", "Engineering"),
+            ("supergpqa_stem/star", "Other sciences"),
+        ]
+        assert asked == [(supergpqa.DATASET, None, "train", supergpqa.REVISION)] * 2
+
+    def test_prompt_is_the_reference_zero_shot_layout(self, asked: list) -> None:
+        [item] = supergpqa.SuperGPQACS().load()
+        assert item.prompt == (
+            "Answer the following multiple choice question. There is only one correct answer. "
+            "The last line of your response should be in the format 'Answer: $LETTER' (without quotes), "
+            "where LETTER is one of A, B, C, D, E, F, G, H, I, or J.\n\n"
+            "Question os?\nA) FIFO\nB) SJF\nC) Round robin\nD) Lottery"
+        )
+        assert (item.answer, item.meta["letters"]) == ("C", "ABCD")
+
+    def test_grade_reads_the_answer_line_and_only_letters_that_exist(self, asked: list) -> None:
+        bench = supergpqa.SuperGPQACS()
+        [item] = bench.load()
+        grade = bench.grade(item, "Round robin gives each process a time slice.\nAnswer: C")
+        assert (grade.correct, grade.detail["method"]) == (True, "answer_tag")
+        # The prompt lists A-J for every question, but this one has only four options.
+        assert bench.grade(item, "Answer: E").extracted is None
 
 
 PROMPT = 'def add(a, b):\n    """Return a + b."""\n'

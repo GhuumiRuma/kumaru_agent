@@ -1,0 +1,45 @@
+# Phase 1: computer science fundamentals, up to graduate level, before any
+# programming language. Run (and re-run) it with:
+#
+#   ghuumi curriculum run configs/curriculum/cs-foundations.yaml -c qwen36
+#
+# A repeat only does what is missing, so it costs no model tokens once done.
+# See docs/howto/configs/cs-foundations.yaml.md.
+id: cs-foundations
+title: Computer science fundamentals
+
+measure:
+  # supergpqa_cs asks all 763 computer science questions (10 areas);
+  # supergpqa_stem samples the other sciences, never repeating a CS question.
+  benchmarks: [supergpqa_cs, supergpqa_stem]
+  limit: 1000
+  # Visible step-by-step answers without hidden reasoning: about 2,300 tokens
+  # per question instead of several times that.
+  think: false
+
+collect:
+  # Each topic is searched once per query on OpenAlex, open-access works only.
+  queries: [textbook, survey, lecture notes]
+  # Named like the benchmark's areas, so a bar and its references line up.
+  topics:
+    - {id: computer-science, name: Computer science, level: area, aliases: [computing, informatics]}
+    - {id: cs-data-structures, name: Data Structures, level: subfield, parent_id: computer-science,
+       aliases: [algorithms, algorithm analysis]}
+    - {id: cs-operating-systems, name: Operating Systems, level: subfield, parent_id: computer-science,
+       aliases: [concurrency, memory management]}
+    - {id: cs-computer-networks, name: Computer Networks, level: subfield, parent_id: computer-science,
+       aliases: [networking, network protocols]}
+    - {id: cs-databases, name: Databases, level: subfield, parent_id: computer-science,
+       aliases: [database systems, transaction processing]}
+    - {id: cs-formal-languages, name: Formal Languages, level: subfield, parent_id: computer-science,
+       aliases: [automata theory, theory of computation]}
+    - {id: cs-computer-architecture, name: Computer Architecture, level: subfield, parent_id: computer-science,
+       aliases: [microarchitecture, parallel architecture]}
+    - {id: cs-computer-organization, name: Principles of Computer Organization, level: subfield,
+       parent_id: computer-science, aliases: [computer organization, digital logic]}
+    - {id: cs-software-and-theory, name: Computer Software and Theory, level: subfield,
+       parent_id: computer-science, aliases: [software engineering, computational complexity]}
+    - {id: cs-programming-languages, name: Advanced Programming Languages, level: subfield,
+       parent_id: computer-science, aliases: [programming language theory, compilers]}
+    - {id: cs-pattern-recognition, name: Pattern Recognition, level: subfield, parent_id: computer-science,
+       aliases: [machine learning, statistical learning]}

@@ -23,6 +23,8 @@ The distinction that matters most:
 
 Fine-tuning facts into weights is expensive, slow to update, and fails silently as the world changes. If your goal is "the model should know our internal docs", build retrieval first. For a documentation folder that takes one command: `ghuumi learn` indexes it, and `agent.knowledge_indexes` adds the passages that match each question ([how-to](howto/src/ghuumi/agent/doc_index.md)).
 
+**Measure first, one area at a time.** A curriculum phase is one YAML file that names an area's benchmarks and the topics to collect references for: `ghuumi curriculum run configs\curriculum\cs-foundations.yaml -c qwen36` (phase 1: computer science fundamentals). It changes no weights. Repeating it only does what is missing, so it never pays twice for an answer, and the web UI's `/education` page shows each area's bar as the baseline any training must beat ([how-to](howto/src/ghuumi/train/curriculum.md)).
+
 ---
 
 ## The two paths
@@ -142,6 +144,8 @@ ghuumi train configs/train/lora-qwen.yaml
 ```
 
 On an RTX 3090: ~9–11 GB VRAM, roughly 20–40 minutes per epoch on 1,000 examples of ~1k tokens each.
+
+To run it overnight on a PC you also use for games or browsing, `.\scripts\overnight.ps1 "ghuumi train configs/train/lora-qwen.yaml"` closes the programs holding graphics memory (it lists them and asks first), keeps the PC awake until the run ends, and saves the log and a summary under `runs\overnight\` ([how-to](howto/scripts/overnight.ps1.md)).
 
 Use the adapter:
 

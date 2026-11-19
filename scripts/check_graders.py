@@ -7,7 +7,7 @@ phrase answers, and requires each to grade correct and a wrong answer to grade
 wrong. docs/BENCHMARKS.md ("Are the graders right?") reports the results.
 
     pip install -e ".[bench]"
-    python scripts\\check_graders.py              # gsm8k, mmlu_pro, humaneval (~1-2 min)
+    python scripts\\check_graders.py              # gsm8k, mmlu_pro, supergpqa, humaneval (~1-2 min)
     python scripts\\check_graders.py gsm8k        # one benchmark
     python scripts\\check_graders.py multipl_e_rs # one MultiPL-E language (~2-10 min)
     python scripts\\check_graders.py multipl_e --workers 2 --sample 200
@@ -62,6 +62,9 @@ from ghuumi.eval.benchmarks.extract import parse_number
 from ghuumi.eval.benchmarks.gsm8k import GSM8K
 from ghuumi.eval.benchmarks.humaneval import HumanEval, assemble_program, run_program
 from ghuumi.eval.benchmarks.mmlu_pro import LETTERS, MMLUPro, clean_options
+from ghuumi.eval.benchmarks.supergpqa import DATASET as SUPERGPQA
+from ghuumi.eval.benchmarks.supergpqa import REVISION as SUPERGPQA_REVISION
+from ghuumi.eval.benchmarks.supergpqa import SuperGPQA, SuperGPQACS, SuperGPQASTEM
 
 
 @dataclass
@@ -156,6 +159,51 @@ def check_mmlu_pro() -> list[str]:
     show("mmlu_pro", len(items), passed)
     print(f"  options per question: {dict(sorted(option_counts.items()))}")
     return problems
+
+
+def check_supergpqa_slice(bench: SuperGPQA) -> list[str]:
+    """Each gold letter, in seven phrasings, grades correct; a wrong letter does not;
+    and the gold letter names the dataset's own answer text, shown in the prompt."""
+    items = bench.load()
+    rows = {row["uuid"]: row for row in load_hf_rows(SUPERGPQA, None, "train", revision=SUPERGPQA_REVISION)}
+    problems: list[str] = []
+    passed: Counter[str] = Counter()
+    for item in items:
+        row = rows[item.id.split("/", 1)[1]]
+        letters = item.meta["letters"]
+        gold = item.answer
+        if gold not in letters or row["options"][letters.index(gold)] != row["answer"]:
+            problems.append(f"{item.id}: gold letter {gold} does not name the answer text")
+            continue
+        if f"\n{gold}) {row['answer']}" not in item.prompt:
+            problems.append(f"{item.id}: the gold option is missing from the prompt")
+        wrong = next(letter for letter in letters if letter != gold)
+        phrasings = {
+            "Answer: X": f"Reasoning...\nAnswer: {gold}",
+            "**Answer: X**": f"Reasoning...\n**Answer: {gold}**",
+            "Answer: (X)": f"Reasoning...\nAnswer: ({gold})",
+            "Answer: X) text": f"Reasoning...\nAnswer: {gold}) {row['answer'].splitlines()[0][:40]}",
+            "The answer is (X)": f"Reasoning...\nThe answer is ({gold}).",
+            "boxed{X}": f"Reasoning...\nAnswer: $\\boxed{{{gold}}}$",
+            "after ruling one out": f"It is not ({wrong}), which fails the second condition.\nAnswer: {gold}",
+        }
+        for kind, text in phrasings.items():
+            grade = bench.grade(item, text)
+            passed[kind] += grade.correct
+            if not grade.correct:
+                problems.append(f"{item.id} [{kind}]: gold {gold}, extracted {grade.extracted!r}")
+        if bench.grade(item, f"Reasoning...\nAnswer: {wrong}").correct:
+            problems.append(f"{item.id}: the wrong letter {wrong} graded correct")
+        else:
+            passed["wrong letter rejected"] += 1
+    show(bench.name, len(items), passed)
+    print(f"  areas: {dict(sorted(Counter(item.group for item in items).items()))}")
+    return problems
+
+
+def check_supergpqa() -> list[str]:
+    """Both SuperGPQA slices: computer science by subfield, STEM by field."""
+    return check_supergpqa_slice(SuperGPQACS()) + check_supergpqa_slice(SuperGPQASTEM())
 
 
 def check_humaneval() -> list[str]:
@@ -454,6 +502,7 @@ def check_multipl_e() -> list[str]:
 CHECKS: dict[str, Callable[[], list[str]]] = {
     "gsm8k": check_gsm8k,
     "mmlu_pro": check_mmlu_pro,
+    "supergpqa": check_supergpqa,
     "humaneval": check_humaneval,
     "multipl_e": check_multipl_e,
     **{
@@ -462,7 +511,7 @@ CHECKS: dict[str, Callable[[], list[str]]] = {
     },
 }
 # What runs when no benchmark is named: the quick checks, which need no compilers.
-DEFAULT_CHECKS = ("gsm8k", "mmlu_pro", "humaneval")
+DEFAULT_CHECKS = ("gsm8k", "mmlu_pro", "supergpqa", "humaneval")
 
 
 def main(argv: list[str]) -> int:

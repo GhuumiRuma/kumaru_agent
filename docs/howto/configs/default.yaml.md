@@ -235,6 +235,19 @@ A sampling preset that is applied over `generation` only while thinking is on. R
 | `metrics_enabled` | `true` | Not read. `/metrics` is always served. |
 | `trace_file` | `null` | Not read. No request trace is written. |
 
+### `education`
+
+| Field | Default | Effect and notes |
+|---|---|---|
+| `runs_dirs` | `[runs/bench]` | Folders of `ghuumi bench run` results that the Education page (`/education`) reads, up to two levels deep; relative paths start at the Ghuumi folder. The first is also where `ghuumi curriculum run` puts a phase's run. Set it once for your machine with `$env:GHUUMI_EDUCATION__RUNS_DIRS = '["D:/ghuumi/runs/bench"]'` (a JSON list). [Details](../src/ghuumi/server/education.md). |
+
+### `gaming`
+
+| Field | Default | Effect and notes |
+|---|---|---|
+| `below_free_gb` | `null` | `ghuumi app` (and its "Ghuumi" shortcut) uses the gaming settings by itself when less graphics memory than this, in GiB, is free as it starts, per `nvidia-smi`. `null` never switches. qwen36 sets `21`. |
+| `backend` | `{}` | `backend` fields merged over the profile's with `--gaming` (`ghuumi serve`, `ghuumi app`, the "Ghuumi (gaming)" shortcut), under the command's own flags. qwen36 sets `max_context_length: 65536` and `llama_server.n_cpu_moe: 18`, measured beside a game. Validated at load. [Details](../src/ghuumi/desktop.md). |
+
 ## How to use it
 
 Commands assume the venv is active; otherwise call `.\.venv\Scripts\ghuumi.exe`.

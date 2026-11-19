@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from ghuumi.cli import _build_overrides, app, main
+from ghuumi.cli import _build_overrides, _load, app, main
 from ghuumi.eval.benchmarks import runner
 from ghuumi.eval.benchmarks.golden import GoldenSet
 
@@ -79,6 +79,12 @@ def test_config_shows_that_a_flag_beats_the_profile(echo_profile: Path) -> None:
     assert "delay_s: 0" in text  # the rest of the profile still applies
 
 
+def test_gaming_settings_sit_under_the_commands_own_flags() -> None:
+    cfg = _load("qwen36", gaming=True, context=32768)
+    assert cfg.backend.max_context_length == 32768  # the flag beats the gaming settings...
+    assert cfg.backend.llama_server.n_cpu_moe == 18  # ...which still apply
+
+
 def test_chat_answers_one_question_and_exits(echo_profile: Path) -> None:
     text = run_cli("chat", "-c", str(echo_profile), "-q", "hello")
     assert "You said: hello" in text
@@ -109,7 +115,7 @@ def test_chat_flags_beat_the_profiles_thinking_preset(scratch_dir: Path) -> None
 
 def test_bench_list_names_every_benchmark() -> None:
     text = run_cli("bench", "list")
-    for name in ("golden", "gsm8k", "mmlu_pro", "ifeval", "humaneval", "multipl_e_py", "multipl_e_rs"):
+    for name in ("golden", "gsm8k", "mmlu_pro", "supergpqa_cs", "supergpqa_stem", "ifeval", "humaneval", "multipl_e_py", "multipl_e_rs"):
         assert name in text
     assert "multipl_e " in text  # the suite of all eight languages
 

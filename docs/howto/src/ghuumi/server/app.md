@@ -19,9 +19,9 @@
 3. `app.state.ghuumi = AppState(config)`.
 4. CORS middleware.
 5. The `GhuumiError` exception handler.
-6. The router from `src\ghuumi\server\routes_chat.py`.
+6. The router from `src\ghuumi\server\routes_chat.py`, then the open `GET /v1/education` router ([`routes_education.md`](routes_education.md)).
 7. If `academic.enabled` is true: create the persistent source catalogue, a two-slot network semaphore, and register the authenticated `/v1/academic` router. Disabled mode creates neither routes nor database.
-8. If `server.serve_ui` is true and `UI_DIR` exists: the UI, with `ui\` mounted at `/static` and `GET /` serving `ui\index.html`.
+8. If `server.serve_ui` is true and `UI_DIR` exists: the UI, with `ui\` mounted at `/static`, `GET /` serving `ui\index.html` and `GET /education` serving `ui\education.html`.
 
 `run(config)` serves that app with uvicorn; `ghuumi serve` calls it.
 

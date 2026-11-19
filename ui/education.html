@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ghuumi · Education</title>
+<link rel="stylesheet" href="/static/styles.css" />
+<link rel="stylesheet" href="/static/education.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>" />
+</head>
+<body class="education">
+<a class="skip-link" href="#sections">Skip to the areas</a>
+
+<header class="edu-header">
+  <a class="brand" href="/" title="Back to the chat">
+    <span class="mark" aria-hidden="true">◈</span>
+    <div>
+      <h1>Education</h1>
+      <p>what the model knows, per area</p>
+    </div>
+  </a>
+  <span class="spacer"></span>
+  <label class="picker">
+    <span>Setup</span>
+    <select id="setup"></select>
+  </label>
+  <label class="picker">
+    <span>Compare with</span>
+    <select id="compare"></select>
+  </label>
+  <a class="back" href="/">Chat</a>
+</header>
+
+<main class="edu-main">
+  <p class="lede">
+    Each bar is the share of exam questions the model answered correctly, questions it was
+    never trained on. The shaded band is the 95% interval: the true share is very likely
+    inside it, so two bars whose bands overlap may not really differ. The thin line marks
+    random guessing. A setup is one way of running the model: its profile, thinking mode
+    and any references.
+  </p>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <div id="sections"></div>
+  <section id="empty" class="card empty" hidden>
+    <h2>No measurements yet</h2>
+    <p>Measure the model, then reload this page. Graduate-level computer science, about three hours on an RTX 3090:</p>
+    <pre>ghuumi bench run supergpqa_cs -c qwen36</pre>
+    <p>Ghuumi reads <code>ghuumi bench</code> runs from the folders below. Add others with
+      <code>education.runs_dirs</code>.</p>
+  </section>
+  <footer id="sources" class="edu-footer"></footer>
+</main>
+
+<script src="/static/education.js"></script>
+</body>
+</html>

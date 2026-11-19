@@ -85,10 +85,16 @@ def _build_overrides(**kwargs: Any) -> dict[str, Any]:
     return out
 
 
-def _load(config: str | None, **flags: Any):
-    from ghuumi.core.config import load_config
+def _load(config: str | None, *, gaming: bool = False, **flags: Any):
+    from ghuumi.core.config import deep_merge, load_config
 
-    return load_config(config, overrides=_build_overrides(**flags))
+    overrides = _build_overrides(**flags)
+    cfg = load_config(config, overrides=overrides)
+    if gaming:
+        cfg.with_gaming()  # refuses a profile without gaming settings
+        # Over the profile and the environment, under the command's own flags.
+        cfg = load_config(config, overrides=deep_merge({"backend": cfg.gaming.backend}, overrides))
+    return cfg
 
 
 # ---------------------------------------------------------------------------
@@ -105,9 +111,10 @@ def serve(
     host: str = typer.Option(None, "--host"),
     port: int = typer.Option(None, "--port", "-p"),
     log_level: str = typer.Option(None, "--log-level"),
+    gaming: bool = typer.Option(False, "--gaming", help="Use the profile's gaming settings, leaving room for a game."),
 ) -> None:
     """Start the HTTP API and the web UI."""
-    cfg = _load(config, backend=backend, model=model, device=device, adapter=adapter,
+    cfg = _load(config, gaming=gaming, backend=backend, model=model, device=device, adapter=adapter,
                 context=context, host=host, port=port, log_level=log_level)
 
     console.print(
@@ -127,6 +134,38 @@ def serve(
     from ghuumi.server.app import run
 
     run(cfg)
+
+
+@app.command("app")
+def desktop_app(
+    config: str = typer.Option(None, "--config", "-c", help="YAML file or profile name."),
+    gaming: bool = typer.Option(False, "--gaming", help="Use the profile's gaming settings, leaving room for a game started afterwards."),
+    install: bool = typer.Option(False, "--install", help="Put Ghuumi shortcuts on the desktop and in the Start menu (Windows)."),
+) -> None:
+    """Open Ghuumi in its own window; closing it stops the server it started."""
+    from ghuumi import desktop
+    from ghuumi.core.errors import ConfigError
+
+    log = desktop.log_if_windowless()
+    try:
+        cfg = _load(config)
+        if install:
+            if not config:
+                raise ConfigError("Name the profile the shortcuts start.", hint="ghuumi app -c qwen36 --install")
+            for path in desktop.install_shortcuts(desktop.profile_argument(config), gaming=bool(cfg.gaming.backend)):
+                console.print(f"[green]shortcut:[/] {escape(path)}")
+            return
+        free = desktop.free_graphics_gb() if cfg.gaming.below_free_gb and not gaming else None
+        cfg, gamed = desktop.settings_for(cfg, gaming=gaming, free_gb=free)
+        if gamed:
+            why = "asked for" if gaming else f"{free:.1f} GiB of graphics memory free, under {cfg.gaming.below_free_gb:g}"
+            console.print(f"[yellow]gaming settings[/] ({why}): leaving room on the graphics card")
+        desktop.run_app(cfg)
+    except Exception as exc:
+        if log is not None:  # no console: say what went wrong in a message box
+            text = f"{exc.message}\n\n{exc.hint or ''}" if isinstance(exc, GhuumiError) else f"Ghuumi stopped: {exc}"
+            desktop.notify(f"{text.strip()}\n\nDetails: {log}", error=True)
+        raise
 
 
 @app.command()
@@ -718,6 +757,71 @@ def bench_report(
     from ghuumi.eval.benchmarks.runner import load_summaries, render_summaries
 
     render_summaries(console, load_summaries(Path(run)), details=True)
+
+
+# ---------------------------------------------------------------------------
+# ghuumi curriculum ...
+# ---------------------------------------------------------------------------
+
+curriculum_app = typer.Typer(
+    help="Study one area at a time: collect references for it and measure it, repeatably.",
+    no_args_is_help=True,
+)
+app.add_typer(curriculum_app, name="curriculum")
+
+
+@curriculum_app.command("run")
+def curriculum_run(
+    phase_file: Path = typer.Argument(..., help="A phase file, e.g. configs/curriculum/cs-foundations.yaml."),
+    config: str = typer.Option(None, "--config", "-c", help="YAML file or profile name."),
+    collect: bool = typer.Option(True, "--collect/--no-collect", help="Search OpenAlex for open-access works per topic."),
+    measure: bool = typer.Option(True, "--measure/--no-measure", help="Run the phase's benchmarks."),
+    refresh: bool = typer.Option(False, "--refresh", help="Repeat the searches already done."),
+    out_root: str = typer.Option(None, "--out-root", help="Folder for the phase's run (default: the first education.runs_dirs)."),
+) -> None:
+    """Run one phase; repeating it only does what is missing."""
+    import asyncio
+    from functools import partial
+
+    from ghuumi.academic.catalog import Catalog
+    from ghuumi.academic.discovery import discover
+    from ghuumi.core.types import GenerationParams
+    from ghuumi.eval.benchmarks.runner import (
+        DEFAULT_OUT,
+        BenchRunner,
+        BenchSettings,
+        default_label,
+        render_summaries,
+    )
+    from ghuumi.server.education import resolve_dirs
+    from ghuumi.train.curriculum import collect as collect_phase
+    from ghuumi.train.curriculum import load_phase
+
+    phase = load_phase(phase_file)
+    cfg = _load(config)
+    console.print(f"[bold]{escape(phase.title)}[/] [dim]({phase.id})[/]")
+    if collect and phase.collect:
+        search = partial(
+            discover, provider="openalex", open_access_only=True, limit=20,
+            openalex_api_key=cfg.academic.openalex_api_key,
+        )
+        result = collect_phase(phase, Catalog(cfg.academic.database), search, refresh=refresh)
+        for row in result["searched"]:
+            console.print(f"  {row['topic']} [dim]{escape(row['query'])}[/]: {row['found']} works")
+        console.print(f"[dim]{result['skipped']} searches done before were skipped (--refresh repeats them)[/]")
+        if result["error"]:
+            console.print(f"[yellow]collection stopped:[/] {escape(result['error'])}. Run again later to continue.")
+        console.print("[dim]review the finds on the Academic page before Ghuumi relies on them[/]")
+    if measure and phase.measure:
+        plan = phase.measure
+        root = Path(out_root) if out_root else (resolve_dirs(cfg.education.runs_dirs) or [DEFAULT_OUT])[0]
+        label = default_label(cfg.backend.model, config, GenerationParams(thinking=plan.think))
+        settings = BenchSettings(limit=plan.limit, thinking=plan.think, out_dir=root / f"{phase.id}-{label}")
+        runner = BenchRunner(cfg, settings, profile=config, console=console)
+        summaries = asyncio.run(runner.run(plan.benchmarks))
+        console.print()
+        render_summaries(console, summaries)
+        console.print(f"\n[dim]saved to[/] {runner.out_dir}")
 
 
 # ---------------------------------------------------------------------------

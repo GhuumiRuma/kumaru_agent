@@ -72,12 +72,14 @@ Full walkthrough with troubleshooting: [`docs/QUICKSTART.md`](docs/QUICKSTART.md
 | Command | What it does |
 |---|---|
 | `ghuumi serve` | Web UI + OpenAI-compatible API |
+| `ghuumi app` | Ghuumi as a desktop app: the chat in its own window, the model stopped when you close it. `ghuumi app -c qwen36 --install` adds **Ghuumi** and **Ghuumi (gaming)** icons to the desktop and Start menu ([how](docs/howto/src/ghuumi/desktop.md)) |
 | `ghuumi chat` | Terminal REPL, no server in between. `--workspace DIR` lets it create and edit files and run builds and tests in that folder, with your yes for each change and command |
 | `ghuumi info` | Versions, GPU, which optional components are installed |
 | `ghuumi config` | Print the fully merged configuration — run this when something ignores your settings |
 | `ghuumi train` | LoRA fine-tune or from-scratch pretrain |
 | `ghuumi eval` | Latency, throughput, and quality regression checks |
-| `ghuumi bench` | Public benchmarks with error bars; compares two runs with significance tests |
+| `ghuumi bench` | Public benchmarks with error bars; compares two runs with significance tests. The web UI's `/education` page shows the newest results per area |
+| `ghuumi curriculum` | Study one area at a time: `run` collects open-access references for a phase's topics and measures it with its benchmarks; repeating it only does what is missing ([phase 1](docs/howto/configs/cs-foundations.yaml.md)) |
 | `ghuumi distill` | Turns a large model's graded answers into training data for a small, fast one ([how](docs/TRAINING.md#part-3--distillation)) |
 | `ghuumi learn` | Create a versioned local reference pack, or index a documentation folder, for a language or platform |
 | `ghuumi academic` | Discover sources, find legal open-access copies and their licenses, review claim-level evidence and editorial updates, and collect permitted human-authored text; opt-in `/academic` review dashboard ([guide](docs/ACADEMIC.md)) |
@@ -267,9 +269,10 @@ ui/            zero-build web client (3 files, no npm)
 configs/       hardware profiles and training recipes, heavily commented
 data/          sample training data and the golden benchmark questions
 scripts/       setup.ps1 (install), verify.ps1 (layered self-check),
-               get-llama-server.ps1 (inference engine), check_graders.py (grader proof)
+               get-llama-server.ps1 (inference engine), check_graders.py (grader proof),
+               overnight.ps1 (frees the GPU and runs a long job while you sleep)
 docs/howto/    a page for every source file
-tests/         pytest suite (1430 tests), runs with no GPU in under a minute
+tests/         pytest suite (1459 tests), runs with no GPU in under a minute
 ```
 
 ## Requirements

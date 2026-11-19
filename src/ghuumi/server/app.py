@@ -228,8 +228,10 @@ def create_app(config: GhuumiConfig | None = None) -> FastAPI:
         )
 
     from ghuumi.server.routes_chat import router as chat_router
+    from ghuumi.server.routes_education import router as education_router
 
     app.include_router(chat_router)
+    app.include_router(education_router)
 
     if config.academic.enabled:
         from threading import BoundedSemaphore
@@ -254,6 +256,10 @@ def create_app(config: GhuumiConfig | None = None) -> FastAPI:
         @app.get("/", include_in_schema=False)
         async def index() -> FileResponse:
             return FileResponse(str(UI_DIR / "index.html"))
+
+        @app.get("/education", include_in_schema=False)
+        async def education_page() -> FileResponse:
+            return FileResponse(str(UI_DIR / "education.html"))
 
         if config.academic.enabled:
             @app.get("/academic", include_in_schema=False)

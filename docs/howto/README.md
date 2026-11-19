@@ -12,6 +12,8 @@ One page per file. Each page answers the same seven questions: what it does, why
 |---|---|---|
 | `src/ghuumi/__init__.py` | [page](src/ghuumi/__init__.md) | You want the public import surface |
 | `src/ghuumi/cli.py` | [page](src/ghuumi/cli.md) | Adding a command, or a flag behaves oddly |
+| `src/ghuumi/desktop.py` | [page](src/ghuumi/desktop.md) | **The desktop app**: shortcuts, the app window, and sharing the graphics card with a game |
+| `src/ghuumi/__main__.py` | [page](src/ghuumi/__main__.md) | Running `python -m ghuumi` (what the shortcuts do) |
 | `src/ghuumi/core/__init__.py` | [page](src/ghuumi/core/__init__.md) | Understanding the layering rule |
 | `src/ghuumi/core/types.py` | [page](src/ghuumi/core/types.md) | Anything to do with messages or generation params |
 | `src/ghuumi/core/errors.py` | [page](src/ghuumi/core/errors.md) | Raising a new error, or mapping one to HTTP |
@@ -57,6 +59,8 @@ One page per file. Each page answers the same seven questions: what it does, why
 | `server/app.py` | [page](src/ghuumi/server/app.md) | Startup, lifecycle, metrics, concurrency limits |
 | `server/schemas.py` | [page](src/ghuumi/server/schemas.md) | Changing the public API contract |
 | `server/routes_chat.py` | [page](src/ghuumi/server/routes_chat.md) | **Every HTTP endpoint, documented** |
+| `server/education.py` | [page](src/ghuumi/server/education.md) | A bar on the Education page looks wrong or is missing |
+| `server/routes_education.py` | [page](src/ghuumi/server/routes_education.md) | `GET /v1/education`: the newest benchmark results per area |
 
 ## Training
 
@@ -64,6 +68,7 @@ One page per file. Each page answers the same seven questions: what it does, why
 |---|---|---|
 | `train/__init__.py` | [page](src/ghuumi/train/__init__.md) | Deciding which training path you need |
 | `train/config.py` | [page](src/ghuumi/train/config.md) | **Every training YAML field, explained** |
+| `train/curriculum.py` | [page](src/ghuumi/train/curriculum.md) | **Studying one area at a time**: measuring it and collecting its references, repeatably |
 | `train/data.py` | [page](src/ghuumi/train/data.md) | Dataset format, loss masking, token packing |
 | `train/distill.py` | [page](src/ghuumi/train/distill.md) | **Distilling a large model into a small one**: building and auditing the data |
 | `train/finetune_lora.py` | [page](src/ghuumi/train/finetune_lora.md) | Running or debugging a LoRA fine-tune |
@@ -91,6 +96,7 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 | `eval/benchmarks/extract.py` | [page](src/ghuumi/eval/benchmarks/extract.md) | A right answer was graded wrong |
 | `eval/benchmarks/gsm8k.py` | [page](src/ghuumi/eval/benchmarks/gsm8k.md) | Math word problems |
 | `eval/benchmarks/mmlu_pro.py` | [page](src/ghuumi/eval/benchmarks/mmlu_pro.md) | Knowledge and reasoning, 14 subjects |
+| `eval/benchmarks/supergpqa.py` | [page](src/ghuumi/eval/benchmarks/supergpqa.md) | **Graduate level, per area**: computer science in 10 subfields, and the other sciences |
 | `eval/benchmarks/ifeval.py` | [page](src/ghuumi/eval/benchmarks/ifeval.md) | Instruction following and its four scores |
 | `eval/benchmarks/ifeval_checks.py` | [page](src/ghuumi/eval/benchmarks/ifeval_checks.md) | One IFEval instruction type behaves oddly |
 | `eval/benchmarks/humaneval.py` | [page](src/ghuumi/eval/benchmarks/humaneval.md) | Code generation; what the code-execution guard does and does not stop |
@@ -108,6 +114,9 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 | `ui/index.html` | [page](ui/index.html.md) | Adding a control to the sidebar |
 | `ui/styles.css` | [page](ui/styles.css.md) | Changing the theme |
 | `ui/app.js` | [page](ui/app.js.md) | Streaming, markdown rendering, client state |
+| `ui/education.html` | [page](ui/education.html.md) | The Education page: what the model knows, per area |
+| `ui/education.js` | [page](ui/education.js.md) | How a bar reads; adding a benchmark family to the page |
+| `ui/education.css` | [page](ui/education.css.md) | Bars, interval bands, chance ticks, compare markers |
 
 ## Configuration profiles
 
@@ -133,6 +142,7 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 | `configs/train/distill-gsm8k.yaml` | [page](configs/distill-gsm8k.yaml.md) | **Distillation**: Qwen2.5-1.5B learns from the teacher's verified answers |
 | `configs/train/distill-gsm8k-gold.yaml` | [page](configs/distill-gsm8k-gold.yaml.md) | Distillation's control arm: the same questions, human-written solutions |
 | `configs/train/distill-gsm8k-0.5b.yaml` | [page](configs/distill-gsm8k-0.5b.yaml.md) | Distillation pilot on Qwen2.5-0.5B: measures time and memory first |
+| `configs/curriculum/cs-foundations.yaml` | [page](configs/cs-foundations.yaml.md) | **Curriculum phase 1**: computer science fundamentals, measured and supplied with references |
 | `data/samples/chat_train.jsonl` | [page](configs/chat_train.jsonl.md) | **The SFT data format**, and how to build your own |
 | `data/samples/corpus.txt` | [page](configs/corpus.txt.md) | Pretraining corpus format |
 
@@ -150,5 +160,6 @@ Results and method: [docs/BENCHMARKS.md](../BENCHMARKS.md).
 | `scripts/setup.ps1` | [page](scripts/setup.ps1.md) | One-shot install |
 | `scripts/get-llama-server.ps1` | [page](scripts/get-llama-server.ps1.md) | Installing or upgrading the llama.cpp server |
 | `scripts/verify.ps1` | [page](scripts/verify.ps1.md) | Full self-check, layer by layer |
+| `scripts/overnight.ps1` | [page](scripts/overnight.ps1.md) | Training or benchmarking overnight: frees the graphics card and keeps the PC awake |
 | `docker/sandbox/Dockerfile` | [page](docker/sandbox/Dockerfile.md) | The `--sandbox docker` image for code benchmarks (built and checked on 2026-10-23) |
 | `tests/` | [page](tests/README.md) | What the suite protects, and how to add to it |

@@ -93,9 +93,11 @@ The signatures show the CLI defaults. In Python, the real defaults are `typer.Op
 | `app` | `typer.Typer(name="ghuumi", help="Local-first, scalable LLM agent.", no_args_is_help=True, add_completion=False)` | The root command. It has no `--version` and no shell-completion options. |
 | `bench_app` | `typer.Typer(help="Score models on public benchmarks; compare runs with significance tests.", no_args_is_help=True)` | Mounted as `ghuumi bench` by `app.add_typer(bench_app, name="bench")`. |
 | `distill_app` | `typer.Typer(help="Build training data from a teacher model's graded answers (knowledge distillation).", no_args_is_help=True)` | Mounted as `ghuumi distill`. |
+| `curriculum_app` | `typer.Typer(help="Study one area at a time: collect references for it and measure it, repeatably.", no_args_is_help=True)` | Mounted as `ghuumi curriculum`. |
 | `console` | `Console()` | Module-level Rich console on stdout. All command output goes here, including the `error:` and `hint:` lines. Log records go to stderr. |
 | `CONTEXT_HELP` | `str` | The help text shared by every `--context`. |
-| `serve` | `serve(config: str = None, backend: str = None, model: str = None, device: str = None, adapter: str = None, context: int = None, host: str = None, port: int = None, log_level: str = None) -> None` | `ghuumi serve`: prints the banner, then calls `ghuumi.server.app.run(cfg)`, which blocks. |
+| `serve` | `serve(config: str = None, backend: str = None, model: str = None, device: str = None, adapter: str = None, context: int = None, host: str = None, port: int = None, log_level: str = None, gaming: bool = False) -> None` | `ghuumi serve`: prints the banner, then calls `ghuumi.server.app.run(cfg)`, which blocks. |
+| `desktop_app` | `desktop_app(config: str = None, gaming: bool = False, install: bool = False) -> None` | `ghuumi app`: with `--install`, `desktop.install_shortcuts(...)`; otherwise `desktop.settings_for(...)`, then `desktop.run_app(cfg)`. With no console, an error also shows `desktop.notify(...)`. |
 | `chat` | `chat(config: str = None, backend: str = None, model: str = None, device: str = None, adapter: str = None, context: int = None, temperature: float = None, max_tokens: int = None, think: bool = None, thinking_budget: int = None, prompt: str = None, workspace: str = None) -> None` | `ghuumi chat`: builds the config from the backend flags, then runs `asyncio.run(_chat_loop(cfg, prompt, overrides))` inside `_exit_cleanly_on_signals()`. `overrides` holds the four generation flags. `workspace` sets `agent.workspace.root` and adds `WORKSPACE_TOOLS` to `agent.enabled_tools`. |
 | `info` | `info() -> None` | `ghuumi info`: versions, registered components, profiles, optional packages and CUDA devices. |
 | `show_config` | `show_config(config: str = None, backend: str = None, model: str = None) -> None` | `ghuumi config`: prints `Panel(cfg.dump_yaml(), title="resolved configuration")`. |
@@ -107,12 +109,13 @@ The signatures show the CLI defaults. In Python, the real defaults are `typer.Op
 | `bench_run` | `bench_run(benchmarks: list[str], config: str = None, backend: str = None, model: str = None, adapter: str = None, context: int = None, limit: int = 100, full: bool = False, seed: int = 1234, think: bool = None, thinking_budget: int = None, max_tokens: int = None, temperature: float = None, concurrency: int = None, label: str = None, out: str = None, allow_code_exec: bool = False, sandbox: str = "none", use_agent_prompt: bool = False) -> None` | `ghuumi bench run`: refuses a `--sandbox` outside `codeexec.SANDBOXES` before loading the profile, builds `BenchSettings` (`limit=None` when `--full` is given), then runs `BenchRunner(cfg, settings, profile=config, console=console).run(benchmarks)`. After the summaries it prints `not run: <name>: <why>` for each suite member the runner skipped. |
 | `bench_compare` | `bench_compare(baseline: str, candidate: str, examples: int = 0) -> None` | `ghuumi bench compare A B`: `render_comparisons(...)`, plus `render_flips(...)` when `-e` is above 0. |
 | `bench_report` | `bench_report(run: str) -> None` | `ghuumi bench report RUN`: `render_summaries(console, load_summaries(Path(run)), details=True)`. |
+| `curriculum_run` | `curriculum_run(phase_file: Path, config: str = None, collect: bool = True, measure: bool = True, refresh: bool = False, out_root: str = None) -> None` | `ghuumi curriculum run PHASE`: `load_phase`, then `collect(...)` with `discover` bound to OpenAlex, open-access only, 20 works per search; then `BenchRunner` with `out_dir = <out_root or first education.runs_dirs>/<phase id>-<default_label>` so a repeat resumes. |
 | `distill_build` | `distill_build(runs: list[str], out: str, max_tokens: int = 1024, per_question: int = 4, val_fraction: float = 0.05, seed: int = 42, check_arithmetic: bool = True, eval_set: list[str] = ["gsm8k"], decontaminate: bool = True, allow_thinking: bool = False, force: bool = False) -> None` | `ghuumi distill build RUNS... -o DIR`: `render(console, build_from_runs(runs, out, DistillSettings(...), force=force), Path(out))`. |
 | `distill_gold` | `distill_gold(out: str, match: str = None, val_fraction: float = 0.05, seed: int = 42, check_arithmetic: bool = True, eval_set: list[str] = ["gsm8k"], decontaminate: bool = True, force: bool = False) -> None` | `ghuumi distill gold -o DIR`: the same with `build_gold(out, settings, match=match, force=force)`. |
 | `DISTILL_OUT_HELP`, `VAL_FRACTION_HELP`, `SPLIT_SEED_HELP`, `ARITHMETIC_HELP`, `EVAL_SET_HELP`, `DECONTAMINATE_HELP`, `FORCE_HELP` | `str` | Help texts shared by `distill build` and `distill gold`, so the two commands describe a shared flag identically. |
 | `main` | `main() -> None` | Console-script entry point. Calls `ensure_utf8_streams()`, then `app()`; a `GhuumiError` prints `error:`/`hint:` and raises `SystemExit(1)`. Its `KeyboardInterrupt` branch (`interrupted`, exit 130) does not run in practice; see [Exit codes](#errors-and-exit-codes). |
 | `_build_overrides` | `_build_overrides(**kwargs: Any) -> dict[str, Any]` | Private, and the one place flags become config paths. Drops `None` values and unknown keys. `tests\test_cli.py` tests it directly. |
-| `_load` | `_load(config: str \| None, **flags: Any)` | Private. Returns the `GhuumiConfig` from `load_config(config, overrides=_build_overrides(**flags))`. |
+| `_load` | `_load(config: str \| None, *, gaming: bool = False, **flags: Any)` | Private. Returns the `GhuumiConfig` from `load_config(config, overrides=_build_overrides(**flags))`. With `gaming`, loads again with the profile's `gaming.backend` under those flags. |
 | `_chat_loop` | `async _chat_loop(cfg: Any, single_prompt: str \| None, overrides: dict[str, Any]) -> None` | Private. The terminal REPL behind `chat`. Builds `ChatAgent(backend, cfg, approver=_approve)` before `backend.load()`, so a bad knowledge pack, documentation index, tool name or project folder, or a backend that cannot call tools, fails before the model loads. Passes `overrides` to every `agent.stream` call, prints tool calls and results as they happen, and adds the turn's whole transcript to the history. |
 | `_approve` | `async _approve(request: Any) -> bool` | Private. The approver; `request` is an `ApprovalRequest`. Prints `request.summary` in a yellow panel titled with the tool name, with diff lines coloured and the `$` line of a command in bold, then discards type-ahead (`_discard_type_ahead`) and asks `Allow this? [y/N]`. Only `y` or `yes` (any case) approves; anything else, end of input or Ctrl+C is no. |
 | `_discard_type_ahead` | `_discard_type_ahead() -> None` | Private. Drops the keys typed before the approval prompt appeared, so that a `y` and Enter typed in reply to the model's prose cannot approve a change you have not seen. Only an interactive terminal is flushed (`msvcrt` on Windows, `termios.tcflush` elsewhere); piped answers are kept for the prompts. |
@@ -129,6 +132,7 @@ The examples are PowerShell, run from the repo root with the venv active; otherw
 | Command | Help text | Loads a model? |
 |---|---|---|
 | `ghuumi serve` | Start the HTTP API and the web UI. | Yes, in the background after the server is up. |
+| `ghuumi app` | Open Ghuumi in its own window; closing it stops the server it started. `--install` adds desktop shortcuts. | Yes, unless a server is already running (and not with `--install`). |
 | `ghuumi chat` | Chat in the terminal, with no server in between. | Yes, before the first prompt. |
 | `ghuumi info` | Show versions, hardware, and which optional components are installed. | No. It imports torch and queries CUDA, so it is slow, especially on a cold start. |
 | `ghuumi config` | Print the fully merged configuration and exit. | No. |
@@ -137,6 +141,7 @@ The examples are PowerShell, run from the repo root with the venv active; otherw
 | `ghuumi eval` | Measure latency, throughput, and answer quality. | Yes. |
 | `ghuumi bench list\|run\|report\|compare` | Score models on public benchmarks; compare runs with significance tests. | `run` only. |
 | `ghuumi distill build\|gold` | Build training data from a teacher model's graded answers (knowledge distillation). | No. It reads GSM8K from the Hugging Face cache, downloading it on first use. |
+| `ghuumi curriculum run PHASE` | Collect open-access references for a phase's topics, then measure it with its benchmarks; a repeat only does what is missing. | Yes, unless `--no-measure`. |
 
 ### Options
 
@@ -364,6 +369,17 @@ Model loads in the background; the UI shows progress.
 - **URLs.** They come from `server.host`, so `--host 0.0.0.0` prints `http://0.0.0.0:<port>`. That is a bind address, not one you can browse to.
 - **No thinking or sampling flags.** Thinking is chosen per request, by the UI toggle or `"thinking": true` in the body. Server-wide defaults come from YAML or env, e.g. `$env:GHUUMI_GENERATION__THINKING = 'true'`.
 - **Logging.** `serve` follows `telemetry.log_level` (and `--log-level`), not `GHUUMI_LOG_LEVEL`.
+- **`--gaming`** applies the profile's `gaming` settings, which leave room for a game on the graphics card ([qwen36's](../../configs/qwen36.yaml.md#share-the-gpu-with-a-game-or-use-a-smaller-card)). They sit over the profile and the environment and under the command's own flags, so `--gaming --context 32768` keeps 32,768. A profile without a `gaming:` section is refused.
+
+### Open it as a desktop app: `ghuumi app`
+
+```powershell
+ghuumi app -c qwen36 --install    # once: "Ghuumi" and "Ghuumi (gaming)" shortcuts (Windows)
+ghuumi app -c qwen36              # the chat in its own window; closing it stops the model
+ghuumi app -c qwen36 --gaming     # leave room for a game started afterwards
+```
+
+It starts the server unless one already answers on the profile's port, opens the chat in an Edge (or Chrome) app window, and stops the server it started when that window closes. It switches to the gaming settings by itself when less than `gaming.below_free_gb` of graphics memory is free. Run from a shortcut, it has no console: output goes to `runs\logs\ghuumi-app.log` and an error shows a message box. Details: [`desktop.md`](desktop.md).
 
 ### Inspect the install: `ghuumi info`
 
@@ -407,7 +423,7 @@ ghuumi eval -c qwen36 -s my_cases.jsonl
 ### Benchmarks: `ghuumi bench`
 
 - **Subcommands:**
-  - `bench list` prints the benchmarks: `golden`, `gsm8k`, `gsm8k_train`, `humaneval`, `ifeval`, `mmlu_pro` and the eight `multipl_e_<lang>`, plus the `multipl_e` suite, which runs all eight. Any golden-set `.jsonl` file also works as a benchmark. `gsm8k_train` is GSM8K's training split: teacher data for `ghuumi distill`, not a score.
+  - `bench list` prints the benchmarks: `golden`, `gsm8k`, `gsm8k_train`, `humaneval`, `ifeval`, `mmlu_pro`, `supergpqa_cs`, `supergpqa_stem` and the eight `multipl_e_<lang>`, plus the `multipl_e` suite, which runs all eight. Any golden-set `.jsonl` file also works as a benchmark. `gsm8k_train` is GSM8K's training split: teacher data for `ghuumi distill`, not a score.
   - `bench report RUN` shows one run in detail.
   - `bench compare BASELINE CANDIDATE [-e N]` answers "did B really beat A?" with paired differences, confidence intervals and p-values.
 - **Records.** `bench run` saves every answer.
@@ -457,6 +473,16 @@ ghuumi bench run multipl_e -c qwen36 --no-think --allow-code-exec
   - A run whose fingerprint differs (model, decoding parameters, seed, prompt mode, documentation indexes, sandbox, compiler version or memory cap) is refused before anything is written.
   - On Ctrl+C the runner prints `Stopped. Finished answers are saved; resume with --out <dir>`.
 - **`humaneval` and `multipl_e*`** refuse to run without `--allow-code-exec`. Read `docs\howto\src\ghuumi\eval\benchmarks\multipl_e.md` for the toolchains each language needs.
+
+### Curriculum phases: `ghuumi curriculum`
+
+```powershell
+ghuumi curriculum run configs\curriculum\cs-foundations.yaml -c qwen36
+```
+
+- **`run PHASE`** reads a phase file ([format](train/curriculum.md)), adds its topics to the academic catalogue, searches OpenAlex for open-access works once per (topic, query), then runs its benchmarks in one fixed folder, `<first education.runs_dirs>\<phase id>-<profile>-<think mode>`. A repeat skips the searches already done and resumes the run, so it spends model tokens only on unanswered questions.
+- `--no-collect` / `--no-measure` do one half; `--refresh` repeats the searches; `--out-root DIR` puts the run elsewhere.
+- A failed search (no network, a spent OpenAlex budget) stops collection with `collection stopped: ...`, and measuring goes ahead.
 
 ### Distillation data: `ghuumi distill`
 

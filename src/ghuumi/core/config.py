@@ -323,6 +323,28 @@ class AcademicConfig(_Base):
     monitor_batch_size: int = Field(default=10, ge=1, le=20)
 
 
+class EducationConfig(_Base):
+    """Where the Education page (/education) finds `ghuumi bench` results."""
+
+    # Folders of `ghuumi bench` runs, or single runs. Relative paths start at the
+    # Ghuumi folder, like the runner's default output, runs/bench.
+    runs_dirs: list[str] = Field(default_factory=lambda: [str(REPO_ROOT / "runs" / "bench")])
+
+
+class GamingConfig(_Base):
+    """Settings that leave room for a game on the graphics card.
+
+    Used by `ghuumi serve --gaming` and `ghuumi app --gaming`, and by `ghuumi app`
+    on its own when less than `below_free_gb` of graphics memory is free as it
+    starts. A model that overfills the card does not fail: Windows moves memory
+    to system RAM and both the model and the game slow to a crawl.
+    """
+
+    below_free_gb: float | None = Field(default=None, gt=0)  # None: only when asked
+    # Merged over `backend` in gaming mode, e.g. a smaller context and n_cpu_moe.
+    backend: dict[str, Any] = Field(default_factory=dict)
+
+
 class GhuumiConfig(_Base):
     """The single object every subsystem reads from."""
 
@@ -333,6 +355,24 @@ class GhuumiConfig(_Base):
     server: ServerConfig = Field(default_factory=ServerConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     academic: AcademicConfig = Field(default_factory=AcademicConfig)
+    education: EducationConfig = Field(default_factory=EducationConfig)
+    gaming: GamingConfig = Field(default_factory=GamingConfig)
+
+    @model_validator(mode="after")
+    def _gaming_backend_is_valid(self) -> GhuumiConfig:
+        if self.gaming.backend:
+            self.with_gaming()  # a typo there fails at load, not when a game is running
+        return self
+
+    def with_gaming(self) -> GhuumiConfig:
+        """This config with `gaming.backend` merged over `backend`."""
+        if not self.gaming.backend:
+            raise ConfigError(
+                "This profile has no gaming settings.",
+                hint="Add a `gaming:` section, as configs/qwen36.yaml has.",
+            )
+        merged = deep_merge(self.backend.model_dump(), self.gaming.backend)
+        return self.model_copy(update={"backend": BackendConfig.model_validate(merged)})
 
     def dump_yaml(self) -> str:
         """Serialize the *fully resolved* config.

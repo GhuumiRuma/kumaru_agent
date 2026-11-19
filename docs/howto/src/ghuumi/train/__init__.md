@@ -24,6 +24,7 @@ LoRA fine-tuning changes style, format, and domain-specific behavior on existing
 2. **Use NanoLM pretraining to understand the loop.** The nano path is educational and scalable, not a shortcut to a production assistant.
 3. **Both paths enter through `ghuumi train`.** The YAML `task` field selects the implementation.
 4. **Distillation is a data source, not a third path.** `ghuumi distill` turns a stronger teacher's graded answers into `train.jsonl`, and a `task: lora` recipe trains the student on it.
+5. **Measure before you train.** `ghuumi curriculum run configs/curriculum/<phase>.yaml` ([page](curriculum.md)) scores one area with its benchmarks and collects references for it; it changes no weights. Its bars on the Education page are the baseline a fine-tune must beat.
 
 ## Public API
 

@@ -193,6 +193,13 @@ BENCHMARKS.register_lazy(
     "gsm8k_train", "ghuumi.eval.benchmarks.gsm8k:GSM8KTrain", aliases=("gsm8k-train",)
 )
 BENCHMARKS.register_lazy("mmlu_pro", "ghuumi.eval.benchmarks.mmlu_pro:MMLUPro", aliases=("mmlu-pro",))
+# Graduate level, reported per area: computer science by subfield, STEM by field.
+BENCHMARKS.register_lazy(
+    "supergpqa_cs", "ghuumi.eval.benchmarks.supergpqa:SuperGPQACS", aliases=("supergpqa-cs",)
+)
+BENCHMARKS.register_lazy(
+    "supergpqa_stem", "ghuumi.eval.benchmarks.supergpqa:SuperGPQASTEM", aliases=("supergpqa-stem",)
+)
 BENCHMARKS.register_lazy("ifeval", "ghuumi.eval.benchmarks.ifeval:IFEval")
 BENCHMARKS.register_lazy("humaneval", "ghuumi.eval.benchmarks.humaneval:HumanEval")
 # HumanEval in eight languages (MultiPL-E). One benchmark per language, so each
