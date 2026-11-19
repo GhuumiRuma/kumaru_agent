@@ -35,6 +35,17 @@ Operating rules:
 - When a question is ambiguous in a way that changes the answer, ask one clarifying question.
 - Use fenced code blocks with a language tag for all code."""
 
+# Added when `ghuumi chat --dev` points the project folder at Ghuumi's own source.
+DEVELOPER_MODE_RULES = """\
+Developer mode: the project folder is your own source code (the ghuumi package).
+- Read the code before changing it, and make small, focused changes.
+- After each change run the tests with run_command: python -m pytest -q. Fix what you break.
+- Every new source file needs a companion guide in docs/howto at the matching path; update
+  the guide of any file whose behaviour you change.
+- Do not weaken safety checks (approval, path limits, command allowlist) or the tests that guard them.
+- Your edits take effect only after the user restarts Ghuumi; say so when you finish.
+- Explain what you changed and why, and leave the work uncommitted for the user to review."""
+
 
 def build_system_prompt(
     config: AgentConfig,
@@ -50,6 +61,8 @@ def build_system_prompt(
     in the latest user message when `agent.knowledge_indexes` is set.
     """
     sections: list[str] = [config.system_prompt.strip(), QUALITY_DIRECTIVES]
+    if config.developer_mode:
+        sections.append(DEVELOPER_MODE_RULES)
     if config.expertise:
         sections.append(
             "Engineering guidance:\n"

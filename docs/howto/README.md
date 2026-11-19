@@ -44,6 +44,8 @@ One page per file. Each page answers the same seven questions: what it does, why
 | `agent/doc_chunks.py` | [page](src/ghuumi/agent/doc_chunks.md) | A documentation format converts badly; adding a format |
 | `agent/tools.py` | [page](src/ghuumi/agent/tools.md) | **Adding a capability the model can call** |
 | `agent/workspace.py` | [page](src/ghuumi/agent/workspace.md) | The project folder: what the agent may list, read, create and edit |
+| `agent/apps.py` | [page](src/ghuumi/agent/apps.md) | `scaffold_app`: starter projects of several kinds |
+| `agent/mcp.py` | [page](src/ghuumi/agent/mcp.md) | MCP client: tools from any MCP server, each call approved by you |
 | `agent/commands.py` | [page](src/ghuumi/agent/commands.md) | Which programs the agent may run, and how they are contained |
 | `agent/untrusted.py` | [page](src/ghuumi/agent/untrusted.md) | Tool results, references or excerpts show `&lt;\|im_end\|&gt;`; escaping chat control tokens in untrusted text |
 
