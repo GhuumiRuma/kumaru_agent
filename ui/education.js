@@ -28,7 +28,7 @@ const FAMILIES = {
   },
   supergpqa_stem: {
     title: "STEM · graduate level",
-    note: "SuperGPQA, Science and Engineering, by field. A sample: see the question count per area.",
+    note: "SuperGPQA, Science and Engineering besides computer science (above), by field. A sample: see the question count per area.",
     chance: 0.1,
   },
   mmlu_pro: { title: "Knowledge and reasoning · 14 subjects", note: "MMLU-Pro, by subject.", chance: 0.1 },
