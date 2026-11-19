@@ -2,9 +2,9 @@
 
 import pytest
 
-from kumaru.eval.benchmarks.base import BenchItem
-from kumaru.eval.benchmarks.ifeval import IFEval
-from kumaru.eval.benchmarks.ifeval_checks import (
+from ghuumi.eval.benchmarks.base import BenchItem
+from ghuumi.eval.benchmarks.ifeval import IFEval
+from ghuumi.eval.benchmarks.ifeval_checks import (
     CHECKS,
     check_instructions,
     constrained_response,
@@ -28,7 +28,7 @@ from kumaru.eval.benchmarks.ifeval_checks import (
     title,
     two_responses,
 )
-from kumaru.eval.benchmarks.runner import ItemRecord
+from ghuumi.eval.benchmarks.runner import ItemRecord
 
 
 @pytest.fixture
@@ -187,19 +187,19 @@ class TestIFEvalBenchmark:
 @pytest.mark.usefixtures("nltk_ready")
 class TestCountingWithNltk:
     def test_sentences_use_punkt_so_abbreviations_do_not_split(self) -> None:
-        from kumaru.eval.benchmarks.ifeval_checks import count_sentences, number_sentences
+        from ghuumi.eval.benchmarks.ifeval_checks import count_sentences, number_sentences
 
         assert count_sentences("Dr. Smith arrived. He sat down.") == 2
         assert number_sentences("One. Two. Three.", num_sentences=3, relation="at least")
 
     def test_words_are_unicode_word_runs(self) -> None:
-        from kumaru.eval.benchmarks.ifeval_checks import count_words, number_words
+        from ghuumi.eval.benchmarks.ifeval_checks import count_words, number_words
 
         assert count_words("Hello, world! It's 2024.") == 5
         assert number_words("one two three", num_words=4, relation="less than")
 
     def test_capital_words_are_all_caps_tokens(self) -> None:
-        from kumaru.eval.benchmarks.ifeval_checks import capital_word_frequency, count_capital_words
+        from ghuumi.eval.benchmarks.ifeval_checks import capital_word_frequency, count_capital_words
 
         assert count_capital_words("I met NASA staff today.") == 2
         assert capital_word_frequency("I met NASA staff.", capital_frequency=3, capital_relation="less than")
@@ -207,7 +207,7 @@ class TestCountingWithNltk:
 
 class TestLanguageChecks:
     def test_case_checks_fail_fast_on_mixed_case(self) -> None:
-        from kumaru.eval.benchmarks.ifeval_checks import english_capital, english_lowercase
+        from ghuumi.eval.benchmarks.ifeval_checks import english_capital, english_lowercase
 
         # Rejected by the case test alone, before any language detection.
         assert not english_capital("Not All Caps")
@@ -215,7 +215,7 @@ class TestLanguageChecks:
 
     def test_language_detection_distinguishes_english_from_french(self) -> None:
         pytest.importorskip("langdetect")
-        from kumaru.eval.benchmarks.ifeval_checks import english_lowercase, response_language
+        from ghuumi.eval.benchmarks.ifeval_checks import english_lowercase, response_language
 
         english = "The weather today is sunny and warm, and everyone is enjoying the afternoon in the park."
         french = "Le temps aujourd'hui est ensoleillé et chaud, et tout le monde profite de l'après-midi au parc."

@@ -1,6 +1,6 @@
 """Protect stable core data model helpers and derived metrics."""
 
-from kumaru.core.types import ChatResult, GenerationParams, Message, Role, Usage
+from ghuumi.core.types import ChatResult, GenerationParams, Message, Role, Usage
 
 
 def test_message_to_openai_shape_includes_optional_fields() -> None:

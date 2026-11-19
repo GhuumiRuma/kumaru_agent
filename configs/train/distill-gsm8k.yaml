@@ -2,10 +2,10 @@
 # the teacher's verified GSM8K answers. The whole recipe: docs/TRAINING.md,
 # Part 3.
 #
-#   kumaru distill build runs/distill/teacher-qwen36 -o runs/distill/data-teacher
-#   kumaru train configs/train/distill-gsm8k.yaml --dry-run   # validate first, always
-#   kumaru train configs/train/distill-gsm8k.yaml
-#   kumaru bench run gsm8k -c student --full --max-tokens 1024 --adapter runs/distill/qwen1.5b-teacher/adapter --label student-teacher -o runs/distill/eval-teacher
+#   ghuumi distill build runs/distill/teacher-qwen36 -o runs/distill/data-teacher
+#   ghuumi train configs/train/distill-gsm8k.yaml --dry-run   # validate first, always
+#   ghuumi train configs/train/distill-gsm8k.yaml
+#   ghuumi bench run gsm8k -c student --full --max-tokens 1024 --adapter runs/distill/qwen1.5b-teacher/adapter --label student-teacher -o runs/distill/eval-teacher
 #
 # Cost on an RTX 3090, measured 2026-10-22: 6,751 training rows (one answer per
 # question, 335 answer tokens on average), 2 epochs = 422 optimizer steps, 117
@@ -17,7 +17,7 @@
 # takes one row, and 32 passes make a step. The loss is the same however the
 # 32 rows are split: transformers divides it by their answer tokens.
 #
-# Rows carry no system message, exactly like `kumaru bench run` without
+# Rows carry no system message, exactly like `ghuumi bench run` without
 # --use-agent-prompt: the student is trained the way it is tested.
 #
 # The control arm (distill-gsm8k-gold.yaml) must stay identical apart from the

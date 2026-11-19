@@ -59,7 +59,7 @@ Use it on a single 24 GB CUDA GPU after:
 
 ## How to use it
 
-Prerequisites, in the Kumaru folder:
+Prerequisites, in the Ghuumi folder:
 
 ```powershell
 .\scripts\setup.ps1 -Gpu -Quant    # elsewhere: pip install -e ".[train,quant]"
@@ -68,25 +68,25 @@ Prerequisites, in the Kumaru folder:
 Validate config and data first:
 
 ```powershell
-kumaru train configs/train/lora-qwen.yaml --dry-run
+ghuumi train configs/train/lora-qwen.yaml --dry-run
 ```
 
 Train:
 
 ```powershell
-kumaru train configs/train/lora-qwen.yaml
+ghuumi train configs/train/lora-qwen.yaml
 ```
 
 Use the adapter:
 
 ```powershell
-kumaru chat --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter -q "What changed?"
+ghuumi chat --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter -q "What changed?"
 ```
 
 Or serve it:
 
 ```powershell
-kumaru serve -c local-gpu --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
+ghuumi serve -c local-gpu --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
 ```
 
 ## Tuning it
@@ -112,7 +112,7 @@ kumaru serve -c local-gpu --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-q
 
 - `configs/train/lora-small.yaml` — fast pipeline validation profile.
 - `data/samples/chat_train.jsonl` — accepted SFT JSONL shape.
-- `src/kumaru/train/config.py` — authoritative training schema.
-- `src/kumaru/train/data.py` — data validation, chat templating, and loss masking.
-- `src/kumaru/cli.py` — `kumaru train <config> --dry-run` and `--resume`.
+- `src/ghuumi/train/config.py` — authoritative training schema.
+- `src/ghuumi/train/data.py` — data validation, chat templating, and loss masking.
+- `src/ghuumi/cli.py` — `ghuumi train <config> --dry-run` and `--resume`.
 

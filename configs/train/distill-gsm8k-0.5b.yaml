@@ -6,11 +6,11 @@
 # an RTX 3090 (2026-10-22): 58 minutes and a peak of 21.6 GB reserved, at 2 rows
 # per forward pass; the 1.5B teacher arm, at 1 row, took 117 minutes and 13.8 GB.
 #
-#   kumaru train configs/train/distill-gsm8k-0.5b.yaml --dry-run
-#   kumaru train configs/train/distill-gsm8k-0.5b.yaml
-#   kumaru bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --label student0.5b-base -o runs/distill/eval-0.5b-base
-#   kumaru bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --adapter runs/distill/qwen0.5b-teacher/adapter --label student0.5b-teacher -o runs/distill/eval-0.5b-teacher
-#   kumaru bench compare runs/distill/eval-0.5b-base runs/distill/eval-0.5b-teacher
+#   ghuumi train configs/train/distill-gsm8k-0.5b.yaml --dry-run
+#   ghuumi train configs/train/distill-gsm8k-0.5b.yaml
+#   ghuumi bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --label student0.5b-base -o runs/distill/eval-0.5b-base
+#   ghuumi bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --adapter runs/distill/qwen0.5b-teacher/adapter --label student0.5b-teacher -o runs/distill/eval-0.5b-teacher
+#   ghuumi bench compare runs/distill/eval-0.5b-base runs/distill/eval-0.5b-teacher
 #
 # Identical to distill-gsm8k.yaml apart from base_model, output_dir, run_name
 # and the batch split (a test enforces it), so what the pilot shows carries

@@ -17,15 +17,15 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner
 
-from kumaru.cli import app, main
-from kumaru.core.config import load_config
-from kumaru.core.errors import ConfigError
-from kumaru.core.registry import BENCHMARKS
-from kumaru.eval.benchmarks import gsm8k
-from kumaru.eval.benchmarks.gsm8k import PROMPT
-from kumaru.eval.benchmarks.runner import BenchSummary, ItemRecord
-from kumaru.train.config import load_train_config
-from kumaru.train.distill import (
+from ghuumi.cli import app, main
+from ghuumi.core.config import load_config
+from ghuumi.core.errors import ConfigError
+from ghuumi.core.registry import BENCHMARKS
+from ghuumi.eval.benchmarks import gsm8k
+from ghuumi.eval.benchmarks.gsm8k import PROMPT
+from ghuumi.eval.benchmarks.runner import BenchSummary, ItemRecord
+from ghuumi.train.config import load_train_config
+from ghuumi.train.distill import (
     REASONS,
     DistillSettings,
     Manifest,
@@ -95,7 +95,7 @@ def write_run(
     thinking: bool | None = False,
     label: str = "teacher",
 ) -> Path:
-    """One benchmark's result folder, as `kumaru bench run` writes it."""
+    """One benchmark's result folder, as `ghuumi bench run` writes it."""
     folder.mkdir(parents=True)
     summary = BenchSummary(
         benchmark=benchmark,
@@ -594,7 +594,7 @@ def test_the_cli_refuses_evaluation_answers_with_a_hint(
     scratch_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     run = write_run(scratch_dir / "run", [answer("gsm8k/0", QUESTIONS[0])], benchmark="gsm8k")
-    monkeypatch.setattr(sys, "argv", ["kumaru", "distill", "build", str(run), "-o", str(scratch_dir / "data")])
+    monkeypatch.setattr(sys, "argv", ["ghuumi", "distill", "build", str(run), "-o", str(scratch_dir / "data")])
     monkeypatch.setenv("COLUMNS", "200")
     with pytest.raises(SystemExit) as exit_info:
         main()

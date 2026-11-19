@@ -170,7 +170,7 @@ function wireTree(tree, rerender) {
 
 export function renderSubjects(host) {
   const tree = el("ul", { role: "tree", class: "tree", "aria-label": "Subjects" });
-  const empty = el("p", { class: "quiet tree-empty" }, "Subjects load once Kumaru is connected.");
+  const empty = el("p", { class: "quiet tree-empty" }, "Subjects load once Ghuumi is connected.");
   const actions = el("div", { class: "rail-actions" });
   const build = (focusId = null) => {
     const active = tree.contains(document.activeElement) ? document.activeElement.closest('[role="treeitem"]')?.dataset.topicId : null;

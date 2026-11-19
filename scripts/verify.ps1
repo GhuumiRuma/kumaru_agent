@@ -1,10 +1,10 @@
-# Full self-check: proves every layer of Kumaru works on this machine.
+# Full self-check: proves every layer of Ghuumi works on this machine.
 #
 #   .\scripts\verify.ps1          # fast checks only (no GPU, no downloads)
 #   .\scripts\verify.ps1 -Full    # + a real model on the GPU (downloads ~1 GB)
 #
 # Run this after setup, after upgrading a dependency, or whenever you want to
-# know whether a problem is yours or Kumaru's. Each stage isolates one layer,
+# know whether a problem is yours or Ghuumi's. Each stage isolates one layer,
 # so the first failure tells you where to look.
 
 [CmdletBinding()]
@@ -19,7 +19,7 @@ $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
 $py = Join-Path $repo ".venv\Scripts\python.exe"
-$kumaru = Join-Path $repo ".venv\Scripts\kumaru.exe"
+$ghuumi = Join-Path $repo ".venv\Scripts\ghuumi.exe"
 
 if (-not (Test-Path $py)) {
     Write-Host "No .venv found. Run .\scripts\setup.ps1 first." -ForegroundColor Red
@@ -31,7 +31,7 @@ $results = [ordered]@{}
 function Check($name, [scriptblock]$body) {
     Write-Host "`n>> $name" -ForegroundColor Cyan
     # PowerShell turns *any* stderr write from a native command into a
-    # terminating error while $ErrorActionPreference is "Stop". Kumaru logs to
+    # terminating error while $ErrorActionPreference is "Stop". Ghuumi logs to
     # stderr by design, so every successful command would "fail". Preference
     # variables are dynamically scoped, so relaxing it here applies inside
     # $body. Each check therefore validates explicitly and throws on failure.
@@ -47,12 +47,12 @@ function Check($name, [scriptblock]$body) {
 }
 
 # 1. Environment ------------------------------------------------------------
-Check "environment" { & $kumaru info | Out-Host }
+Check "environment" { & $ghuumi info | Out-Host }
 
 # 2. Config resolution ------------------------------------------------------
 Check "config" {
     foreach ($profile in @("default", "test", "local-gpu", "low-vram", "cpu-only", "vllm", "qwen36", "qwen25-7b-gguf")) {
-        & $kumaru config -c $profile *> $null
+        & $ghuumi config -c $profile *> $null
         if ($LASTEXITCODE -ne 0) { throw "profile '$profile' failed to load" }
     }
 }
@@ -64,12 +64,12 @@ Check "unit tests" {
 }
 
 # 4. Agent stack, no model --------------------------------------------------
-# Kumaru writes logs to stderr and answers to stdout. We capture stdout only:
+# Ghuumi writes logs to stderr and answers to stdout. We capture stdout only:
 # merging stderr with 2>&1 would make PowerShell treat ordinary log lines as
 # terminating errors under $ErrorActionPreference = "Stop".
 Check "agent (echo backend)" {
-    $out = (& $kumaru chat -c test -q "verification probe" 2>$null) | Out-String
-    if ($LASTEXITCODE -ne 0) { throw "kumaru chat exited with $LASTEXITCODE" }
+    $out = (& $ghuumi chat -c test -q "verification probe" 2>$null) | Out-String
+    if ($LASTEXITCODE -ne 0) { throw "ghuumi chat exited with $LASTEXITCODE" }
     if ($out -notmatch "echo:") { throw "echo backend produced no reply" }
 }
 
@@ -77,7 +77,7 @@ Check "agent (echo backend)" {
 Check "server + SSE streaming" {
     $job = Start-Job -ScriptBlock {
         param($exe, $port) & $exe serve -c test --port $port
-    } -ArgumentList $kumaru, $Port
+    } -ArgumentList $ghuumi, $Port
 
     try {
         Start-Sleep -Seconds 6
@@ -110,7 +110,7 @@ print(f"  healthz ok, completion ok, {frames} SSE frames, UI served")
 }
 
 # 6. llama-server binary (optional) -----------------------------------------
-# The engine behind GGUF profiles such as qwen36. Found where Kumaru looks:
+# The engine behind GGUF profiles such as qwen36. Found where Ghuumi looks:
 # the copy get-llama-server.ps1 installs, then PATH. --version loads the binary
 # and its DLLs without a model or any GPU memory.
 $llamaServer = Join-Path $repo "tools\llama.cpp\llama-server.exe"
@@ -145,20 +145,20 @@ if ($Full) {
         }
     }
     Check "training pipeline (dry run)" {
-        & $kumaru train configs/train/lora-small.yaml --dry-run | Out-Host
+        & $ghuumi train configs/train/lora-small.yaml --dry-run | Out-Host
         if ($LASTEXITCODE -ne 0) { throw "training dry run failed" }
     }
 
     Check "GPU inference ($SmallModel)" {
-        $out = (& $kumaru chat --backend transformers --model $SmallModel `
+        $out = (& $ghuumi chat --backend transformers --model $SmallModel `
             -q "Reply with the single word: ready" 2>$null) | Out-String
-        if ($LASTEXITCODE -ne 0) { throw "kumaru chat exited with $LASTEXITCODE" }
+        if ($LASTEXITCODE -ne 0) { throw "ghuumi chat exited with $LASTEXITCODE" }
         if ($out.Trim().Length -lt 3) { throw "no output from model" }
         Write-Host "   model said: $($out.Trim())"
     }
 
     Check "eval harness" {
-        & $kumaru eval --backend transformers --model $SmallModel --suite smoke | Out-Host
+        & $ghuumi eval --backend transformers --model $SmallModel --suite smoke | Out-Host
     }
 }
 

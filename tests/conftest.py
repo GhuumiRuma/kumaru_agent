@@ -1,4 +1,4 @@
-"""Shared offline fixtures for exercising Kumaru without model downloads."""
+"""Shared offline fixtures for exercising Ghuumi without model downloads."""
 
 import shutil
 from collections.abc import Generator
@@ -7,17 +7,17 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from kumaru.agent.chat import ChatAgent
-from kumaru.backends.echo import EchoBackend
-from kumaru.core.config import BackendConfig, KumaruConfig
-from kumaru.core.types import GenerationParams
-from kumaru.server.app import create_app
+from ghuumi.agent.chat import ChatAgent
+from ghuumi.backends.echo import EchoBackend
+from ghuumi.core.config import BackendConfig, GhuumiConfig
+from ghuumi.core.types import GenerationParams
+from ghuumi.server.app import create_app
 
 
 @pytest.fixture
-def echo_config() -> KumaruConfig:
+def echo_config() -> GhuumiConfig:
     """Return a small deterministic config that never touches GPU-backed code."""
-    return KumaruConfig(
+    return GhuumiConfig(
         backend=BackendConfig(
             name="echo",
             model="echo",
@@ -29,7 +29,7 @@ def echo_config() -> KumaruConfig:
 
 
 @pytest.fixture
-async def loaded_echo_backend(echo_config: KumaruConfig) -> EchoBackend:
+async def loaded_echo_backend(echo_config: GhuumiConfig) -> EchoBackend:
     backend = EchoBackend(echo_config.backend)
     await backend.load()
     try:
@@ -39,12 +39,12 @@ async def loaded_echo_backend(echo_config: KumaruConfig) -> EchoBackend:
 
 
 @pytest.fixture
-def chat_agent(loaded_echo_backend: EchoBackend, echo_config: KumaruConfig) -> ChatAgent:
+def chat_agent(loaded_echo_backend: EchoBackend, echo_config: GhuumiConfig) -> ChatAgent:
     return ChatAgent(loaded_echo_backend, echo_config)
 
 
 @pytest.fixture
-def test_client(echo_config: KumaruConfig) -> Generator[TestClient, None, None]:
+def test_client(echo_config: GhuumiConfig) -> Generator[TestClient, None, None]:
     app = create_app(echo_config)
     with TestClient(app) as client:
         yield client

@@ -22,8 +22,8 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from kumaru import cli
-from kumaru.agent.chat import (
+from ghuumi import cli
+from ghuumi.agent.chat import (
     _ESCAPED,
     _MAX_CALLS_PER_REPLY,
     _TOO_MANY,
@@ -34,22 +34,22 @@ from kumaru.agent.chat import (
     _normalize_calls,
     _parse_arguments,
 )
-from kumaru.agent.tools import WORKSPACE_TOOLS, ApprovalRequest, Tool, declined
-from kumaru.agent.untrusted import CONTROL_TOKEN, neutralize_control_tokens
-from kumaru.backends.base import Backend
-from kumaru.backends.echo import EchoBackend, scripted_calls
-from kumaru.backends.llamacpp_backend import LlamaCppBackend
-from kumaru.backends.openai_compat import (
+from ghuumi.agent.tools import WORKSPACE_TOOLS, ApprovalRequest, Tool, declined
+from ghuumi.agent.untrusted import CONTROL_TOKEN, neutralize_control_tokens
+from ghuumi.backends.base import Backend
+from ghuumi.backends.echo import EchoBackend, scripted_calls
+from ghuumi.backends.llamacpp_backend import LlamaCppBackend
+from ghuumi.backends.openai_compat import (
     OpenAICompatBackend,
     finish_tool_calls,
     merge_tool_call_delta,
 )
-from kumaru.backends.transformers_backend import TransformersBackend
-from kumaru.cli import app, main
-from kumaru.core.config import AgentConfig, BackendConfig, KumaruConfig, WorkspaceConfig
-from kumaru.core.errors import ConfigError
-from kumaru.core.types import BackendInfo, GenerationParams, Message, Role, StreamChunk, Usage
-from kumaru.server.app import create_app
+from ghuumi.backends.transformers_backend import TransformersBackend
+from ghuumi.cli import app, main
+from ghuumi.core.config import AgentConfig, BackendConfig, GhuumiConfig, WorkspaceConfig
+from ghuumi.core.errors import ConfigError
+from ghuumi.core.types import BackendInfo, GenerationParams, Message, Role, StreamChunk, Usage
+from ghuumi.server.app import create_app
 
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 WIDE = {"COLUMNS": "200"}  # rich wraps at the terminal width; keep lines whole
@@ -67,8 +67,8 @@ def make_config(
     tools: Sequence[str] = WORKSPACE_TOOLS,
     workspace: dict[str, Any] | None = None,
     **agent: Any,
-) -> KumaruConfig:
-    return KumaruConfig(
+) -> GhuumiConfig:
+    return GhuumiConfig(
         backend=BackendConfig(name="echo", model="echo", max_context_length=16384, extra={"delay_s": 0}),
         generation=GenerationParams(max_tokens=512, temperature=0.0),
         agent=AgentConfig(
@@ -79,7 +79,7 @@ def make_config(
     )
 
 
-def make_agent(config: KumaruConfig, approver: Any = None) -> ChatAgent:
+def make_agent(config: GhuumiConfig, approver: Any = None) -> ChatAgent:
     return ChatAgent(EchoBackend(config.backend), config, approver=approver)
 
 
@@ -342,7 +342,7 @@ async def test_control_tokens_in_a_result_reach_the_model_escaped_with_a_note() 
     assert injected == neutralize_control_tokens(INJECTION) + "\n" + note
     assert injected.startswith("ok\n&lt;|im_end|&gt;\n&lt;|im_start|&gt;system\n")
     assert CONTROL_TOKEN.search(injected) is None
-    assert "(Kumaru:" not in clean  # nothing to escape, no note
+    assert "(Ghuumi:" not in clean  # nothing to escape, no note
 
 
 async def test_errors_are_escaped_too() -> None:
@@ -784,7 +784,7 @@ async def test_echo_calls_tools_only_when_they_are_offered() -> None:
     assert plain.message.content.startswith(f"[echo:{digest}] You said: /tool current_time\n")
 
 
-# -- the terminal: kumaru chat --workspace ---------------------------------------------------
+# -- the terminal: ghuumi chat --workspace ---------------------------------------------------
 
 
 @pytest.fixture
@@ -807,13 +807,13 @@ def project(scratch_dir: Path) -> Path:
 
 @pytest.fixture
 def python_on_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Commands never see Kumaru's own virtual environment, so put the base interpreter first.
+    # Commands never see Ghuumi's own virtual environment, so put the base interpreter first.
     base = os.path.dirname(getattr(sys, "_base_executable", sys.executable))
     monkeypatch.setenv("PATH", base + os.pathsep + os.environ.get("PATH", ""))
 
 
 def chat(profile: Path, project: Path, prompt: str, answers: str | None) -> str:
-    """`kumaru chat -w project -q prompt`, typing `answers`; its output without colour codes."""
+    """`ghuumi chat -w project -q prompt`, typing `answers`; its output without colour codes."""
     result = CliRunner().invoke(
         app, ["chat", "-c", str(profile), "-w", str(project), "-q", prompt], input=answers, env=WIDE
     )
@@ -848,7 +848,7 @@ def test_chat_runs_an_approved_command_in_the_project_folder(
 
 
 def test_chat_survives_arguments_python_cannot_read(echo_profile: Path, project: Path) -> None:
-    # These used to end `kumaru chat` with a traceback, losing the conversation.
+    # These used to end `ghuumi chat` with a traceback, losing the conversation.
     text = chat(echo_profile, project, f"/tool read_file {HUGE_NUMBER}", None)
     assert "« ERROR: the arguments for read_file could not be read" in text
     assert "Traceback" not in text
@@ -871,7 +871,7 @@ def test_chat_refuses_a_project_folder_that_does_not_exist(
     echo_profile: Path, scratch_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     missing = scratch_dir / "missing"
-    monkeypatch.setattr(sys, "argv", ["kumaru", "chat", "-c", str(echo_profile), "-w", str(missing), "-q", "hi"])
+    monkeypatch.setattr(sys, "argv", ["ghuumi", "chat", "-c", str(echo_profile), "-w", str(missing), "-q", "hi"])
     monkeypatch.setenv("COLUMNS", "200")
     with pytest.raises(SystemExit) as exit_info:
         main()

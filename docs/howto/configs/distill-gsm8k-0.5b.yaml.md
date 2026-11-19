@@ -47,14 +47,14 @@ Measured on an RTX 3090 (24 GB) under Windows 11, on 2026-10-22.
 
 ## How to use it
 
-From the Kumaru folder, after `kumaru distill build` ([Part 3 of TRAINING.md](../../TRAINING.md#part-3--distillation)):
+From the Ghuumi folder, after `ghuumi distill build` ([Part 3 of TRAINING.md](../../TRAINING.md#part-3--distillation)):
 
 ```powershell
-kumaru train configs\train\distill-gsm8k-0.5b.yaml --dry-run
-kumaru train configs\train\distill-gsm8k-0.5b.yaml
-kumaru bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --label student0.5b-base -o runs\distill\eval-0.5b-base
-kumaru bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --adapter runs\distill\qwen0.5b-teacher\adapter --label student0.5b-teacher -o runs\distill\eval-0.5b-teacher
-kumaru bench compare runs\distill\eval-0.5b-base runs\distill\eval-0.5b-teacher -e 5
+ghuumi train configs\train\distill-gsm8k-0.5b.yaml --dry-run
+ghuumi train configs\train\distill-gsm8k-0.5b.yaml
+ghuumi bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --label student0.5b-base -o runs\distill\eval-0.5b-base
+ghuumi bench run gsm8k -c student -m Qwen/Qwen2.5-0.5B-Instruct --full --max-tokens 1024 --adapter runs\distill\qwen0.5b-teacher\adapter --label student0.5b-teacher -o runs\distill\eval-0.5b-teacher
+ghuumi bench compare runs\distill\eval-0.5b-base runs\distill\eval-0.5b-teacher -e 5
 ```
 
 - **`-m` is required** when scoring. `configs/student.yaml` names the 1.5B model, and an adapter loaded onto the wrong base model fails with a size-mismatch error.
@@ -62,11 +62,11 @@ kumaru bench compare runs\distill\eval-0.5b-base runs\distill\eval-0.5b-teacher 
 
 ### Reading the result
 
-Qwen reports about 50% on GSM8K for the 0.5B model and about 73% for the 1.5B (Qwen2.5 technical report); Kumaru measured 50.3% and 72.3%. Prompts and graders differ between setups, so compare only runs scored the same way. The 0.5B starts lower, so it has more room to gain.
+Qwen reports about 50% on GSM8K for the 0.5B model and about 73% for the 1.5B (Qwen2.5 technical report); Ghuumi measured 50.3% and 72.3%. Prompts and graders differ between setups, so compare only runs scored the same way. The 0.5B starts lower, so it has more room to gain.
 
-- **A significant gain** (p below 0.05 in `kumaru bench compare`): the pipeline works, and the 1.5B runs are worth their two hours each. The pilot has no control arm, so the gain could come from the teacher or from GSM8K practice alone; the 1.5B gold arm decides which.
+- **A significant gain** (p below 0.05 in `ghuumi bench compare`): the pipeline works, and the 1.5B runs are worth their two hours each. The pilot has no control arm, so the gain could come from the teacher or from GSM8K practice alone; the 1.5B gold arm decides which.
 - **No gain:** the 1.5B can still gain. Li et al. (2025, *Small Models Struggle to Learn from Strong Reasoners*) found that students of 3B parameters or fewer gain less from a strong teacher than larger students do. Check `example_preview.txt` and the losses first, though.
-- **A loss:** the adapter hurt the 0.5B. Look at the `-e 5` examples, and at how many answers were cut off (`kumaru bench report`). A broken answer format is a common cause, and the 1.5B would show it too.
+- **A loss:** the adapter hurt the 0.5B. Look at the `-e 5` examples, and at how many answers were cut off (`ghuumi bench report`). A broken answer format is a common cause, and the 1.5B would show it too.
 
 **The 2026-10-22 run gave a loss.** The pilot scored 44.7% (42.0–47.3) against 50.3% (47.6–53.0) untrained: −5.6 points (−8.3 to −2.9), with 206 questions only the untrained model got right against 132 only the pilot did, p 6.74e-05. Its training went as planned: the validation loss fell from 0.331 to 0.285, lowest at the last step. Its format was not broken either. It took the teacher's, with `**Step` headers in 1,134 answers and an `Answer:` line in every one it finished, where the untrained model boxed its answer (`\boxed`) in 1,203. It also ran long more often: 63 answers hit the token limit, against 17. But most of its 206 losses were not cut off: 19 were, 48 had the right number in the working but a wrong final answer, and 139 never reached it. The 1.5B teacher arm then showed no measurable change against its untrained model (−0.4 points, −2.9 to +2.1, p 0.815): its interval rules out a loss as large as the pilot's, which fits Li et al. (2025) ([the whole run](../../TRAINING.md#results-2026-10-22)).
 
@@ -82,8 +82,8 @@ The batch split is the exception: here it may differ from the arms', as long as 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Size-mismatch error while loading the adapter, when scoring | The 0.5B adapter is being loaded onto the 1.5B model. | Pass `-m Qwen/Qwen2.5-0.5B-Instruct` to `kumaru bench run`. |
-| `Training data not found: runs\distill\data-teacher\train.jsonl` | The teacher dataset is not built, or `kumaru train` ran in another folder. | Run `kumaru distill build` ([`distill.md`](../src/kumaru/train/distill.md#how-to-use-it)), from the Kumaru folder. |
+| Size-mismatch error while loading the adapter, when scoring | The 0.5B adapter is being loaded onto the 1.5B model. | Pass `-m Qwen/Qwen2.5-0.5B-Instruct` to `ghuumi bench run`. |
+| `Training data not found: runs\distill\data-teacher\train.jsonl` | The teacher dataset is not built, or `ghuumi train` ran in another folder. | Run `ghuumi distill build` ([`distill.md`](../src/ghuumi/train/distill.md#how-to-use-it)), from the Ghuumi folder. |
 | CUDA out of memory, or steps far slower than ~8 seconds | Two rows per pass, plus what a game holds: the 0.5B does not avoid the cost of the vocabulary. On Windows, running short slows training instead of failing (*Shared GPU memory* rises in Task Manager). | Close any game, or split the batch 1 × 32 here, as the arms do ([Tuning it](distill-gsm8k.yaml.md#tuning-it), step 1). |
 | `test_the_arms_and_the_pilot_differ_only_where_they_must` fails | One recipe was edited alone, or this file's batch split no longer makes 32 rows. | Make the same change in all three; keep rows per pass × passes at 32 here. |
 
@@ -92,6 +92,6 @@ The batch split is the exception: here it may differ from the arms', as long as 
 - `configs/train/distill-gsm8k.yaml` — the teacher arm, whose recipe this runs: every field, the cost breakdown and tuning ([`distill-gsm8k.yaml.md`](distill-gsm8k.yaml.md)).
 - `configs/train/distill-gsm8k-gold.yaml` — the control arm ([`distill-gsm8k-gold.yaml.md`](distill-gsm8k-gold.yaml.md)).
 - `configs/student.yaml` — scores the students; `-m` swaps in the 0.5B ([`student.yaml.md`](student.yaml.md)).
-- `src/kumaru/train/finetune_lora.py` — the trainer, which writes `metrics.json` ([`finetune_lora.md`](../src/kumaru/train/finetune_lora.md)).
+- `src/ghuumi/train/finetune_lora.py` — the trainer, which writes `metrics.json` ([`finetune_lora.md`](../src/ghuumi/train/finetune_lora.md)).
 - `tests/test_distill.py` — the arm test.
 - [`docs/TRAINING.md`](../../TRAINING.md#part-3--distillation) — the experiment, step by step.

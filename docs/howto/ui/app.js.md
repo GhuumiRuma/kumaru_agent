@@ -13,11 +13,11 @@
 
 `ui\app.js` turns the static shell in `ui\index.html` into a chat client. The server serves it at `/static/app.js`. It is a classic (non-module) script loaded at the end of `<body>`, and it starts on `DOMContentLoaded` (line 604). It:
 
-- keeps the conversation in `state.messages` and saves the last 100 messages to `localStorage["kumaru.messages"]`;
+- keeps the conversation in `state.messages` and saves the last 100 messages to `localStorage["ghuumi.messages"]`;
 - sends every turn to `POST /v1/chat/completions` with `stream: true` and parses the Server-Sent Events itself;
 - shows thoughts (`delta.reasoning_content`) in a collapsible **Thinking…** panel above the answer. The answer (`delta.content`) renders as escape-first markdown;
 - turns the Think pill, the thinking-budget slider and **Use the model's tuned settings** into request fields;
-- copies the stats object `kumaru` from the final frame into the **Last response** panel and the reply's footer line;
+- copies the stats object `ghuumi` from the final frame into the **Last response** panel and the reply's footer line;
 - polls `GET /v1/info` every 4 s for status, model facts and the profile's sampling defaults;
 - hot-swaps the backend through `POST /v1/backend`.
 
@@ -62,7 +62,7 @@ The v0.2 decisions, and the problem each one solves:
                     │
  send() ──► POST /v1/chat/completions  {messages: answers only, stream: true, ...requestSettings()}
                     │
-   SSE:  role frame ─► reasoning_content … ─► content … ─► finish frame {kumaru: stats} ─► [DONE]
+   SSE:  role frame ─► reasoning_content … ─► content … ─► finish frame {ghuumi: stats} ─► [DONE]
             (ignored)   .thinking-body        .answer        updateStats() + meta line
                     │
  finally ─► state.messages.push(finished(…)) ─► persist() ─► renderAll()
@@ -136,9 +136,9 @@ Hold five ideas:
 | `choices[0].delta.reasoning_content` | The first one starts the client thinking clock. Text is appended to `reasoning`. |
 | `choices[0].delta.content` | The first one after thoughts stops the clock, closes the panel (`details.open = false`) and removes `live`. Text is appended to `acc`. |
 | `choices[0].finish_reason` | remembered for the cut-off note |
-| `kumaru` (finish frame only) | `updateStats()`, `thinkingMs`, meta line |
+| `ghuumi` (finish frame only) | `updateStats()`, `thinkingMs`, meta line |
 
-The parser relies on Kumaru's own framing: `\n\n` separators and exactly one single-line `data:` per frame (`frame()` inside `_stream_sse`, `src\kumaru\server\routes_chat.py`). That is not SSE in general. Use a full SSE parser before pointing this code at another server.
+The parser relies on Ghuumi's own framing: `\n\n` separators and exactly one single-line `data:` per frame (`frame()` inside `_stream_sse`, `src\ghuumi\server\routes_chat.py`). That is not SSE in general. Use a full SSE parser before pointing this code at another server.
 
 ### The thinking panel
 
@@ -168,7 +168,7 @@ The parser relies on Kumaru's own framing: `\n\n` separators and exactly one sin
 
 Never sent: `top_k`, `min_p`, `presence_penalty`, `repetition_penalty`, `stop`, `seed`, `model`, `chat_template_kwargs`, `reasoning_effort`. The budget slider is disabled while Think is off, and its value is ignored then.
 
-How the server combines the request with its profile, in `ChatAgent.resolve_params()` (`src\kumaru\agent\chat.py:81`):
+How the server combines the request with its profile, in `ChatAgent.resolve_params()` (`src\ghuumi\agent\chat.py:81`):
 
 1. Start from `generation`.
 2. If thinking resolves to true, overlay `thinking_mode`.
@@ -198,7 +198,7 @@ A model without a thinking mode ignores `enable_thinking` and answers directly.
 
 ### Stats
 
-| Panel row | Element | From the finish frame's `kumaru` | Not updated when |
+| Panel row | Element | From the finish frame's `ghuumi` | Not updated when |
 |---|---|---|---|
 | first token | `#stat-ttft` | `time_to_first_token_ms` → `N ms` | the value is null (nothing was generated) |
 | thinking | `#stat-think` | `thinking_ms` → `formatSeconds()`, or `off` when null | always updated |
@@ -213,7 +213,7 @@ The footer line under each reply (`.msg-meta`) has three parts:
 
 A stopped reply's footer is just `stopped`.
 
-What the numbers mean (`_stream_sse`, `src\kumaru\server\routes_chat.py:113-210`):
+What the numbers mean (`_stream_sse`, `src\ghuumi\server\routes_chat.py:113-210`):
 
 - **The clock starts before the request waits for a concurrency slot** (`server.max_concurrent_requests`). TTFT and tok/s therefore include queueing and prompt prefill.
 - **First token** is the first thought or answer token, whichever comes first.
@@ -233,13 +233,13 @@ What the numbers mean (`_stream_sse`, `src\kumaru\server\routes_chat.py:113-210`
 | Network failure | the browser's text, e.g. `Failed to fetch` in Chromium |
 | Model swap failure | `alert("Could not load model: <message>")` |
 
-The server also sends a `hint` with Kumaru errors (for example "Retry in a few seconds."). This file drops it; see "Show the server's hint" below.
+The server also sends a `hint` with Ghuumi errors (for example "Retry in a few seconds."). This file drops it; see "Show the server's hint" below.
 
 ### Persistence
 
 | Key | Store | Value |
 |---|---|---|
-| `kumaru.messages` | `localStorage` | JSON array of the last 100 stored messages (shapes above), saved after every turn |
+| `ghuumi.messages` | `localStorage` | JSON array of the last 100 stored messages (shapes above), saved after every turn |
 
 That is the only key. The Think state, sliders, tuned-settings box, budget and system prompt reset on reload. Think then re-reads the profile default.
 
@@ -286,7 +286,7 @@ Not supported: tables (styled in `styles.css` but never generated), `---` rules,
 ### Develop against the echo backend
 
 ```powershell
-.\.venv\Scripts\kumaru.exe serve -c test --port 8790
+.\.venv\Scripts\ghuumi.exe serve -c test --port 8790
 ```
 
 Open `http://127.0.0.1:8790/`. The echo backend needs no model and no GPU, and its reply reports the parameters it received:
@@ -324,10 +324,10 @@ After editing, hard-reload with Ctrl+F5. Static files carry `ETag` and `Last-Mod
    - with the other labels: `$("val-topk").textContent = eff ? eff.top_k : $("top-k").value;`.
 4. **`init()`**: add `"top-k"` to the `input` listener list.
 
-`top_k` already exists in the request schema (`src\kumaru\server\schemas.py:62`). A new field must be added there too. The model uses `extra="ignore"`, so a misspelled field returns 200 and silently changes nothing. Prove the value arrives with a spy in `tests\test_server.py`:
+`top_k` already exists in the request schema (`src\ghuumi\server\schemas.py:62`). A new field must be added there too. The model uses `extra="ignore"`, so a misspelled field returns 200 and silently changes nothing. Prove the value arrives with a spy in `tests\test_server.py`:
 
 ```python
-from kumaru.backends.echo import EchoBackend
+from ghuumi.backends.echo import EchoBackend
 
 def test_top_k_reaches_the_backend(test_client, monkeypatch):
     seen = []
@@ -384,24 +384,24 @@ With `server.api_key` set, chat and swap require `Authorization: Bearer <api_key
 
 ```js
 function authHeaders() {
-  const key = sessionStorage.getItem("kumaru.apiKey");
+  const key = sessionStorage.getItem("ghuumi.apiKey");
   return key ? { Authorization: "Bearer " + key } : {};
 }
 // In send() and in the swap handler:
 //   headers: { "Content-Type": "application/json", ...authHeaders() },
 ```
 
-Set it once per tab from the DevTools console: `sessionStorage.setItem("kumaru.apiKey", "<api_key>")`.
+Set it once per tab from the DevTools console: `sessionStorage.setItem("ghuumi.apiKey", "<api_key>")`.
 
 ### Remember the Think choice across reloads
 
 ```js
 // init(), before the first syncControls():
-const saved = localStorage.getItem("kumaru.think");
+const saved = localStorage.getItem("ghuumi.think");
 if (saved !== null) { state.think = saved === "true"; state.thinkTouched = true; }
 
 // The think-btn click handler, after toggling:
-localStorage.setItem("kumaru.think", String(state.think));
+localStorage.setItem("ghuumi.think", String(state.think));
 ```
 
 Setting `thinkTouched` stops `refreshInfo()` from overwriting the saved choice with the profile default.
@@ -430,8 +430,8 @@ if (evt.error) throw new Error([evt.error.message, evt.error.hint].filter(Boolea
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Page renders unstyled | `styles.css` served as `text/plain`. Python takes MIME types from the Windows registry, where some installers map `.css`/`.js` to `text/plain`, and browsers refuse such a stylesheet. `app.js` would still run: it is a classic script and the server sends no `nosniff`. A module script or `nosniff` would block it too. | Pinned in `src\kumaru\server\app.py:46-47` and tested by `test_ui_assets_are_served_with_browser_safe_types`. Check with `(Invoke-WebRequest http://127.0.0.1:8790/static/styles.css).Headers['Content-Type']`; expect `text/css; charset=utf-8`. |
-| Stuck at "connecting…"; Send does nothing; chips are dead | The script never initialized: a corrupt `kumaru.messages` (line 36 throws), or an id renamed in `index.html` (a `$()` returns null and `init()` throws) | Read the DevTools console. Run `localStorage.removeItem("kumaru.messages")`, or restore the id. |
+| Page renders unstyled | `styles.css` served as `text/plain`. Python takes MIME types from the Windows registry, where some installers map `.css`/`.js` to `text/plain`, and browsers refuse such a stylesheet. `app.js` would still run: it is a classic script and the server sends no `nosniff`. A module script or `nosniff` would block it too. | Pinned in `src\ghuumi\server\app.py:46-47` and tested by `test_ui_assets_are_served_with_browser_safe_types`. Check with `(Invoke-WebRequest http://127.0.0.1:8790/static/styles.css).Headers['Content-Type']`; expect `text/css; charset=utf-8`. |
+| Stuck at "connecting…"; Send does nothing; chips are dead | The script never initialized: a corrupt `ghuumi.messages` (line 36 throws), or an id renamed in `index.html` (a `$()` returns null and `init()` throws) | Read the DevTools console. Run `localStorage.removeItem("ghuumi.messages")`, or restore the id. |
 | Red dot, "server unreachable" | `/v1/info` could not be fetched or parsed (server down or restarting), or something inside `refreshInfo()` threw; one `catch` covers it all | Check the server, then the console |
 | Red dot, "load failed", the error shown in the hint | The backend failed to load, and the server does not retry. Chat returns 503 `Backend failed to load: …`. | Fix the cause and restart, or **Load model** a working backend; a successful swap clears the error |
 | "loading model…" for minutes | First run downloading weights, or a large load. A chat request waits up to 600 s, then gets 503 `Backend is still loading.` | Wait; watch the server log |
@@ -466,9 +466,9 @@ if (evt.error) throw new Error([evt.error.message, evt.error.hint].filter(Boolea
 
 - `ui\index.html` — the element ids this script binds to
 - `ui\styles.css` — the classes it toggles: `.hidden`, `.is-disabled`, `.thinking.live`, `.dot.ok`/`.err`/`.loading`, `.pill[aria-pressed]`
-- `src\kumaru\server\app.py` — serves `ui\` at `/` and `/static`, pins MIME types; `ensure_ready()` and `swap_backend()`
-- `src\kumaru\server\routes_chat.py` — `/v1/chat/completions` (`_stream_sse`), `/v1/info`, `/v1/backend`
-- `src\kumaru\server\schemas.py` — request fields (`thinking`, `thinking_budget`, sampling) and `sse_chunk()`
-- `src\kumaru\agent\chat.py` — `resolve_params()`, which `profileDefaults()` mirrors
+- `src\ghuumi\server\app.py` — serves `ui\` at `/` and `/static`, pins MIME types; `ensure_ready()` and `swap_backend()`
+- `src\ghuumi\server\routes_chat.py` — `/v1/chat/completions` (`_stream_sse`), `/v1/info`, `/v1/backend`
+- `src\ghuumi\server\schemas.py` — request fields (`thinking`, `thinking_budget`, sampling) and `sse_chunk()`
+- `src\ghuumi\agent\chat.py` — `resolve_params()`, which `profileDefaults()` mirrors
 - `configs\test.yaml` — the echo profile for UI work; `configs\qwen36.yaml` — a profile with a `thinking_mode` preset
 - `tests\test_server.py` — pins the contract this parser relies on: frame order, final stats, thinking fields, MIME types

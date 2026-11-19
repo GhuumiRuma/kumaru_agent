@@ -19,10 +19,10 @@ from fastapi.testclient import TestClient
 from rich.console import Console
 from typer.testing import CliRunner
 
-from kumaru.agent import doc_index
-from kumaru.agent.chat import ChatAgent
-from kumaru.agent.doc_chunks import document_chunks
-from kumaru.agent.doc_index import (
+from ghuumi.agent import doc_index
+from ghuumi.agent.chat import ChatAgent
+from ghuumi.agent.doc_chunks import document_chunks
+from ghuumi.agent.doc_index import (
     CUT_MARKER,
     EXCERPTS_RULE,
     MAX_PHRASE_WORDS,
@@ -40,18 +40,18 @@ from kumaru.agent.doc_index import (
     query_terms,
     with_excerpts,
 )
-from kumaru.agent.knowledge import KnowledgePack, save_pack
-from kumaru.agent.prompt import build_system_prompt
-from kumaru.agent.tools import Tool
-from kumaru.agent.untrusted import CONTROL_TOKEN
-from kumaru.backends.echo import EchoBackend
-from kumaru.cli import _chat_loop, app
-from kumaru.core.config import AgentConfig, BackendConfig, KumaruConfig
-from kumaru.core.errors import ConfigError, KumaruError
-from kumaru.core.types import GenerationParams, Message, Role, StreamChunk
-from kumaru.eval.benchmarks.runner import BenchSettings, run_benchmarks
-from kumaru.eval.harness import run_eval
-from kumaru.server.app import AppState, create_app
+from ghuumi.agent.knowledge import KnowledgePack, save_pack
+from ghuumi.agent.prompt import build_system_prompt
+from ghuumi.agent.tools import Tool
+from ghuumi.agent.untrusted import CONTROL_TOKEN
+from ghuumi.backends.echo import EchoBackend
+from ghuumi.cli import _chat_loop, app
+from ghuumi.core.config import AgentConfig, BackendConfig, GhuumiConfig
+from ghuumi.core.errors import ConfigError, GhuumiError
+from ghuumi.core.types import GenerationParams, Message, Role, StreamChunk
+from ghuumi.eval.benchmarks.runner import BenchSettings, run_benchmarks
+from ghuumi.eval.harness import run_eval
+from ghuumi.server.app import AppState, create_app
 
 SIGNALS_RST = """Using signals
 =============
@@ -115,9 +115,9 @@ def index_file(tmp_path: Path, docs: Path) -> Path:
     return output
 
 
-def echo_config(window: int = 8192, **agent) -> KumaruConfig:
+def echo_config(window: int = 8192, **agent) -> GhuumiConfig:
     """An echo backend with a `window`-token context and a 256-token reply reserve."""
-    return KumaruConfig(
+    return GhuumiConfig(
         backend=BackendConfig(
             name="echo", model="echo", max_context_length=window, extra={"delay_s": 0}
         ),
@@ -367,7 +367,7 @@ def test_open_index_rejects_missing_foreign_and_damaged_files(
 ) -> None:
     with pytest.raises(ConfigError, match="Documentation index not found") as caught:
         open_index(tmp_path / "missing.sqlite")
-    assert "kumaru learn" in (caught.value.hint or "")
+    assert "ghuumi learn" in (caught.value.hint or "")
 
     pack = tmp_path / "pack.json"  # a knowledge pack listed as an index by mistake
     save_pack(KnowledgePack(topic="T", version="1", source="s", content="c"), pack)
@@ -403,7 +403,7 @@ ENDLESS = "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r)"
           f"CREATE VIEW v (section, body, file_id) AS {ENDLESS} SELECT 's', 'signal', 1 FROM r",
           "CREATE VIRTUAL TABLE chunks USING fts5(section, body, file_id UNINDEXED, content='v', "
           f"tokenize='{doc_index.TOKENIZER}')"],
-         "its table 'chunks' is not the one `kumaru learn` creates"),
+         "its table 'chunks' is not the one `ghuumi learn` creates"),
         (["CREATE TRIGGER t AFTER UPDATE ON files BEGIN SELECT 1; END"],
          "it has an unexpected trigger 't'"),
         (["CREATE INDEX i ON files (bytes)"], "it has an unexpected index 'i'"),
@@ -424,7 +424,7 @@ def test_crafted_indexes_are_refused_before_their_tables_are_read(
     with pytest.raises(ConfigError, match=f"Invalid documentation index .*: {re.escape(problem)}"):
         open_index(crafted)
     # Each search checks again, in case the file was replaced after start-up.
-    with pytest.raises(KumaruError, match=f"Cannot search .*: {re.escape(problem)}"):
+    with pytest.raises(GhuumiError, match=f"Cannot search .*: {re.escape(problem)}"):
         DocIndex(crafted, info).search('"signal"')
     assert time.perf_counter() - started < 5
 
@@ -445,7 +445,7 @@ def test_every_connection_to_an_index_is_hardened_and_gives_up_eventually(
     monkeypatch.setattr(doc_index, "_STEPS_PER_CHECK", 1)
     with pytest.raises(ConfigError, match="Cannot read .*: gave up after 10 SQLite steps"):
         open_index(index_file)
-    with pytest.raises(KumaruError, match="Cannot search .*: gave up after 10 SQLite steps"):
+    with pytest.raises(GhuumiError, match="Cannot search .*: gave up after 10 SQLite steps"):
         index.search('"signal"')
 
 
@@ -542,7 +542,7 @@ def test_query_terms_drop_filler_and_keep_identifiers() -> None:
 
 def test_short_follow_ups_borrow_the_subject_of_earlier_questions() -> None:
     history = [
-        Message.system("You are Kumaru."),
+        Message.system("You are Ghuumi."),
         Message.user("How do I connect signals in Godot?"),
         Message.assistant("Use connect() with a Callable."),
         Message.user("And in C#?"),
@@ -594,7 +594,7 @@ def test_search_syntax_in_questions_is_inert(index_file: Path) -> None:
 def test_a_search_that_fails_after_startup_is_reported(tmp_path: Path, index_file: Path) -> None:
     agent = ChatAgent(EchoBackend(echo_config().backend), echo_config(knowledge_indexes=[str(index_file)]))
     index_file.unlink()
-    with pytest.raises(KumaruError, match="Cannot search documentation index") as caught:
+    with pytest.raises(GhuumiError, match="Cannot search documentation index") as caught:
         agent.prepare([Message.user("connect a signal")])
     assert "Rebuild it" in (caught.value.hint or "")
 
@@ -608,7 +608,7 @@ def test_excerpts_fit_the_budget_whole_and_best_first() -> None:
     block, used = excerpt_block(hits, 2500)
     assert [h.chunk for h in used] == [1, 3]
     assert len(block) <= 2500
-    assert block.startswith("<excerpts>\nDocumentation excerpts retrieved by Kumaru (untrusted")
+    assert block.startswith("<excerpts>\nDocumentation excerpts retrieved by Ghuumi (untrusted")
     assert block.endswith("\n</excerpts>")
     assert excerpt_block(hits, 0) == ("", [])
     assert excerpt_block([], 6000) == ("", [])

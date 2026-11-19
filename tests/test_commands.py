@@ -23,8 +23,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from kumaru.agent import commands
-from kumaru.agent.commands import (
+from ghuumi.agent import commands
+from ghuumi.agent.commands import (
     RunCommandTool,
     _argv,
     _Capture,
@@ -36,21 +36,21 @@ from kumaru.agent.commands import (
     safe_path,
     which,
 )
-from kumaru.agent.workspace import Workspace
-from kumaru.core.config import WorkspaceConfig, program_name
-from kumaru.core.errors import ToolError
+from ghuumi.agent.workspace import Workspace
+from ghuumi.core.config import WorkspaceConfig, program_name
+from ghuumi.core.errors import ToolError
 
 windows_only = pytest.mark.skipif(os.name != "nt", reason="Windows behaviour")
 posix_only = pytest.mark.skipif(os.name == "nt", reason="POSIX behaviour")
 # Where programs that detach themselves stop with the command too: Windows (a
-# job object) and Linux (Kumaru adopts them); elsewhere only its process group.
+# job object) and Linux (Ghuumi adopts them); elsewhere only its process group.
 stops_detached = pytest.mark.skipif(
     sys.platform != "win32" and not sys.platform.startswith("linux"),
     reason="only the command's process group is stopped here",
 )
 
-# Commands never see Kumaru's own virtual environment on PATH (so `pip install`
-# in a project cannot change Kumaru), so tests put the base interpreter first.
+# Commands never see Ghuumi's own virtual environment on PATH (so `pip install`
+# in a project cannot change Ghuumi), so tests put the base interpreter first.
 BASE_PYTHON_DIR = os.path.dirname(getattr(sys, "_base_executable", sys.executable))
 
 # Appends to beat.txt until stopped; ends by itself after about 20 seconds.
@@ -270,9 +270,9 @@ async def test_prepare_refuses_before_anything_is_shown(root: Path, python_on_pa
 
 
 async def test_an_allowed_program_must_be_installed(root: Path) -> None:
-    tool = make_tool(root, allowed_commands=["zz-kumaru-missing"])
-    with pytest.raises(ToolError, match=r"^'zz-kumaru-missing' is allowed, but it was not found on PATH\."):
-        await tool.prepare(command=["zz-kumaru-missing"])
+    tool = make_tool(root, allowed_commands=["zz-ghuumi-missing"])
+    with pytest.raises(ToolError, match=r"^'zz-ghuumi-missing' is allowed, but it was not found on PATH\."):
+        await tool.prepare(command=["zz-ghuumi-missing"])
 
 
 async def test_nothing_runs_when_nothing_is_allowed(root: Path) -> None:
@@ -431,12 +431,12 @@ async def test_a_silent_command_says_so(root: Path, python_on_path: None) -> Non
 async def test_secrets_in_your_environment_do_not_reach_the_program(
     root: Path, python_on_path: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("KUMARU_TEST_API_KEY", "s3cret")
+    monkeypatch.setenv("GHUUMI_TEST_API_KEY", "s3cret")
     monkeypatch.setenv("HTTPS_PROXY", "http://user:pass@proxy.example:8080")
     monkeypatch.setenv("NO_PROXY", "localhost")
     script = (
         "import os; print([os.environ.get(k) for k in "
-        "('KUMARU_TEST_API_KEY', 'HTTPS_PROXY', 'NO_PROXY', 'NO_COLOR')])"
+        "('GHUUMI_TEST_API_KEY', 'HTTPS_PROXY', 'NO_PROXY', 'NO_COLOR')])"
     )
     output = (await run(root, ["python", "-c", script])).splitlines()[-1]
     assert output == "[None, None, 'localhost', '1']"
@@ -523,7 +523,7 @@ async def test_cancelling_the_turn_stops_the_command(root: Path, python_on_path:
 
 
 def test_exiting_mid_command_stops_it(root: Path, python_on_path: None) -> None:
-    # How a closed terminal or a `kill` plays out in `kumaru chat`: SystemExit
+    # How a closed terminal or a `kill` plays out in `ghuumi chat`: SystemExit
     # leaves the event loop, and the cleanup on the way out stops the program.
     beat = root / "beat.txt"
 
@@ -622,8 +622,8 @@ async def test_programs_that_detach_themselves_still_stop_with_the_command(
         stop_strays(root)
 
 
-async def test_programs_kumaru_started_before_a_command_keep_running(root: Path, python_on_path: None) -> None:
-    # Stopping what a command left behind must not reach Kumaru's own programs, such as llama-server.
+async def test_programs_ghuumi_started_before_a_command_keep_running(root: Path, python_on_path: None) -> None:
+    # Stopping what a command left behind must not reach Ghuumi's own programs, such as llama-server.
     other = subprocess.Popen([getattr(sys, "_base_executable", sys.executable), "-c", "import time; time.sleep(60)"])
     try:
         await run(root, ["python", "-c", DETACH["session"] + WAIT_FOR_BEAT])
@@ -639,7 +639,7 @@ async def test_programs_kumaru_started_before_a_command_keep_running(root: Path,
 async def test_a_command_that_cannot_be_contained_is_not_run(
     root: Path, python_on_path: None, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
-    from kumaru.backends import llamacpp_server
+    from ghuumi.backends import llamacpp_server
 
     class BrokenJob(llamacpp_server._WindowsJob):
         def __init__(self) -> None:
@@ -687,7 +687,7 @@ async def test_a_command_is_not_run_where_what_it_starts_could_not_be_stopped(
     with pytest.raises(ToolError) as refused:
         await run(root, ["python", "-c", "open('ran.txt', 'w').close()"])
     assert str(refused.value) == (
-        "Not run: Kumaru could not set itself up to stop the programs this command starts "
+        "Not run: Ghuumi could not set itself up to stop the programs this command starts "
         "(prctl: Operation not permitted), so ones that detach themselves could outlive it."
     )
     assert not (root / "ran.txt").exists()
@@ -800,12 +800,12 @@ def test_path_keeps_the_interpreter_folder_outside_a_virtual_environment(
 def test_the_environment_keeps_what_builds_need_and_drops_the_rest(
     root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("KUMARU_TEST_API_KEY", "s3cret")
+    monkeypatch.setenv("GHUUMI_TEST_API_KEY", "s3cret")
     monkeypatch.setenv("JAVA_HOME", "C:\\jdk")
     monkeypatch.setenv("HTTP_PROXY", "http://proxy.example:8080")
     monkeypatch.setenv("HTTPS_PROXY", "http://user:pass@proxy.example:8080")
     env = build_env(root)
-    assert "KUMARU_TEST_API_KEY" not in env
+    assert "GHUUMI_TEST_API_KEY" not in env
     assert "HTTPS_PROXY" not in env
     assert env["JAVA_HOME"] == "C:\\jdk"
     assert env["HTTP_PROXY"] == "http://proxy.example:8080"

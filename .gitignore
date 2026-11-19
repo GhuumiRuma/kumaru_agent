@@ -12,7 +12,7 @@ venv/
 .ruff_cache/
 tests/.scratch/
 
-# Kumaru runtime artifacts
+# Ghuumi runtime artifacts
 /tools/llama.cpp/
 runs/
 checkpoints/
@@ -34,7 +34,7 @@ data/*
 # Logs & local state
 logs/
 *.log
-.kumaru/
+.ghuumi/
 
 # Editors / OS
 .vscode/

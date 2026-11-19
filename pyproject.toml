@@ -3,13 +3,13 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "kumaru"
+name = "ghuumi"
 version = "0.2.0"
-description = "Kumaru — a local-first, scalable LLM agent: pluggable inference backends, OpenAI-compatible server, web UI, and a training stack that scales from one GPU to many."
+description = "Ghuumi — a local-first, scalable LLM agent: pluggable inference backends, OpenAI-compatible server, web UI, and a training stack that scales from one GPU to many."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Kumaru" }]
+authors = [{ name = "Ghuumi" }]
 keywords = ["llm", "agent", "inference", "fine-tuning", "lora", "local-first"]
 
 # ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ torch = [
     "numpy>=1.26",
 ]
 train = [
-    "kumaru[torch]",
+    "ghuumi[torch]",
     "peft>=0.12",
     "datasets>=2.20",
     "tensorboard>=2.17",
@@ -53,9 +53,9 @@ train = [
 quant = ["bitsandbytes>=0.43"]
 # GGUF / llama.cpp backend for low-VRAM and CPU-only machines.
 gguf = ["llama-cpp-python>=0.2.90"]
-# `kumaru bench`: public benchmark datasets, IFEval's language detection and
+# `ghuumi bench`: public benchmark datasets, IFEval's language detection and
 # NLTK counting (the same tokenizers as the reference implementation), and numpy
-# for the ~1000x faster bootstrap in `kumaru bench compare`.
+# for the ~1000x faster bootstrap in `ghuumi bench compare`.
 bench = [
     "datasets>=2.20",
     "langdetect>=1.0.9",
@@ -72,16 +72,16 @@ dev = [
     "mypy>=1.11",
     "numpy>=1.26",
 ]
-all = ["kumaru[train,quant,gguf,bench,dev]"]
+all = ["ghuumi[train,quant,gguf,bench,dev]"]
 
 [project.scripts]
-kumaru = "kumaru.cli:main"
+ghuumi = "ghuumi.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-kumaru = ["py.typed"]
+ghuumi = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -103,7 +103,7 @@ ignore_missing_imports = true
 warn_unused_ignores = false
 
 # numpy 2.5+ writes its stubs in Python 3.12 syntax, which a 3.10 target can't
-# parse: mypy would stop before checking any of Kumaru. Skip them (numpy -> Any).
+# parse: mypy would stop before checking any of Ghuumi. Skip them (numpy -> Any).
 [[tool.mypy.overrides]]
 module = "numpy.*"
 follow_imports = "skip"

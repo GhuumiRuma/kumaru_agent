@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-# kumaru.train.data imports numpy at the top; the dev extra installs it, so only an install without dev skips this file.
+# ghuumi.train.data imports numpy at the top; the dev extra installs it, so only an install without dev skips this file.
 pytest.importorskip("numpy")
 
 import numpy as np
 
-from kumaru.core.config import REPO_ROOT
-from kumaru.core.errors import ConfigError
-from kumaru.train.data import (
+from ghuumi.core.config import REPO_ROOT
+from ghuumi.core.errors import ConfigError
+from ghuumi.train.data import (
     IGNORE_INDEX,
     PackedTokenDataset,
     SFTCollator,
@@ -147,7 +147,7 @@ def test_sft_collator_pads_shapes_labels_and_multiple() -> None:
 
 # Pretraining: token packing. The fake tokenizer maps each character to its code point,
 # so the astral characters here produce ids above 65,535 and prove the stream is uint32.
-PACK_TEXT = "Kumaru packs text: \u00d1and\u00fa, caf\u00e9, \u6771\u4eac, \U0001f600, \U0001d11e.\n" * 40
+PACK_TEXT = "Ghuumi packs text: \u00d1and\u00fa, caf\u00e9, \u6771\u4eac, \U0001f600, \U0001d11e.\n" * 40
 
 
 def reference_pack(text_file: Path, out_path: Path, tokenizer: FakeTokenizer, chunk_chars: int) -> None:

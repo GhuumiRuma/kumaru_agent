@@ -14,7 +14,7 @@
 ## What it does
 
 1. **Works out what to install.**
-   - Flavor: `-Flavor` if given, else the flavor recorded in the install's marker, `kumaru-install.json`, else `cuda-13.4`.
+   - Flavor: `-Flavor` if given, else the flavor recorded in the install's marker, `ghuumi-install.json`, else `cuda-13.4`.
    - Version: `-Version` if given; else the installed version, if you chose it yourself with `-Version` earlier (the marker says `"pinned": false`); else the pin, `$PinnedVersion = "b11541"` at the top of the script.
 2. **Refuses a foreign folder.** The destination is replaced wholesale. If an install is needed, and the destination exists, is not empty, and holds neither the marker nor `llama-server.exe`, the script stops and changes nothing. This protects you from a mistyped `-Destination`.
 3. **Clears leftovers**, on every run including the no-op one. It deletes the `<Destination>.old-*` folders that step 9 leaves while an old build is still running, once nothing uses them. This is best effort and silent.
@@ -24,7 +24,7 @@
    - **Flavor missing:** if the release has no zip for your flavor, it stops and lists the Windows x64 flavors that release does have.
    - **Otherwise:** it records the SHA-256 digest GitHub publishes for each file.
    - **API unreachable** (offline, a proxy, or the limit of 60 unauthenticated API requests per hour): it prints a yellow warning and continues *without* verification.
-6. **Downloads** each zip into `%TEMP%\kumaru-llama-<Version>\`:
+6. **Downloads** each zip into `%TEMP%\ghuumi-llama-<Version>\`:
    - It needs `llama-<Version>-bin-win-<Flavor>-x64.zip`, plus `cudart-llama-bin-win-<Flavor>-x64.zip` (the CUDA runtime DLLs) for CUDA flavors.
    - It uses `curl.exe -L --fail --retry 3`, or `Invoke-WebRequest` when `curl.exe` is missing.
    - Each transfer goes to `<zip>.part` and is renamed only once complete, so an interrupted download never looks finished.
@@ -38,16 +38,16 @@
    - It writes the marker into `.new`.
 9. **Swaps**:
    - It renames `<Destination>` to `<Destination>.old-<yyyyMMdd-HHmmss>`, renames `.new` to `<Destination>`, then deletes the old folder.
-   - Windows allows renaming the folder of a *running* program, so this works while `kumaru serve` is up. The running `llama-server` keeps using the old build until Kumaru restarts, and the old folder cannot be deleted until then. The script says so in yellow, and step 3 of any later run removes the folder.
+   - Windows allows renaming the folder of a *running* program, so this works while `ghuumi serve` is up. The running `llama-server` keeps using the old build until Ghuumi restarts, and the old folder cannot be deleted until then. The script says so in yellow, and step 3 of any later run removes the folder.
    - If a process has its *current directory* inside the install, the first rename fails. The script then deletes `.new` and stops; nothing was changed.
 10. **Checks the GPU** (GPU flavors only). It runs `llama-server.exe --list-devices` and prints the result. If no device line such as `CUDA0: NVIDIA GeForce RTX 3090 (…)` or `Vulkan0: …` appears, it prints a yellow warning.
-11. **Reports.** It prints `Installed: <path>`. If you used a non-default `-Destination`, a reminder follows that Kumaru only looks in `tools\llama.cpp\` and on `PATH`, with the path to set as `backend.llama_server.binary`. Last comes `Next:  kumaru serve -c qwen36`.
+11. **Reports.** It prints `Installed: <path>`. If you used a non-default `-Destination`, a reminder follows that Ghuumi only looks in `tools\llama.cpp\` and on `PATH`, with the path to set as `backend.llama_server.binary`. Last comes `Next:  ghuumi serve -c qwen36`.
 
-Nothing is installed system-wide, and nothing is added to `PATH`. `tools\llama.cpp\` is ignored by git, and deleting it uninstalls everything. The zips stay cached in `%TEMP%\kumaru-llama-<Version>\`: about 580 MB for CUDA and 20 MB for CPU. Delete that folder to reclaim the space.
+Nothing is installed system-wide, and nothing is added to `PATH`. `tools\llama.cpp\` is ignored by git, and deleting it uninstalls everything. The zips stay cached in `%TEMP%\ghuumi-llama-<Version>\`: about 580 MB for CUDA and 20 MB for CPU. Delete that folder to reclaim the space.
 
 ### The marker file
 
-`tools\llama.cpp\kumaru-install.json` records what is installed:
+`tools\llama.cpp\ghuumi-install.json` records what is installed:
 
 ```json
 {
@@ -60,13 +60,13 @@ Nothing is installed system-wide, and nothing is added to `PATH`. `tools\llama.c
 
 - `pinned` is `true` when the installed version is the script's pin, and `false` when you chose another one with `-Version`.
 - Markers written by the first version of this script have no `pinned` field. They are treated as following the pin.
-- Only this script reads the marker. Kumaru itself doesn't.
+- Only this script reads the marker. Ghuumi itself doesn't.
 
 ## Why it exists
 
 - **New architectures land in llama.cpp first.** The Python bindings (`llama-cpp-python`, the `llamacpp` backend) lag by weeks. Building them on Windows needs a CUDA toolchain plus MSVC. A prebuilt release zip needs neither, and upgrading means changing one tag.
 - **Pinned for reproducibility.** Benchmark numbers are only comparable between runs on the same engine build, so the default is one fixed, tested release, not "latest".
-  - When a Kumaru update moves the pin, a plain re-run moves you with it.
+  - When a Ghuumi update moves the pin, a plain re-run moves you with it.
   - Your own `-Version` choice is remembered, so a plain re-run never silently swaps your engine.
 - **Never half-installed.** The new build is downloaded, verified and test-started before the swap. The swap itself is two folder renames. Every failure before the swap leaves the old install exactly as it was.
 - **Verified downloads.** A truncated or corrupted zip, or one altered by a proxy, is caught before anything is unpacked.
@@ -112,8 +112,8 @@ The script finds the repo from its own location, so it works from any current di
 
 1. Pick a tag from https://github.com/ggml-org/llama.cpp/releases and run `.\scripts\get-llama-server.ps1 -Version bNNNNN`.
    - Your flavor is remembered.
-   - Kumaru may keep running. Its `llama-server` keeps the old build until you restart.
-2. Restart Kumaru and check the build: `(Invoke-RestMethod http://127.0.0.1:8080/v1/info).agent.backend.extra.build`.
+   - Ghuumi may keep running. Its `llama-server` keeps the old build until you restart.
+2. Restart Ghuumi and check the build: `(Invoke-RestMethod http://127.0.0.1:8080/v1/info).agent.backend.extra.build`.
 3. Re-run your benchmark baseline before comparing scores across builds.
 4. To return to the tested build, run `.\scripts\get-llama-server.ps1 -Version b11541` (the pin). From then on, plain runs follow the pin again.
 
@@ -132,7 +132,7 @@ The asset names are fixed to `win-…-x64`. On Linux or macOS, or with a custom 
 ## Verifying it worked
 
 ```powershell
-Get-Content .\tools\llama.cpp\kumaru-install.json     # version, flavor, pinned, installed_at
+Get-Content .\tools\llama.cpp\ghuumi-install.json     # version, flavor, pinned, installed_at
 Test-Path .\tools\llama.cpp\llama-server.exe          # True
 ```
 
@@ -144,20 +144,20 @@ The script's own output is the real check:
 
 `.\scripts\verify.ps1` re-checks the binary as stage 6, and its GPU visibility under `-Full`.
 
-End to end, `kumaru serve -c qwen25-7b-gguf` (4.7 GB download) or `-c qwen36` should log `starting llama-server on port …`, and `/v1/info` should report `extra.build`.
+End to end, `ghuumi serve -c qwen25-7b-gguf` (4.7 GB download) or `-c qwen36` should log `starting llama-server on port …`, and `/v1/info` should report `extra.build`.
 
 ## Testing changes to the script
 
 Never test edits against your real `tools\llama.cpp\`. Point the script at a scratch folder with the 20 MB CPU build, and give it its own download cache. `GetTempPath()` reads `TMP`/`TEMP`, so the cache moves too. Do this in a **new** PowerShell window, because the variables last until you close it:
 
 ```powershell
-$scratch = "$env:TEMP\kumaru-installer-test"
+$scratch = "$env:TEMP\ghuumi-installer-test"
 New-Item -ItemType Directory -Force "$scratch\tmp" | Out-Null
 $env:TEMP = "$scratch\tmp"; $env:TMP = "$scratch\tmp"
 .\scripts\get-llama-server.ps1 -Flavor cpu -Destination "$scratch\dest"
 ```
 
-These scenarios were checked under both Windows PowerShell 5.1 and PowerShell 7. Several of them need an update that does not download anything. To get one, edit `dest\kumaru-install.json` and set `"version"` to `"b11540"`: the next run then "updates" to the pin from the cached zip.
+These scenarios were checked under both Windows PowerShell 5.1 and PowerShell 7. Several of them need an update that does not download anything. To get one, edit `dest\ghuumi-install.json` and set `"version"` to `"b11540"`: the next run then "updates" to the pin from the cached zip.
 
 | Scenario | Set-up | Expected |
 |---|---|---|
@@ -188,16 +188,16 @@ These scenarios were checked under both Windows PowerShell 5.1 and PowerShell 7.
 | `The new llama-server.exe did not run (exit code N)` | A broken build, or a DLL blocked by antivirus | The output shows llama-server's own error, and your install is untouched. Try another `-Version`. |
 | `Could not move the current install aside … A program is using the folder` | A terminal or other process has its current directory inside the install | `cd` out of it or close it, then re-run |
 | `Could not move the new build into place … Nothing was changed.` | Antivirus or another program held the new folder for longer than the script's ~2 seconds of retries | Re-run |
-| Yellow `The previous build is still running …` | Kumaru (`kumaru serve`, or a `kumaru bench` run) was using llama-server during the update | Not an error. Restart Kumaru to use the new build. A later run deletes the old folder. |
+| Yellow `The previous build is still running …` | Ghuumi (`ghuumi serve`, or a `ghuumi bench` run) was using llama-server during the update | Not an error. Restart Ghuumi to use the new build. A later run deletes the old folder. |
 | `Could not remove the leftover folder …\llama.cpp.new` | An earlier run was killed mid-install, and something holds a file in it | Delete the folder by hand |
 | `llama-server.exe is not in llama-…zip; the release layout may have changed.` | The zip layout changed | Inspect the zip. Install manually and set `backend.llama_server.binary`. |
 | Yellow `No CUDA device detected…` | A driver older than 580 with `cuda-13.4`, no NVIDIA GPU, or a driver problem | Check `nvidia-smi`. Re-run with `-Flavor cuda-12.4`, or use `vulkan`/`cpu`. |
 | Yellow `No Vulkan device detected…` | A GPU driver without Vulkan support | Update the driver, or use `-Flavor cpu` |
-| Kumaru does not find an install in a custom `-Destination` | The backend only checks `tools\llama.cpp\` and `PATH` | Set `backend.llama_server.binary` to the path the script printed |
+| Ghuumi does not find an install in a custom `-Destination` | The backend only checks `tools\llama.cpp\` and `PATH` | Set `backend.llama_server.binary` to the path the script printed |
 
 ## Related files
 
-- `src\kumaru\backends\llamacpp_server.py` — `BUNDLED_BINARY` and `find_llama_server`: explicit `binary`, then `tools\llama.cpp\`, then `PATH`.
+- `src\ghuumi\backends\llamacpp_server.py` — `BUNDLED_BINARY` and `find_llama_server`: explicit `binary`, then `tools\llama.cpp\`, then `PATH`.
 - `configs\qwen36.yaml`, `configs\qwen25-7b-gguf.yaml` — the profiles that need this binary.
 - `scripts\verify.ps1` — stage 6 runs the installed binary; `-Full` checks that it sees the GPU.
 - `scripts\setup.ps1` — the Python environment. This script is independent of it and needs no Python.

@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from kumaru.eval.benchmarks.stats import (
+from ghuumi.eval.benchmarks.stats import (
     Z95,
     holm_adjust,
     mcnemar_exact,

@@ -10,8 +10,8 @@ from pydantic import ValidationError
 from rich.console import Console
 from typer.testing import CliRunner
 
-from kumaru.agent.chat import ChatAgent
-from kumaru.agent.knowledge import (
+from ghuumi.agent.chat import ChatAgent
+from ghuumi.agent.knowledge import (
     EXPERTISE,
     MAX_FILE_BYTES,
     REFERENCE_HEADER,
@@ -21,16 +21,16 @@ from kumaru.agent.knowledge import (
     reference_context,
     save_pack,
 )
-from kumaru.agent.prompt import build_system_prompt
-from kumaru.agent.untrusted import CONTROL_TOKEN, neutralize_control_tokens
-from kumaru.backends.echo import EchoBackend
-from kumaru.cli import _chat_loop, app
-from kumaru.core.config import AgentConfig, BackendConfig, KumaruConfig, load_config
-from kumaru.core.errors import ConfigError, ContextLengthExceededError
-from kumaru.core.types import Message
-from kumaru.eval.benchmarks.runner import BenchSettings, run_benchmarks
-from kumaru.eval.harness import run_eval
-from kumaru.server.app import AppState, create_app
+from ghuumi.agent.prompt import build_system_prompt
+from ghuumi.agent.untrusted import CONTROL_TOKEN, neutralize_control_tokens
+from ghuumi.backends.echo import EchoBackend
+from ghuumi.cli import _chat_loop, app
+from ghuumi.core.config import AgentConfig, BackendConfig, GhuumiConfig, load_config
+from ghuumi.core.errors import ConfigError, ContextLengthExceededError
+from ghuumi.core.types import Message
+from ghuumi.eval.benchmarks.runner import BenchSettings, run_benchmarks
+from ghuumi.eval.harness import run_eval
+from ghuumi.server.app import AppState, create_app
 
 
 def pack(content: str = "Use checked arithmetic.") -> KnowledgePack:
@@ -85,7 +85,7 @@ def test_invalid_pack_is_rejected_with_the_reason(tmp_path: Path, text: str, det
     # /healthz is unauthenticated: name the problem, never echo a value.
     assert detail in caught.value.message
     assert "PRIVATE-VALUE" not in str(caught.value)
-    assert "kumaru learn" in (caught.value.hint or "")
+    assert "ghuumi learn" in (caught.value.hint or "")
 
 
 def test_read_is_bounded_and_utf8_only(tmp_path: Path) -> None:
@@ -236,7 +236,7 @@ async def test_a_bad_pack_fails_every_entry_point_before_the_model_loads(
     monkeypatch.setattr(EchoBackend, "_load", record_load)
     bad = tmp_path / "pack.json"
     bad.write_text('{"topic": "x"}', encoding="utf-8")
-    cfg = KumaruConfig(
+    cfg = GhuumiConfig(
         backend=BackendConfig(name="echo", model="echo", extra={"delay_s": 0}),
         agent=AgentConfig(knowledge_files=[str(bad)]),
     )
@@ -246,10 +246,10 @@ async def test_a_bad_pack_fails_every_entry_point_before_the_model_loads(
 
     with pytest.raises(ConfigError, match=reason):
         await _chat_loop(cfg, "hello", {})
-    assert loads == [], "kumaru chat loaded the model first"
+    assert loads == [], "ghuumi chat loaded the model first"
     with pytest.raises(ConfigError, match=reason):
         await run_eval(cfg)
-    assert loads == [], "kumaru eval loaded the model first"
+    assert loads == [], "ghuumi eval loaded the model first"
     with pytest.raises(ConfigError, match=reason):
         await run_benchmarks(
             cfg,
@@ -258,7 +258,7 @@ async def test_a_bad_pack_fails_every_entry_point_before_the_model_loads(
             console=Console(file=io.StringIO()),
             show_progress=False,
         )
-    assert loads == [], "kumaru bench run loaded the model first"
+    assert loads == [], "ghuumi bench run loaded the model first"
     assert not (tmp_path / "bench").exists()
     state = AppState(cfg)
     await state._load()
@@ -291,7 +291,7 @@ def test_learn_cli_creates_reference_without_running_code(tmp_path: Path) -> Non
 async def test_agent_uses_packs_for_complete_and_stream(tmp_path: Path) -> None:
     path = tmp_path / "pack.json"
     save_pack(pack(), path)
-    cfg = KumaruConfig(
+    cfg = GhuumiConfig(
         backend=BackendConfig(name="echo", model="echo", extra={"delay_s": 0}),
         agent=AgentConfig(expertise=["coding"], knowledge_files=[str(path)]),
     )
@@ -314,7 +314,7 @@ async def test_agent_uses_packs_for_complete_and_stream(tmp_path: Path) -> None:
 def test_oversized_reference_cannot_overflow_model_context(tmp_path: Path) -> None:
     path = tmp_path / "pack.json"
     save_pack(pack("x " * 10000), path)
-    cfg = KumaruConfig(
+    cfg = GhuumiConfig(
         backend=BackendConfig(name="echo", model="echo", max_context_length=1024),
         agent=AgentConfig(knowledge_files=[str(path)], max_knowledge_chars=24000),
     )
@@ -340,7 +340,7 @@ def test_api_and_ui_chat_path_share_the_coding_agent(tmp_path: Path) -> None:
     with TestClient(application) as client:
         payload = {"model": "echo", "messages": [{"role": "user", "content": "hello"}]}
         assert client.post("/v1/chat/completions", json=payload).status_code == 200
-        agent = application.state.kumaru.agent
+        agent = application.state.ghuumi.agent
         assert agent is not None
         prompt = agent.prepare([Message.user("hello")])[0].content
         assert EXPERTISE["playwright"] in prompt

@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from kumaru.agent.tools import (
+from ghuumi.agent.tools import (
     WORKSPACE_TOOLS,
     Action,
     ApprovalRequest,
@@ -18,9 +18,9 @@ from kumaru.agent.tools import (
     ToolBelt,
     declined,
 )
-from kumaru.core.config import WorkspaceConfig
-from kumaru.core.errors import ConfigError, ToolError
-from kumaru.core.registry import TOOLS
+from ghuumi.core.config import WorkspaceConfig
+from ghuumi.core.errors import ConfigError, ToolError
+from ghuumi.core.registry import TOOLS
 
 
 class EchoArgsTool(Tool):

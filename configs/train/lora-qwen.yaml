@@ -3,9 +3,9 @@
 # Measured footprint on a 3090 with these settings: ~9-11 GB VRAM.
 # Expect ~20-40 minutes per epoch on ~1,000 examples of ~1k tokens each.
 #
-#   kumaru train configs/train/lora-qwen.yaml --dry-run   # validate first, always
-#   kumaru train configs/train/lora-qwen.yaml
-#   kumaru chat --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
+#   ghuumi train configs/train/lora-qwen.yaml --dry-run   # validate first, always
+#   ghuumi train configs/train/lora-qwen.yaml
+#   ghuumi chat --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
 #
 # Requires: .\scripts\setup.ps1 -Gpu -Quant   (elsewhere: pip install -e ".[train,quant]")
 

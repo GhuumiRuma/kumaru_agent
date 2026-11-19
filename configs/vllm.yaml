@@ -24,9 +24,9 @@
 #     --max-model-len 16384 \
 #     --gpu-memory-utilization 0.90
 #
-# Then:  kumaru serve -c vllm
+# Then:  ghuumi serve -c vllm
 #
-# Scaling past one GPU is a vLLM flag, not a Kumaru change:
+# Scaling past one GPU is a vLLM flag, not a Ghuumi change:
 #   --tensor-parallel-size 4     split one model across 4 GPUs
 #   --pipeline-parallel-size 2   split across nodes
 
@@ -46,7 +46,7 @@ agent:
 
 server:
   port: 8080
-  # vLLM does the real admission control; Kumaru just forwards, so this can be
+  # vLLM does the real admission control; Ghuumi just forwards, so this can be
   # far higher than on a local-GPU profile.
   max_concurrent_requests: 64
 

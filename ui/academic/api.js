@@ -51,7 +51,7 @@ export async function api(path, { method, body, params } = {}) {
       method: verb, credentials: "same-origin", headers, ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
-    throw new ApiError("Kumaru server unreachable. Check that it is running, then retry.", { unreachable: true });
+    throw new ApiError("Ghuumi server unreachable. Check that it is running, then retry.", { unreachable: true });
   }
   let payload = null;
   if ((response.headers.get("content-type") || "").includes("json")) {
@@ -61,7 +61,7 @@ export async function api(path, { method, body, params } = {}) {
     throw new ApiError("API key missing or incorrect. Enter the configured server key and reconnect.", { status: 401 });
   }
   if (response.status === 404 && !payload?.error) {
-    throw new ApiError("Academic API unavailable. Enable academic.enabled and restart Kumaru.", { status: 404 });
+    throw new ApiError("Academic API unavailable. Enable academic.enabled and restart Ghuumi.", { status: 404 });
   }
   if (!response.ok) {
     const message = payload?.error?.message || detailMessage(payload?.detail) || `HTTP ${response.status} from server`;

@@ -21,7 +21,7 @@ The distinction that matters most:
 - **Fine-tuning teaches *form*.** How to answer. Format, tone, structure, register.
 - **Retrieval supplies *content*.** What to answer with. Facts, documents, current data.
 
-Fine-tuning facts into weights is expensive, slow to update, and fails silently as the world changes. If your goal is "the model should know our internal docs", build retrieval first. For a documentation folder that takes one command: `kumaru learn` indexes it, and `agent.knowledge_indexes` adds the passages that match each question ([how-to](howto/src/kumaru/agent/doc_index.md)).
+Fine-tuning facts into weights is expensive, slow to update, and fails silently as the world changes. If your goal is "the model should know our internal docs", build retrieval first. For a documentation folder that takes one command: `ghuumi learn` indexes it, and `agent.knowledge_indexes` adds the passages that match each question ([how-to](howto/src/ghuumi/agent/doc_index.md)).
 
 ---
 
@@ -100,7 +100,7 @@ Below ~50 examples, LoRA memorizes rather than generalizes. Drop `lora.r` to 4�
 **Do this every time. It is not optional.**
 
 ```powershell
-kumaru train configs/train/lora-small.yaml --dry-run
+ghuumi train configs/train/lora-small.yaml --dry-run
 ```
 
 `--dry-run` validates the config, loads and encodes the data, reports how many examples survived, and writes `runs/lora-small/example_preview.txt`. **Open that file.** It shows one encoded example split into two sections:
@@ -121,13 +121,13 @@ If `SUPERVISED TOKENS` contains the user's question, or is empty, **stop**. Your
 Then run it for real:
 
 ```powershell
-kumaru train configs/train/lora-small.yaml
+ghuumi train configs/train/lora-small.yaml
 ```
 
 Five minutes, ~2 GB VRAM, on a 0.5B model. It proves the entire path: data loads, masking is right, loss decreases, the adapter saves, and it loads back into the server.
 
 ```powershell
-kumaru chat --model Qwen/Qwen2.5-0.5B-Instruct --adapter runs/lora-small/adapter
+ghuumi chat --model Qwen/Qwen2.5-0.5B-Instruct --adapter runs/lora-small/adapter
 ```
 
 ---
@@ -135,10 +135,10 @@ kumaru chat --model Qwen/Qwen2.5-0.5B-Instruct --adapter runs/lora-small/adapter
 ## Step 3 — The real run
 
 ```powershell
-.\scripts\setup.ps1 -Gpu -Quant    # adds bitsandbytes; elsewhere: pip install -e ".[train,quant]" in the Kumaru folder
+.\scripts\setup.ps1 -Gpu -Quant    # adds bitsandbytes; elsewhere: pip install -e ".[train,quant]" in the Ghuumi folder
 
-kumaru train configs/train/lora-qwen.yaml --dry-run
-kumaru train configs/train/lora-qwen.yaml
+ghuumi train configs/train/lora-qwen.yaml --dry-run
+ghuumi train configs/train/lora-qwen.yaml
 ```
 
 On an RTX 3090: ~9–11 GB VRAM, roughly 20–40 minutes per epoch on 1,000 examples of ~1k tokens each.
@@ -146,8 +146,8 @@ On an RTX 3090: ~9–11 GB VRAM, roughly 20–40 minutes per epoch on 1,000 exam
 Use the adapter:
 
 ```powershell
-kumaru chat --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
-kumaru serve --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
+ghuumi chat --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
+ghuumi serve --model Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter
 ```
 
 Or permanently, in a config:
@@ -158,15 +158,15 @@ backend:
   adapter_path: runs/lora-qwen/adapter
 ```
 
-These commands pass no `-c`, so they run on the built-in defaults, whose backend is `transformers`: the only backend that attaches an adapter. The other backends refuse one with `error: The <name> backend cannot attach a LoRA adapter`, rather than quietly answering with the untuned model. To serve a tuned model from `llama-server` instead, llama.cpp can convert a PEFT adapter to GGUF (`convert_lora_to_gguf.py` in the llama.cpp repository), and `llama-server` loads one with `--lora`. Kumaru does not automate that yet.
+These commands pass no `-c`, so they run on the built-in defaults, whose backend is `transformers`: the only backend that attaches an adapter. The other backends refuse one with `error: The <name> backend cannot attach a LoRA adapter`, rather than quietly answering with the untuned model. To serve a tuned model from `llama-server` instead, llama.cpp can convert a PEFT adapter to GGUF (`convert_lora_to_gguf.py` in the llama.cpp repository), and `llama-server` loads one with `--lora`. Ghuumi does not automate that yet.
 
 ---
 
 ## Step 4 — Did it work?
 
 ```powershell
-kumaru eval --suite smoke --output after.json
-kumaru eval --suite smoke --model Qwen/Qwen2.5-7B-Instruct --output before.json
+ghuumi eval --suite smoke --output after.json
+ghuumi eval --suite smoke --model Qwen/Qwen2.5-7B-Instruct --output before.json
 ```
 
 Compare per-tag pass rates. A tag that regressed tells you exactly what you damaged.
@@ -177,9 +177,9 @@ For a verdict you can trust, run the same benchmark questions on both models and
 
 ```powershell
 pip install -e ".[bench]"
-kumaru bench run golden gsm8k ifeval mmlu_pro -m Qwen/Qwen2.5-7B-Instruct -o runs/bench/base
-kumaru bench run golden gsm8k ifeval mmlu_pro -m Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter -o runs/bench/tuned
-kumaru bench compare runs/bench/base runs/bench/tuned --examples 3
+ghuumi bench run golden gsm8k ifeval mmlu_pro -m Qwen/Qwen2.5-7B-Instruct -o runs/bench/base
+ghuumi bench run golden gsm8k ifeval mmlu_pro -m Qwen/Qwen2.5-7B-Instruct --adapter runs/lora-qwen/adapter -o runs/bench/tuned
+ghuumi bench compare runs/bench/base runs/bench/tuned --examples 3
 ```
 
 - **Your task should improve.** Add questions about it to `golden` first ([how](BENCHMARKS.md#8-your-own-golden-questions)), or the comparison cannot see what you trained for.
@@ -268,8 +268,8 @@ Before any long run, train on 10 examples for 50 steps. Loss should approach zer
 This will **not** produce a useful assistant. The shipped corpus is ~1,700 tokens — the model memorizes it in three steps and emits noise. That is deliberate: it makes every mechanism concrete and observable in seconds, and it lets you *watch* overfitting happen on a corpus small enough to read in full. The profile logs every `logging_steps: 5` steps, so a three-step run prints no loss lines; set `logging_steps: 1` and raise `optim.epochs` to see the loss collapse step by step.
 
 ```powershell
-kumaru train configs/train/pretrain-nano.yaml --dry-run
-kumaru train configs/train/pretrain-nano.yaml
+ghuumi train configs/train/pretrain-nano.yaml --dry-run
+ghuumi train configs/train/pretrain-nano.yaml
 ```
 
 Point `data.text_file` at a real corpus (any UTF-8 text file, any size) to train something meaningful, and give that run a new `output_dir`. The first run packs the corpus into `<output_dir>/tokens.bin`, streaming the token ids to disk one chunk at a time: RAM stays at about 0.2 GB whatever the corpus size, and the file takes 4 bytes per token (about 8 GB for the 2B tokens this model wants). Later runs with the same `output_dir` reuse that file without reading the text again, so a changed `text_file` or `tokenizer` in an old `output_dir` would still train on the old tokens. Packing ran at about 1.4 MB of text per second in local testing, roughly 1.5 hours for 8 GB; `--dry-run` packs and stops, so you can do it up front.
@@ -291,26 +291,26 @@ The default config is ~101M parameters, and the split is instructive:
 
 ## What you get to see
 
-[`src/kumaru/train/model_nano.py`](../src/kumaru/train/model_nano.py) is a complete modern transformer in ~250 readable lines. It is the *same architecture* as Llama 3, Qwen 2.5, and Mistral — RMSNorm, rotary position embeddings, grouped-query attention, SwiGLU, pre-norm residuals — with smaller numbers. Scaling it to 7B changes `n_layers`, `d_model`, and `n_heads`. Nothing structural changes.
+[`src/ghuumi/train/model_nano.py`](../src/ghuumi/train/model_nano.py) is a complete modern transformer in ~250 readable lines. It is the *same architecture* as Llama 3, Qwen 2.5, and Mistral — RMSNorm, rotary position embeddings, grouped-query attention, SwiGLU, pre-norm residuals — with smaller numbers. Scaling it to 7B changes `n_layers`, `d_model`, and `n_heads`. Nothing structural changes.
 
-[`src/kumaru/train/pretrain_nano.py`](../src/kumaru/train/pretrain_nano.py) has no `Trainer` class. The optimizer step, LR schedule, gradient accumulation, clipping, mixed precision, and checkpointing are all written out, because these are exactly the mechanisms you need to understand when a run will not converge.
+[`src/ghuumi/train/pretrain_nano.py`](../src/ghuumi/train/pretrain_nano.py) has no `Trainer` class. The optimizer step, LR schedule, gradient accumulation, clipping, mixed precision, and checkpointing are all written out, because these are exactly the mechanisms you need to understand when a run will not converge.
 
 ## Scaling the same loop
 
 ```powershell
 # 1 GPU
-kumaru train configs/train/pretrain-nano.yaml
+ghuumi train configs/train/pretrain-nano.yaml
 
 # 8 GPUs, same file, same code
-torchrun --nproc_per_node=8 -m kumaru.train.pretrain_nano configs/train/pretrain-nano.yaml
+torchrun --nproc_per_node=8 -m ghuumi.train.pretrain_nano configs/train/pretrain-nano.yaml
 
 # multiple nodes
-torchrun --nnodes=4 --nproc_per_node=8 --rdzv_endpoint=$MASTER:29500 -m kumaru.train.pretrain_nano cfg.yaml
+torchrun --nnodes=4 --nproc_per_node=8 --rdzv_endpoint=$MASTER:29500 -m ghuumi.train.pretrain_nano cfg.yaml
 ```
 
 Data-parallel training works because gradients are linear: each rank computes gradients on its shard, an all-reduce averages them, every rank applies an identical update. Mathematically equivalent to one giant batch.
 
-Before the first `torchrun` launch on a large corpus, pack it with `kumaru train <config> --dry-run` (same `output_dir`). Under `torchrun`, rank 0 packs while the other ranks wait at a barrier, and PyTorch abandons that wait after its default process-group timeout: 10 minutes with NCCL, 30 with gloo. The `torchrun` entry point also skips the `kumaru train` preflight checks.
+Before the first `torchrun` launch on a large corpus, pack it with `ghuumi train <config> --dry-run` (same `output_dir`). Under `torchrun`, rank 0 packs while the other ranks wait at a barrier, and PyTorch abandons that wait after its default process-group timeout: 10 minutes with NCCL, 30 with gloo. The `torchrun` entry point also skips the `ghuumi train` preflight checks.
 
 ## Sizing a real run
 
@@ -359,38 +359,38 @@ Practice on 7,000 GSM8K-style answers could help a student whoever wrote them. S
 
 Teacher against base says whether training helped. Teacher against gold says whether the teacher was the reason. A test fails if the two recipes differ in anything but their data, output folder and run name. A third recipe, [`distill-gsm8k-0.5b.yaml`](howto/configs/distill-gsm8k-0.5b.yaml.md), is the teacher arm on Qwen2.5-0.5B: a cheap pilot that measures time and memory before the real runs.
 
-Run every step from the Kumaru folder, after `.\scripts\setup.ps1 -Gpu` and `pip install -e ".[bench]"`, with the [`qwen36` profile](howto/configs/qwen36.yaml.md) working. Only Step 2 runs without the GPU.
+Run every step from the Ghuumi folder, after `.\scripts\setup.ps1 -Gpu` and `pip install -e ".[bench]"`, with the [`qwen36` profile](howto/configs/qwen36.yaml.md) working. Only Step 2 runs without the GPU.
 
 ## Step 1 — The teacher answers the training questions
 
 ```powershell
-kumaru bench run gsm8k_train -c qwen36 --no-think -n 200 --max-tokens 1024 --context 8192 -o runs\distill\teacher-qwen36
-kumaru bench run gsm8k_train -c qwen36 --no-think --full --max-tokens 1024 --context 8192 -o runs\distill\teacher-qwen36
+ghuumi bench run gsm8k_train -c qwen36 --no-think -n 200 --max-tokens 1024 --context 8192 -o runs\distill\teacher-qwen36
+ghuumi bench run gsm8k_train -c qwen36 --no-think --full --max-tokens 1024 --context 8192 -o runs\distill\teacher-qwen36
 ```
 
-- **`gsm8k_train`, never `gsm8k`.** `gsm8k` is the test split the student will be scored on. `kumaru distill` refuses runs of it, because training on test questions inflates exactly the score being measured.
-- **`--no-think`.** With thinking on, the student would see each answer without the reasoning that produced it, so `kumaru distill` refuses thinking runs by default.
-- **The 200-question pilot** checks the setup: `kumaru bench report runs\distill\teacher-qwen36` shows its accuracy and how many answers were cut off. The second command continues the same run and keeps those 200 answers.
+- **`gsm8k_train`, never `gsm8k`.** `gsm8k` is the test split the student will be scored on. `ghuumi distill` refuses runs of it, because training on test questions inflates exactly the score being measured.
+- **`--no-think`.** With thinking on, the student would see each answer without the reasoning that produced it, so `ghuumi distill` refuses thinking runs by default.
+- **The 200-question pilot** checks the setup: `ghuumi bench report runs\distill\teacher-qwen36` shows its accuracy and how many answers were cut off. The second command continues the same run and keeps those 200 answers.
 - **16 hours**, measured: 7,473 answers of 365 tokens on average, at about 47 tokens per second, beside a game, with 18 expert layers in system RAM as in [BENCHMARKS.md §3](BENCHMARKS.md#3-how-the-comparison-was-run). The pilot took 28 minutes and the rest 34 times as long, so on your machine the pilot gives the estimate. Stop it whenever you need the GPU; repeating the command resumes it.
 
 ## Step 2 — Build the two datasets
 
 ```powershell
-kumaru distill build runs\distill\teacher-qwen36 -o runs\distill\data-teacher
-kumaru distill gold -o runs\distill\data-gold --match runs\distill\data-teacher
+ghuumi distill build runs\distill\teacher-qwen36 -o runs\distill\data-teacher
+ghuumi distill gold -o runs\distill\data-gold --match runs\distill\data-teacher
 ```
 
-Seconds, on the CPU. Each command writes `train.jsonl`, `val.jsonl` and `manifest.json`, and prints what it kept, what it dropped and why. Eleven checks keep only answers that are correct, complete and clean ([all of them](howto/src/kumaru/train/distill.md#2-the-checks-in-order)). Three shape the experiment:
+Seconds, on the CPU. Each command writes `train.jsonl`, `val.jsonl` and `manifest.json`, and prints what it kept, what it dropped and why. Eleven checks keep only answers that are correct, complete and clean ([all of them](howto/src/ghuumi/train/distill.md#2-the-checks-in-order)). Three shape the experiment:
 
 - **Decontamination.** An answer is dropped when its question or its text shares a run of 13 words with a test question (the test of Brown et al., 2020). In the gold build, that removes 4 of the 7,473 questions.
-- **Arithmetic.** A right final number reached through a wrong step would teach the wrong step, so every simple `a op b = c` is checked. It flags 24 of GSM8K's own human-written solutions, [17 of them real errors](howto/src/kumaru/train/distill.md#5-the-arithmetic-check-wrong_steps).
+- **Arithmetic.** A right final number reached through a wrong step would teach the wrong step, so every simple `a op b = c` is checked. It flags 24 of GSM8K's own human-written solutions, [17 of them real errors](howto/src/ghuumi/train/distill.md#5-the-arithmetic-check-wrong_steps).
 - **Matching.** `--match` gives the gold arm exactly the teacher arm's questions, each on the same side of the train/validation split.
 
 ## Step 3 — The pilot
 
 ```powershell
-kumaru train configs\train\distill-gsm8k-0.5b.yaml --dry-run
-kumaru train configs\train\distill-gsm8k-0.5b.yaml
+ghuumi train configs\train\distill-gsm8k-0.5b.yaml --dry-run
+ghuumi train configs\train\distill-gsm8k-0.5b.yaml
 ```
 
 58 minutes, measured. Afterwards, `runs\distill\qwen0.5b-teacher\metrics.json` holds two measurements: `train_seconds`, and `peak_gpu_memory_gb`, the most GPU memory the run held (21.6 GB). Each 1.5B arm took about twice as long but held less, because it takes one row per forward pass and the pilot two ([why that matters](howto/configs/distill-gsm8k.yaml.md#cost)). To read the pilot's own score, see [its how-to](howto/configs/distill-gsm8k-0.5b.yaml.md#reading-the-result).
@@ -398,7 +398,7 @@ kumaru train configs\train\distill-gsm8k-0.5b.yaml
 ## Step 4 — Score the untrained student
 
 ```powershell
-kumaru bench run gsm8k -c student --full --max-tokens 1024 --label student-base -o runs\distill\eval-base
+ghuumi bench run gsm8k -c student --full --max-tokens 1024 --label student-base -o runs\distill\eval-base
 ```
 
 The [`student` profile](howto/configs/student.yaml.md) decodes greedily, 32 questions at a time, so all 1,319 test questions take about 20 minutes (measured), in about 5 GB (estimated). Its first run downloads Qwen2.5-1.5B-Instruct, about 3 GB. Measure this baseline rather than quoting one: the Qwen2.5 report gives about 73% for this model, but prompts and grading differ between setups.
@@ -406,9 +406,9 @@ The [`student` profile](howto/configs/student.yaml.md) decodes greedily, 32 ques
 ## Step 5 — Train both arms
 
 ```powershell
-kumaru train configs\train\distill-gsm8k.yaml --dry-run
-kumaru train configs\train\distill-gsm8k.yaml
-kumaru train configs\train\distill-gsm8k-gold.yaml
+ghuumi train configs\train\distill-gsm8k.yaml --dry-run
+ghuumi train configs\train\distill-gsm8k.yaml
+ghuumi train configs\train\distill-gsm8k-gold.yaml
 ```
 
 - **Check the dry run first**, as in [Part 1](#step-2--the-five-minute-smoke-run): the `SUPERVISED TOKENS` section of `runs\distill\qwen1.5b-teacher\example_preview.txt` must hold the answer and nothing of the question.
@@ -418,11 +418,11 @@ kumaru train configs\train\distill-gsm8k-gold.yaml
 ## Step 6 — Score both students and compare
 
 ```powershell
-kumaru bench run gsm8k -c student --full --max-tokens 1024 --adapter runs\distill\qwen1.5b-teacher\adapter --label student-teacher -o runs\distill\eval-teacher
-kumaru bench run gsm8k -c student --full --max-tokens 1024 --adapter runs\distill\qwen1.5b-gold\adapter --label student-gold -o runs\distill\eval-gold
-kumaru bench compare runs\distill\eval-base runs\distill\eval-teacher
-kumaru bench compare runs\distill\eval-base runs\distill\eval-gold
-kumaru bench compare runs\distill\eval-gold runs\distill\eval-teacher -e 5
+ghuumi bench run gsm8k -c student --full --max-tokens 1024 --adapter runs\distill\qwen1.5b-teacher\adapter --label student-teacher -o runs\distill\eval-teacher
+ghuumi bench run gsm8k -c student --full --max-tokens 1024 --adapter runs\distill\qwen1.5b-gold\adapter --label student-gold -o runs\distill\eval-gold
+ghuumi bench compare runs\distill\eval-base runs\distill\eval-teacher
+ghuumi bench compare runs\distill\eval-base runs\distill\eval-gold
+ghuumi bench compare runs\distill\eval-gold runs\distill\eval-teacher -e 5
 ```
 
 `--label` names each run in the tables; without it, all three would be called `student-default`. The comparisons ask, in order: did training on the teacher's answers help, did training on human answers help, and did the teacher's answers teach more than human ones. `-e 5` also prints up to five questions the two runs answered differently.
@@ -443,11 +443,11 @@ Measured on an RTX 3090 (24 GB) under Windows 11, in [the 2026-10-22 run](#resul
 
 - **Memory follows the rows per forward pass, not the model.** At every position the model scores all 151,936 tokens of its vocabulary, in fp32: about 1.5 MB per token, so one long answer needs ~2 GB for the loss alone. That is why the 0.5B pilot, at two rows per pass, held more than the 1.5B arms at one. The figures are what PyTorch reserved, its cache included, which is well above what the tensors needed: about 6 GB in the teacher arm, estimated ([the arithmetic](howto/configs/distill-gsm8k.yaml.md#cost)).
 - **Time follows the passes.** At one row per pass, a step of 32 passes took ~16.6 seconds in both arms, though the teacher's rows are twice as long: the cost of a pass, not its length, sets the pace. The pilot's 16 passes per step took half that.
-- **Scoring with an adapter is slower.** Unmerged, the adapter runs beside the base weights at every decoding step (one new token for each of the 32 answers decoded together), and a step took about twice as long: 1.96 times the base model's for the 0.5B, scored with and without its adapter back to back. The 1.5B arms measured 2.6 times, but were scored hours after their base, perhaps still beside the game that slowed the gold arm's training. The teacher arm's answers are also longer, and more of them run to the 1,024-token limit. `$env:KUMARU_BACKEND__EXTRA__MERGE_ADAPTER = 'true'` folds the adapter into the weights at load ([`backend.extra`](howto/configs/default.yaml.md#backendextra)), which should remove most of the adapter's cost; it was not tried here.
+- **Scoring with an adapter is slower.** Unmerged, the adapter runs beside the base weights at every decoding step (one new token for each of the 32 answers decoded together), and a step took about twice as long: 1.96 times the base model's for the 0.5B, scored with and without its adapter back to back. The 1.5B arms measured 2.6 times, but were scored hours after their base, perhaps still beside the game that slowed the gold arm's training. The teacher arm's answers are also longer, and more of them run to the 1,024-token limit. `$env:GHUUMI_BACKEND__EXTRA__MERGE_ADAPTER = 'true'` folds the adapter into the weights at load ([`backend.extra`](howto/configs/default.yaml.md#backendextra)), which should remove most of the adapter's cost; it was not tried here.
 
 ## Reading the result
 
-`kumaru bench compare` pairs two runs question by question: McNemar's exact test gives the p-value, and a paired bootstrap the interval ([how to read it](BENCHMARKS.md#4-reading-the-numbers)). At 1,319 questions, about 3 points is the smallest difference it reliably detects. Before concluding, train three seeds per arm: copy each recipe and change `optim.seed`, `output_dir` and `run_name`.
+`ghuumi bench compare` pairs two runs question by question: McNemar's exact test gives the p-value, and a paired bootstrap the interval ([how to read it](BENCHMARKS.md#4-reading-the-numbers)). At 1,319 questions, about 3 points is the smallest difference it reliably detects. Before concluding, train three seeds per arm: copy each recipe and change `optim.seed`, `output_dir` and `run_name`.
 
 Read the teacher arm against base first: only a gain there is a gain. The arms against each other then say where it came from. Where a row turns on what human answers did on their own, read the gold arm against base: the second comparison in [Step 6](#step-6--score-both-students-and-compare).
 
@@ -458,7 +458,7 @@ Read the teacher arm against base first: only a gain there is a gain. The arms a
 | Any | Below | Human solutions were better data for this student. Next: shorter teacher answers, or a mix of both datasets. |
 | No difference | Above | No measurable gain. Only the gold arm against base says why the arms differ. If the gold arm is below base, they differ at least partly because it lost points; if not, neither arm moved measurably on its own. [The 2026-10-22 run](#results-2026-10-22) ended here: compared directly, the gold arm against base was −11.1 points (−13.8 to −8.3), p 2.19e-14. |
 | No difference | No difference | The teacher's answers changed nothing measurable. Only the gold arm against base says whether human answers did. If neither did, check `example_preview.txt`, and that the training loss fell. |
-| Below | Above or no difference | Training on the teacher's answers hurt. Look at the `-e 5` examples, and at how many answers were cut off (`kumaru bench report`). The [0.5B pilot](howto/configs/distill-gsm8k-0.5b.yaml.md#reading-the-result) fell this way against its untrained model. |
+| Below | Above or no difference | Training on the teacher's answers hurt. Look at the `-e 5` examples, and at how many answers were cut off (`ghuumi bench report`). The [0.5B pilot](howto/configs/distill-gsm8k-0.5b.yaml.md#reading-the-result) fell this way against its untrained model. |
 
 "Above" and "below" mean a difference with a p-value under 0.05; "no difference", one without. "No difference" means none was detected, not that there was none, so never work out one comparison from the other two: a teacher arm 2 points below base and 2 above gold can show no difference in either, while the gold arm, 4 points below base, shows one.
 
@@ -469,7 +469,7 @@ Read the teacher arm against base first: only a gain there is a gain. The arms a
 
 Every step above, run once on an RTX 3090 (24 GB) under Windows 11 with a Ryzen 7 5700X, at commit `fd2dadd`, with the recipes as they are now: only their batch split differed from that commit's. One seed per arm.
 
-**Data.** The teacher answered all 7,473 training questions in 16.0 hours, 95.3% of them correctly. `kumaru distill build` kept 7,089 answers (6,751 for training, 338 for validation); it dropped 352 wrong, 21 unfinished, 7 that failed the arithmetic check and 4 as too close to a test question. `kumaru distill gold` matched 7,069 of those questions (6,732 and 337); for the other 20, GSM8K's own solution failed the arithmetic check.
+**Data.** The teacher answered all 7,473 training questions in 16.0 hours, 95.3% of them correctly. `ghuumi distill build` kept 7,089 answers (6,751 for training, 338 for validation); it dropped 352 wrong, 21 unfinished, 7 that failed the arithmetic check and 4 as too close to a test question. `ghuumi distill gold` matched 7,069 of those questions (6,732 and 337); for the other 20, GSM8K's own solution failed the arithmetic check.
 
 **Training.** Each run took 422 steps of 32 rows.
 
@@ -527,10 +527,10 @@ The two 1.5B arms were scored after the gold arm's training, perhaps still besid
 
 Roughly in order of cost:
 
-1. **More answers per question.** Run the teacher again with another `--seed` (it samples at temperature 0.7), and pass both runs to `kumaru distill build`. Yuan et al. (2023) found that more distinct correct solutions help, and help weaker students most.
+1. **More answers per question.** Run the teacher again with another `--seed` (it samples at temperature 0.7), and pass both runs to `ghuumi distill build`. Yuan et al. (2023) found that more distinct correct solutions help, and help weaker students most.
 2. **A bigger student.** Change `base_model` in all three recipes, and `backend.model` in `configs/student.yaml`; a test checks that they agree.
-3. **Another task.** Any benchmark with a grader and a training split can be the source ([how](howto/src/kumaru/train/distill.md#how-to-extend-it)).
-4. **Logit and on-policy distillation.** The student learns the teacher's full next-token probabilities, or practises on its own answers while the teacher scores them. Both change the trainer, not just the data ([how](howto/src/kumaru/train/distill.md#how-to-extend-it)).
+3. **Another task.** Any benchmark with a grader and a training split can be the source ([how](howto/src/ghuumi/train/distill.md#how-to-extend-it)).
+4. **Logit and on-policy distillation.** The student learns the teacher's full next-token probabilities, or practises on its own answers while the teacher scores them. Both change the trainer, not just the data ([how](howto/src/ghuumi/train/distill.md#how-to-extend-it)).
 
 ---
 
@@ -543,10 +543,10 @@ Roughly in order of cost:
 | Loss drops then eval loss rises | Overfitting | Fewer epochs, lower `r`, more data |
 | CUDA OOM | Too much memory requested | Follow the OOM list above, in order |
 | "Every example was dropped" | `max_seq_length` too small | Raise it, or shorten examples |
-| Adapter has no visible effect | Not loaded, or LR too low | Confirm `adapter_path` in `kumaru config`; check train loss actually fell |
+| Adapter has no visible effect | Not loaded, or LR too low | Confirm `adapter_path` in `ghuumi config`; check train loss actually fell |
 | `error: The llamacpp_server backend cannot attach a LoRA adapter` | The profile serves a GGUF file (e.g. `-c qwen36`); only `transformers` loads PEFT adapters | Drop `-c` and pass the adapter's base model, as in Step 3; for GGUF, convert the adapter first (Step 3) |
 | Model got worse at everything | Catastrophic forgetting | Lower LR, fewer epochs, mix in 10–20% general data |
-| `bitsandbytes` import error | Optional dep missing | `.\scripts\setup.ps1 -Quant` (or `pip install -e ".[quant]"` in the Kumaru folder), or set `load_in_4bit: false` |
+| `bitsandbytes` import error | Optional dep missing | `.\scripts\setup.ps1 -Quant` (or `pip install -e ".[quant]"` in the Ghuumi folder), or set `load_in_4bit: false` |
 | `error: <dir> holds answers to gsm8k, an evaluation set` | The teacher answered the test split | Run it on `gsm8k_train` ([Part 3, Step 1](#step-1--the-teacher-answers-the-training-questions)) |
 | Size-mismatch error when scoring an adapter | The adapter was trained on another base model, e.g. a 0.5B adapter on the 1.5B student | Pass the adapter's base model with `-m` |
 
@@ -554,9 +554,9 @@ Roughly in order of cost:
 
 ## Related reading
 
-- [`howto/src/kumaru/train/data.md`](howto/src/kumaru/train/data.md) — loss masking and packing, in detail
-- [`howto/src/kumaru/train/finetune_lora.md`](howto/src/kumaru/train/finetune_lora.md) — the LoRA trainer
-- [`howto/src/kumaru/train/distill.md`](howto/src/kumaru/train/distill.md) — distillation data: every check, flag and file
+- [`howto/src/ghuumi/train/data.md`](howto/src/ghuumi/train/data.md) — loss masking and packing, in detail
+- [`howto/src/ghuumi/train/finetune_lora.md`](howto/src/ghuumi/train/finetune_lora.md) — the LoRA trainer
+- [`howto/src/ghuumi/train/distill.md`](howto/src/ghuumi/train/distill.md) — distillation data: every check, flag and file
 - [`howto/configs/distill-gsm8k.yaml.md`](howto/configs/distill-gsm8k.yaml.md) — the distillation recipes, setting by setting, and what they cost
-- [`howto/src/kumaru/train/model_nano.md`](howto/src/kumaru/train/model_nano.md) — the architecture, component by component
+- [`howto/src/ghuumi/train/model_nano.md`](howto/src/ghuumi/train/model_nano.md) — the architecture, component by component
 - [`SCALABILITY.md`](SCALABILITY.md) §5 — the full training ladder
