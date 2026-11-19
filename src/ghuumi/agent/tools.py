@@ -62,13 +62,13 @@ from ghuumi.core.registry import TOOLS
 
 if TYPE_CHECKING:
     from ghuumi.agent.workspace import Workspace
-    from ghuumi.core.config import WorkspaceConfig
+    from ghuumi.core.config import McpServerConfig, WorkspaceConfig
 
 logger = get_logger(__name__)
 T = TypeVar("T")
 
 #: What `ghuumi chat --workspace DIR` adds to ``agent.enabled_tools``.
-WORKSPACE_TOOLS = ("list_files", "read_file", "write_file", "edit_file", "run_command")
+WORKSPACE_TOOLS = ("list_files", "read_file", "write_file", "edit_file", "run_command", "scaffold_app")
 
 
 @dataclass
@@ -220,11 +220,23 @@ class ToolBelt:
         *,
         workspace: WorkspaceConfig | None = None,
         approver: Approver | None = None,
+        mcp_servers: Sequence[McpServerConfig] = (),
     ) -> None:
         self.approver = approver
         self.tools: dict[str, Tool] = {}
         self.withheld: list[str] = []
+        self.mcp_errors: list[str] = []
         self.workspace: Workspace | None = None
+        if mcp_servers:
+            if approver is None:
+                self.withheld.extend(f"mcp:{s.name}" for s in mcp_servers)
+            else:
+                from ghuumi.agent.mcp import connect_servers
+
+                found, _conns, self.mcp_errors = connect_servers(list(mcp_servers))
+                self.tools.update(found)
+                for line in self.mcp_errors:
+                    logger.warning(line)
         for name in dict.fromkeys(names):
             cls = TOOLS.get(name)
             gated = not getattr(cls, "read_only", True) or getattr(cls, "needs_workspace", False)
@@ -289,3 +301,4 @@ TOOLS.register_lazy("read_file", "ghuumi.agent.workspace:ReadFileTool")
 TOOLS.register_lazy("write_file", "ghuumi.agent.workspace:WriteFileTool")
 TOOLS.register_lazy("edit_file", "ghuumi.agent.workspace:EditFileTool")
 TOOLS.register_lazy("run_command", "ghuumi.agent.commands:RunCommandTool")
+TOOLS.register_lazy("scaffold_app", "ghuumi.agent.apps:ScaffoldAppTool")

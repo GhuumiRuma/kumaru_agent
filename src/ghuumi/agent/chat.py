@@ -70,7 +70,10 @@ class ChatAgent:
         self.config = config
         self.memory = get_policy(config.agent.memory_policy)
         self.tools = ToolBelt(
-            config.agent.enabled_tools, workspace=config.agent.workspace, approver=approver
+            config.agent.enabled_tools,
+            workspace=config.agent.workspace,
+            approver=approver,
+            mcp_servers=config.agent.mcp_servers,
         )
         if self.tools.withheld:
             logger.warning(

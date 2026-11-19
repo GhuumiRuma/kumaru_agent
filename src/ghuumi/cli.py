@@ -187,11 +187,30 @@ def chat(
         "and run allowed programs (agent.workspace.allowed_commands). It shows you each change "
         "and command first, and does it only if you answer y.",
     ),
+    mcp_file: list[str] = typer.Option(
+        None, "--mcp-file",
+        help="JSON file of MCP servers ({\"mcpServers\": {...}}); repeatable. Their tools join the "
+        "agent's, and every call asks you first unless the server lists it in autoApprove.",
+    ),
+    dev: bool = typer.Option(
+        False, "--dev",
+        help="Developer mode: the project folder is Ghuumi's own source, so the agent can change "
+        "and test itself. Starts a ghuumi-dev/<time> git branch; changes stay uncommitted.",
+    ),
 ) -> None:
     """Chat in the terminal, with no server in between."""
     import asyncio
 
     cfg = _load(config, backend=backend, model=model, device=device, adapter=adapter, context=context)
+    if dev:
+        if workspace:
+            raise typer.BadParameter("--dev and --workspace both set the project folder; use one.")
+        workspace = _enter_developer_mode(cfg)
+    if mcp_file:
+        from ghuumi.agent.mcp import load_mcp_file
+
+        for path in mcp_file:
+            cfg.agent.mcp_servers.extend(load_mcp_file(path))
     if workspace:
         from ghuumi.agent.tools import WORKSPACE_TOOLS
 
@@ -203,6 +222,39 @@ def chat(
                  "thinking": think, "thinking_budget": thinking_budget}
     with _exit_cleanly_on_signals():
         asyncio.run(_chat_loop(cfg, prompt, overrides))
+
+
+def _enter_developer_mode(cfg: Any) -> str:
+    """Point the agent at Ghuumi's own source and put its edits on a fresh branch."""
+    import subprocess
+    from datetime import datetime
+
+    from ghuumi.core.config import REPO_ROOT
+
+    root = REPO_ROOT
+    if not (root / "pyproject.toml").is_file() or not (root / "src" / "ghuumi").is_dir():
+        raise typer.BadParameter(
+            "--dev needs Ghuumi installed from a source checkout (pip install -e .); "
+            f"no source tree found at {root}."
+        )
+    cfg.agent.developer_mode = True
+    cfg.agent.max_tool_iterations = max(cfg.agent.max_tool_iterations, 30)
+    branch = datetime.now().strftime("ghuumi-dev/%Y%m%d-%H%M%S")
+    try:
+        done = subprocess.run(  # noqa: S603, S607 - fixed argv, no shell
+            ["git", "-C", str(root), "checkout", "-b", branch],
+            capture_output=True, text=True, timeout=30,
+        )
+        ok = done.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        ok = False
+    if ok:
+        console.print(f"[yellow]developer mode:[/] self-edits go on git branch [bold]{branch}[/] "
+                      "(uncommitted; review with git diff)")
+    else:
+        console.print("[yellow]developer mode:[/] could not start a git branch, so edits cannot be "
+                      "rolled back with git. Back up the folder first.")
+    return str(root)
 
 
 def _visible(text: str) -> str:
@@ -349,6 +401,8 @@ async def _chat_loop(cfg: Any, single_prompt: str | None, overrides: dict[str, A
                   f"{info.context_length:,} token context[/]")
     if agent.tools:
         console.print(f"[dim]tools: {escape(', '.join(agent.tools.tools))}[/]")
+    for problem in agent.tools.mcp_errors:
+        console.print(f"[yellow]{escape(problem)}[/]")
     if agent.tools.workspace is not None:
         console.print(f"[dim]project folder:[/] {escape(str(agent.tools.workspace.root))} "
                       "[dim](every change and command asks you first)[/]")

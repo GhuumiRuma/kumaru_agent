@@ -215,6 +215,33 @@ class WorkspaceConfig(_Base):
         return list(dict.fromkeys(names))
 
 
+class McpServerConfig(_Base):
+    """One MCP (Model Context Protocol) server whose tools the agent may call.
+
+    Give either ``command`` (a local server started over stdio) or ``url`` (a
+    remote streamable-HTTP server). Every call to its tools asks you first,
+    except tools listed in ``auto_approve``. See src/ghuumi/agent/mcp.py.
+    """
+
+    name: str = Field(pattern=r"^[A-Za-z0-9_-]{1,24}$")
+    command: str | None = None
+    args: list[str] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
+    url: str | None = Field(default=None, pattern=r"^https?://")
+    headers: dict[str, str] = Field(default_factory=dict)
+    # Offer only these server tools (empty = all of them).
+    include: list[str] = Field(default_factory=list)
+    # Server tools that run without asking. Only for tools that cannot change anything.
+    auto_approve: list[str] = Field(default_factory=list)
+    timeout_s: int = Field(default=60, ge=1, le=3600)
+
+    @model_validator(mode="after")
+    def _one_transport(self) -> McpServerConfig:
+        if bool(self.command) == bool(self.url):
+            raise ValueError(f"MCP server '{self.name}' needs exactly one of command or url")
+        return self
+
+
 class AgentConfig(_Base):
     """How the conversation itself is managed."""
 
@@ -234,6 +261,10 @@ class AgentConfig(_Base):
     # Rounds of tool calls per message; then the agent stops and asks to continue.
     max_tool_iterations: int = Field(default=10, ge=1, le=100)
     workspace: WorkspaceConfig = Field(default_factory=WorkspaceConfig)
+    # MCP servers to connect to at start-up; `ghuumi chat --mcp-file` adds more.
+    mcp_servers: list[McpServerConfig] = Field(default_factory=list)
+    # Set by `ghuumi chat --dev`: the workspace is Ghuumi's own source tree.
+    developer_mode: bool = False
     expertise: list[Literal["coding", "playwright", "windows", "apis"]] = Field(default_factory=list)
     knowledge_files: list[str] = Field(default_factory=list)
     max_knowledge_chars: int = Field(default=6000, ge=0, le=24000)
