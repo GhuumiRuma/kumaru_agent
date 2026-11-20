@@ -323,6 +323,40 @@ class AcademicConfig(_Base):
     monitor_batch_size: int = Field(default=10, ge=1, le=20)
 
 
+class AutonomyConfig(_Base):
+    """Opt-in self-improvement loop: pull open sources, train, promote only on a pass.
+
+    Nothing runs unless `enabled` is true and you start `ghuumi autonomy run`.
+    """
+
+    enabled: bool = False
+    home: str = Field(
+        default_factory=lambda: str(Path.home() / ".local" / "share" / "ghuumi" / "autonomy")
+    )
+    # Search phrases; each becomes an OpenAlex open-access query.
+    topics: list[str] = Field(default_factory=list)
+    # Only works whose copy carries one of these licences are collected.
+    licenses: list[str] = Field(default_factory=lambda: ["cc0", "cc-by", "cc-by-sa", "public-domain"])
+    works_per_topic: int = Field(default=5, ge=1, le=20)
+    max_documents_per_cycle: int = Field(default=20, ge=1, le=200)
+    max_chars_per_document: int = Field(default=60_000, ge=1000, le=500_000)
+    # Training starts once this many new, verified examples have accumulated.
+    examples_per_passage: int = Field(default=2, ge=1, le=5)
+    min_new_examples: int = Field(default=200, ge=1)
+    max_examples_per_cycle: int = Field(default=2000, ge=1)
+    eval_fraction: float = Field(default=0.1, gt=0.0, lt=0.5)
+    # A YAML in the `ghuumi train` format; the cycle fills in data and output paths.
+    train_template: str | None = None
+    # A new adapter is promoted only if it scores at least the base model's
+    # pass rate on this eval suite minus `max_regression` (0 = no worse).
+    gate_suite: str = "smoke"
+    max_regression: float = Field(default=0.0, ge=0.0, le=1.0)
+    # Seconds between cycles for `ghuumi autonomy run --loop`.
+    interval_s: int = Field(default=86_400, ge=60)
+    # Serve the promoted adapter and documentation index in chat/serve/app.
+    use_promoted: bool = True
+
+
 class EducationConfig(_Base):
     """Where the Education page (/education) finds `ghuumi bench` results."""
 
@@ -355,6 +389,7 @@ class GhuumiConfig(_Base):
     server: ServerConfig = Field(default_factory=ServerConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     academic: AcademicConfig = Field(default_factory=AcademicConfig)
+    autonomy: AutonomyConfig = Field(default_factory=AutonomyConfig)
     education: EducationConfig = Field(default_factory=EducationConfig)
     gaming: GamingConfig = Field(default_factory=GamingConfig)
 
