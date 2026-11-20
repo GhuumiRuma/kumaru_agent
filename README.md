@@ -80,6 +80,7 @@ Full walkthrough with troubleshooting: [`docs/QUICKSTART.md`](docs/QUICKSTART.md
 | `ghuumi eval` | Latency, throughput, and quality regression checks |
 | `ghuumi bench` | Public benchmarks with error bars; compares two runs with significance tests. The web UI's `/education` page shows the newest results per area |
 | `ghuumi curriculum` | Study one area at a time: `run` collects open-access references for a phase's topics and measures it with its benchmarks; repeating it only does what is missing ([phase 1](docs/howto/configs/cs-foundations.yaml.md)) |
+| `ghuumi autonomy` | Opt-in: pulls open-licence sources, trains a LoRA on verified examples and promotes it only if it beats the base model ([how](docs/AUTONOMY.md)) |
 | `ghuumi distill` | Turns a large model's graded answers into training data for a small, fast one ([how](docs/TRAINING.md#part-3--distillation)) |
 | `ghuumi learn` | Create a versioned local reference pack, or index a documentation folder, for a language or platform |
 | `ghuumi academic` | Discover sources, find legal open-access copies and their licenses, review claim-level evidence and editorial updates, and collect permitted human-authored text; opt-in `/academic` review dashboard ([guide](docs/ACADEMIC.md)) |
@@ -272,7 +273,7 @@ scripts/       setup.ps1 (install), verify.ps1 (layered self-check),
                get-llama-server.ps1 (inference engine), check_graders.py (grader proof),
                overnight.ps1 (frees the GPU and runs a long job while you sleep)
 docs/howto/    a page for every source file
-tests/         pytest suite (1459 tests), runs with no GPU in under a minute
+tests/         pytest suite (1468 tests), runs with no GPU in under a minute
 ```
 
 ## Requirements

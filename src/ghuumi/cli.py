@@ -94,7 +94,9 @@ def _load(config: str | None, *, gaming: bool = False, **flags: Any):
         cfg.with_gaming()  # refuses a profile without gaming settings
         # Over the profile and the environment, under the command's own flags.
         cfg = load_config(config, overrides=deep_merge({"backend": cfg.gaming.backend}, overrides))
-    return cfg
+    from ghuumi.autonomy.store import apply_promoted
+
+    return apply_promoted(cfg)
 
 
 # ---------------------------------------------------------------------------
@@ -822,6 +824,100 @@ def curriculum_run(
         console.print()
         render_summaries(console, summaries)
         console.print(f"\n[dim]saved to[/] {runner.out_dir}")
+
+
+# ---------------------------------------------------------------------------
+# ghuumi autonomy ...
+# ---------------------------------------------------------------------------
+
+autonomy_app = typer.Typer(
+    help="Let Ghuumi pull licensed open sources and train itself, behind an evaluation gate.",
+    no_args_is_help=True,
+)
+app.add_typer(autonomy_app, name="autonomy")
+
+
+def _autonomy_cfg(config: str | None):
+    cfg = _load(config)
+    if not cfg.autonomy.enabled:
+        raise GhuumiError("Autonomy is switched off. Set `autonomy.enabled: true` in your config.")
+    return cfg
+
+
+@autonomy_app.command("pull")
+def autonomy_pull(
+    config: str = typer.Option(None, "--config", "-c", help="YAML file or profile name."),
+) -> None:
+    """Collect open-licensed works for `autonomy.topics` and refresh the documentation index."""
+    import asyncio
+
+    from ghuumi.autonomy.cycle import run_cycle
+
+    report = asyncio.run(run_cycle(_autonomy_cfg(config), build=False, train=False))
+    _print_cycle(report)
+
+
+def _print_cycle(report: Any) -> None:
+    console.print(f"{report.documents_added} documents added.", markup=False)
+    for reason, count in report.pull_skipped.items():
+        console.print(f"  skipped {count}: {reason}", markup=False)
+    if report.pull_error:
+        console.print(f"Collection stopped: {report.pull_error}", markup=False)
+    if report.index:
+        console.print(f"Documentation index: {report.index}", markup=False)
+    console.print(
+        f"{report.new_train_examples} train / {report.new_eval_examples} eval examples built.",
+        markup=False,
+    )
+    if report.trained:
+        console.print(
+            f"Trained {report.adapter}: base {report.base_score:.0%}, adapter "
+            f"{report.adapter_score:.0%} -> {'PROMOTED' if report.promoted else 'not promoted'}",
+            markup=False,
+        )
+    if report.note:
+        console.print(report.note.strip(), markup=False)
+
+
+@autonomy_app.command("run")
+def autonomy_run(
+    config: str = typer.Option(None, "--config", "-c", help="YAML file or profile name."),
+    loop: bool = typer.Option(False, "--loop", help="Repeat every autonomy.interval_s seconds."),
+    train: bool = typer.Option(True, "--train/--no-train", help="Train when enough examples exist."),
+) -> None:
+    """Run the whole cycle: pull, index, build examples, train, gate, promote."""
+    import asyncio
+
+    from ghuumi.autonomy.cycle import run_cycle, run_loop
+
+    cfg = _autonomy_cfg(config)
+    if loop:
+        with _exit_cleanly_on_signals():
+            asyncio.run(run_loop(cfg, train=train))
+        return
+    _print_cycle(asyncio.run(run_cycle(cfg, train=train)))
+
+
+@autonomy_app.command("status")
+def autonomy_status(
+    config: str = typer.Option(None, "--config", "-c", help="YAML file or profile name."),
+) -> None:
+    """Show what has been collected, trained and promoted."""
+    from ghuumi.autonomy.store import Store
+
+    cfg = _load(config)
+    store = Store(cfg.autonomy.home)
+    state = store.state()
+    examples = store.read_examples()
+    console.print(f"Home: {store.home}", markup=False)
+    console.print(f"Enabled: {cfg.autonomy.enabled}; topics: {len(cfg.autonomy.topics)}", markup=False)
+    console.print(
+        f"{len(state.seen_hashes)} documents; {len(examples)} examples "
+        f"({state.trained_examples} trained on); {len(state.cycles)} cycles.",
+        markup=False,
+    )
+    promoted = store.promoted()
+    console.print(f"Promoted: {promoted or 'nothing yet'}", markup=False)
 
 
 # ---------------------------------------------------------------------------
