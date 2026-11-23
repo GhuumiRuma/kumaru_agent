@@ -20,6 +20,6 @@ Commands: `ghuumi autonomy pull` (pull and index only), `ghuumi autonomy run [--
 
 Notes:
 - This is separate from the human-reviewed academic catalogue, whose review gate is unchanged.
-- Training works only on the `transformers` backend (or via `autonomy.train_template`) and loads the whole model on GPU 0, so stop the serving process first.
+- Training works only on the `transformers` backend (or via `autonomy.train_template`) and loads the whole model on GPU 0, so stop the serving process first. The gate runs on the template's base model, and a promoted adapter is served only when `backend.model` matches that base. Old documentation indexes are kept in `indexes/`; delete them by hand when no server uses them.
 - Promoted indexes and adapters apply the next time the CLI loads its config (`apply_promoted`); restart a running server to pick them up.
 - State lives under `autonomy.home` (default `~/.local/share/ghuumi/autonomy`).

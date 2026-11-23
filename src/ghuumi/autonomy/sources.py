@@ -89,7 +89,7 @@ def _collect_work(
     for location in free:
         if location.url in store.state().seen_urls:
             report.skip("already collected")
-            return
+            continue
         try:
             page = web.fetch(location.url)
             updates, text = analyze_page(page)

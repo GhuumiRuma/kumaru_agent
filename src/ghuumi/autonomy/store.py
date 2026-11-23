@@ -166,8 +166,9 @@ def apply_promoted(config: Any) -> Any:
     """`config` with the promoted adapter and documentation index attached.
 
     Does nothing unless `autonomy.enabled` and `autonomy.use_promoted` are set.
-    The adapter is attached only when the backend can load one, and never over
-    an `adapter_path` the user chose.
+    The adapter is attached only when the backend can load one, the backend
+    model is the base it was trained on, and never over an `adapter_path` the
+    user chose.
     """
     if not (config.autonomy.enabled and config.autonomy.use_promoted):
         return config
@@ -181,6 +182,7 @@ def apply_promoted(config: Any) -> Any:
         and Path(adapter).is_dir()
         and not config.backend.adapter_path
         and config.backend.name == "transformers"
+        and promoted.get("adapter_base_model") == config.backend.model
     ):
         config.backend.adapter_path = adapter
     return config

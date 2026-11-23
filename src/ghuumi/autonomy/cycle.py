@@ -106,6 +106,9 @@ def train_config_for(
     raw["output_dir"] = str(out / "run")
     raw.setdefault("data", {})
     raw["data"].update(train_file=str(train_file), eval_file=str(eval_file) if eval_file else None)
+    if not eval_file:
+        # The trainer's row-level fallback split would put one document's questions on both sides.
+        raw["data"]["eval_split"] = 0.0
     path = out / "train.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
@@ -128,12 +131,10 @@ def refresh_index(store: Store) -> Path | None:
     folder.mkdir(parents=True, exist_ok=True)
     output = folder / f"index-{_stamp()}.sqlite"
     build_index(store.docs, output, topic="autonomous sources", version=_stamp()[:8])
-    previous = store.promoted().get("index")
     store.promote(index=str(output))
     state.indexed_documents = count
     store.save_state(state)
-    if previous and Path(previous) != output:
-        Path(previous).unlink(missing_ok=True)  # best effort: a running server may hold it
+    # Older indexes are kept: a running server reopens its configured file on every query.
     return output
 
 
@@ -204,10 +205,14 @@ async def run_cycle(
     report.trained, report.adapter = True, str(adapter)
     logger.info("autonomy: trained in %.1f min", (time.perf_counter() - started) / 60)
 
-    score = evaluator or _eval_score
-    candidate = cfg.model_copy(deep=True)
+    # Gate on the model the adapter was actually trained on, via the backend that loads adapters.
+    train_base = str(yaml.safe_load(config_path.read_text("utf-8"))["base_model"])
+    gate = base_config(cfg)
+    gate.backend.name, gate.backend.model = "transformers", train_base
+    candidate = gate.model_copy(deep=True)
     candidate.backend.adapter_path = str(adapter)
-    report.base_score = await score(base_config(cfg), auto.gate_suite)
+    score = evaluator or _eval_score
+    report.base_score = await score(gate, auto.gate_suite)
     report.adapter_score = await score(candidate, auto.gate_suite)
 
     state = store.state()
@@ -216,6 +221,7 @@ async def run_cycle(
     if report.adapter_score + 1e-9 >= report.base_score - auto.max_regression:
         store.promote(
             adapter=str(adapter),
+            adapter_base_model=train_base,
             adapter_score=report.adapter_score,
             base_score=report.base_score,
             promoted_at=stamp,

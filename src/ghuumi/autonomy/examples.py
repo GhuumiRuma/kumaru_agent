@@ -106,7 +106,10 @@ def make_example(
     return Example(
         document_id=doc.id,
         split=split,
-        messages=[{"role": "user", "content": user}, {"role": "assistant", "content": reply}],
+        messages=[
+            {"role": "user", "content": neutralize_control_tokens(user)},
+            {"role": "assistant", "content": neutralize_control_tokens(reply)},
+        ],
     )
 
 

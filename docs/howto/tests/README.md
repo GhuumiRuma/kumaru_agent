@@ -1,6 +1,6 @@
 # `tests/`
 
-> The offline regression suite. 1468 tests, no GPU, no downloads, under a minute.
+> The offline regression suite. 1472 tests, no GPU, no downloads, under a minute.
 
 **Read this when:** you have changed something and want to know whether you broke it, or you are adding a feature and need to know where its test belongs.
 
